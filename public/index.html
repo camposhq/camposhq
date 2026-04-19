@@ -1960,6 +1960,11 @@ function doAuth(){
 
   if(authMode === 'login'){
     fbAuth.signInWithEmailAndPassword(email, pass)
+      .then(function(cred){
+        currentUser = cred.user;
+        btn.textContent = 'Entrar'; btn.disabled = false;
+        loadUserData(cred.user.uid, function(){ showScreen('home'); });
+      })
       .catch(function(err){
         btn.textContent = 'Entrar'; btn.disabled = false;
         showAuthError(getAuthErrorMsg(err.code));
@@ -1969,10 +1974,10 @@ function doAuth(){
     if(!name){ showAuthError('Digite seu nome.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
     fbAuth.createUserWithEmailAndPassword(email, pass)
       .then(function(cred){
+        currentUser = cred.user;
         return cred.user.updateProfile({displayName: name});
       })
       .then(function(){
-        // New user - go to setup wizard
         btn.textContent = 'Criar conta'; btn.disabled = false;
         spStep = 1;
         showScreen('setup');

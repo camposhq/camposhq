@@ -1598,7 +1598,16 @@ function spRender(){
   }
   document.getElementById('sp-steps').innerHTML = stepsH;
   document.getElementById('sp-lbl').innerHTML = 'Etapa <span>'+spStep+' de '+SP_TOTAL+'</span> — '+m.label;
-  document.getElementById('sp-back').style.display = spStep===1?'none':'block';
+  var backBtn = document.getElementById('sp-back');
+  if(spStep === 1){
+    backBtn.textContent = '← Menu principal';
+    backBtn.style.display = 'block';
+    backBtn.onclick = function(){ showScreen('home'); };
+  } else {
+    backBtn.textContent = '← Voltar';
+    backBtn.style.display = 'block';
+    backBtn.onclick = spPrev;
+  }
   var nxt = document.getElementById('sp-next');
   nxt.textContent = spStep===SP_TOTAL ? 'Gerar meu plano ✨' : 'Continuar →';
   nxt.onclick = spStep===SP_TOTAL ? spGenerate : spNext;

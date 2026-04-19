@@ -1290,6 +1290,14 @@ function renderDietaContent(){
     h += '<div class="stat-card"><div class="stat-val" style="color:var(--amber)">'+sDone+'/'+p.supps.length+'</div><div class="stat-lbl">Suplementos</div></div>';
     h += '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'+Math.round(glasses*250)+'ml</div><div class="stat-lbl">Agua</div></div>';
     h += '</div></div>';
+    // Hidratacao no topo
+    h += '<div class="section"><div class="water-card">';
+    h += '<div class="water-hdr"><span class="water-title">💧 Hidratacao</span><span class="water-val">'+Math.round(glasses*250)+'ml / '+p.water+'ml</span></div>';
+    h += '<div class="water-glasses">';
+    for(var gi=0;gi<totalG;gi++){
+      h += '<div class="glass'+(gi<glasses?' filled':'')+'" data-gi="'+gi+'">'+(gi<glasses?'💧':'')+'</div>';
+    }
+    h += '</div></div></div>';
   }
 
   if(dietaTab==='all'||dietaTab==='cafe'||dietaTab==='almoco'||dietaTab==='jantar'){
@@ -1320,16 +1328,6 @@ function renderDietaContent(){
       h += '<div class="scheck'+(done?' done':'')+'"></div></div>';
     });
     h += '</div></div>';
-  }
-
-  if(dietaTab==='all'){
-    h += '<div class="section"><div class="water-card">';
-    h += '<div class="water-hdr"><span class="water-title">💧 Hidratacao</span><span class="water-val">'+Math.round(glasses*250)+'ml / '+p.water+'ml</span></div>';
-    h += '<div class="water-glasses">';
-    for(var gi=0;gi<totalG;gi++){
-      h += '<div class="glass'+(gi<glasses?' filled':'')+'" data-gi="'+gi+'">'+(gi<glasses?'💧':'')+'</div>';
-    }
-    h += '</div></div></div>';
   }
 
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Nutricao IA</span></div>';

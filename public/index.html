@@ -753,6 +753,9 @@ function save(){
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
+  // Debounce cloud save 3s
+  if(saveCloudTimer) clearTimeout(saveCloudTimer);
+  saveCloudTimer = setTimeout(saveToCloud, 3000);
 }
 function load(){
   try{
@@ -2215,6 +2218,27 @@ function loadUserData(uid, callback){
             exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
             cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
             sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
+            profileComplete = s.profileComplete||false;
+            if(s.pdOverride){
+              pdOverride = s.pdOverride;
+              Object.keys(pdOverride).forEach(function(idx){
+                var i = parseInt(idx); if(!PD[i]) return;
+                var o = pdOverride[idx];
+                if(o.name) PD[i].name = o.name;
+                if(o.initials) PD[i].initials = o.initials;
+                if(o.age) PD[i].age = o.age;
+                if(o.weight) PD[i].weight = o.weight;
+                if(o.height) PD[i].height = o.height;
+                if(o.goal) PD[i].goal = o.goal;
+                if(o.calories) PD[i].calories = o.calories;
+                if(o.protein) PD[i].protein = o.protein;
+                if(o.carbs) PD[i].carbs = o.carbs;
+                if(o.fat) PD[i].fat = o.fat;
+                if(o.water) PD[i].water = o.water;
+                if(o.weekly) PD[i].weekly = o.weekly;
+                if(o.meals) PD[i].meals = o.meals;
+              });
+            }
           }catch(e){}
         }
       }
@@ -2226,11 +2250,22 @@ function loadUserData(uid, callback){
 function saveToCloud(){
   if(!fbAuth || !fbAuth.currentUser || !fbDb) return;
   var uid = fbAuth.currentUser.uid;
+  // Strip image data from pdOverride before saving (too large for Firestore)
+  var pdOverrideSafe = {};
+  Object.keys(pdOverride).forEach(function(idx){
+    var o = pdOverride[idx];
+    pdOverrideSafe[idx] = {
+      name:o.name, initials:o.initials, age:o.age, weight:o.weight, height:o.height,
+      goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
+      water:o.water, weekly:o.weekly, meals:o.meals
+    };
+  });
   var appState = {
     curP:curP, curDay:curDay, mealDone:mealDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
+    profileComplete:profileComplete, pdOverride:pdOverrideSafe,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})

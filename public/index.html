@@ -728,6 +728,7 @@ let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '';
 let progressPhotoAngle = 0;
+let profileComplete = false;
 
 // Setup wizard state
 let spStep = 1;
@@ -747,7 +748,7 @@ function save(){
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,suppDone,habitDone,
       exChecked,exWeights,cardioSel,cardioChecked,
-      waterGlasses,sleepData,expandedExam,
+      waterGlasses,sleepData,expandedExam,profileComplete,
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
@@ -763,6 +764,7 @@ function load(){
     exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
     cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
     sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
+    profileComplete = s.profileComplete||false;
     if(s.avatars){
       s.avatars.forEach(function(a,i){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
@@ -843,12 +845,21 @@ function renderHome(){
   var avg = Math.round(Object.values(p.scores).reduce(function(a,b){return a+b;},0)/Object.keys(p.scores).length);
   var h = '';
   // Setup CTA banner
-  h += '<div id="setup-banner" style="margin:0 20px 14px;background:linear-gradient(135deg,#e8630a,#c4621a);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">';
-  h += '<div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">👤</div>';
-  h += '<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:600;margin-bottom:2px">Complete seu perfil</div>';
-  h += '<div style="color:rgba(255,255,255,.75);font-size:12px">Personalize dados, objetivos e gere seu plano com IA</div></div>';
-  h += '<div style="color:#fff;font-size:20px;opacity:.8">›</div>';
-  h += '</div>';
+  if(!profileComplete){
+    h += '<div id="setup-banner" style="margin:0 20px 14px;background:linear-gradient(135deg,#e8630a,#c4621a);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">';
+    h += '<div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">👤</div>';
+    h += '<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:600;margin-bottom:2px">Complete seu perfil</div>';
+    h += '<div style="color:rgba(255,255,255,.75);font-size:12px">Personalize dados, objetivos e gere seu plano com IA</div></div>';
+    h += '<div style="color:#fff;font-size:20px;opacity:.8">›</div>';
+    h += '</div>';
+  } else {
+    h += '<div id="setup-banner" style="margin:0 20px 14px;background:var(--green-light);border:1px solid rgba(26,122,74,.15);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">';
+    h += '<div style="width:34px;height:34px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">✅</div>';
+    h += '<div style="flex:1"><div style="color:var(--green-deep);font-size:13px;font-weight:600;margin-bottom:1px">Perfil completo</div>';
+    h += '<div style="color:var(--muted);font-size:12px">Toque para editar seus dados e objetivos</div></div>';
+    h += '<div style="color:var(--muted);font-size:16px">›</div>';
+    h += '</div>';
+  }
   // Hero
   h += '<div class="dash-hero">';
   h += '<div class="dash-hero-top">';
@@ -1821,6 +1832,7 @@ function spSave(){
   if(P.goals.length){
     PD[curP].goal = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
   }
+  profileComplete = true;
   save(); showToast('Perfil salvo!');
   showScreen('home');
 }

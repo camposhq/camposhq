@@ -1461,7 +1461,7 @@ document.getElementById('file-meal-photo').addEventListener('change', function(e
     ];
     fetch('/api/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:1000, system:sysProm2, messages:[{role:'user', content:userMsg}]})
+      body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, system:sysProm2, messages:[{role:'user', content:userMsg}]})
     }).then(function(r){ return r.json(); }).then(function(data){
       hideTyping();
       if(data.content && data.content[0] && data.content[0].text){
@@ -1566,7 +1566,7 @@ function sendMsg(){
   isTyping=true; document.getElementById('send-btn').disabled=true; showTyping();
   fetch('/api/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,system:getSysProm(),messages:chatHistory})
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:getSysProm(),messages:chatHistory})
   }).then(function(res){ return res.json(); }).then(function(data){
     hideTyping();
     if(data.content&&data.content[0]&&data.content[0].text){
@@ -1802,8 +1802,13 @@ function spGenerate(){
   }
   fetch('/api/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1500,messages:[{role:'user',content:userContent}]})
-  }).then(function(r){ return r.json(); }).then(function(data){
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:userContent}]})
+  }).then(function(r){
+    return r.text().then(function(txt){
+      try{ return JSON.parse(txt); }
+      catch(e){ throw new Error('Resposta invalida ('+r.status+'): '+txt.substring(0,200)); }
+    });
+  }).then(function(data){
     spin.style.display='none';
     if(data.content&&data.content[0]&&data.content[0].text){
       ttl.textContent='✨ Plano gerado!'; sub.textContent='Salve para comecar a usar.';
@@ -1812,10 +1817,14 @@ function spGenerate(){
       var nxt = document.getElementById('sp-next');
       nxt.textContent='Salvar e entrar no app →';
       nxt.onclick = spSave;
+    } else if(data.error){
+      throw new Error(data.error.message||data.error);
     }
-  }).catch(function(){
+  }).catch(function(err){
+    console.error('spGenerate error:', err);
     spin.style.display='none'; icon.style.display='block'; icon.textContent='⚠️';
-    ttl.textContent='Erro de conexao'; sub.textContent='Verifique sua internet e tente novamente.';
+    ttl.textContent='Erro ao gerar plano';
+    sub.textContent = err && err.message ? err.message.substring(0,120) : 'Verifique sua internet e tente novamente.';
     document.getElementById('sp-next').onclick = spGenerate;
   });
 }

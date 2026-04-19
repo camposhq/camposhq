@@ -1043,12 +1043,12 @@ function renderHome(){
     h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Você</span>';
     h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+myVal+'%;background:'+color+'"></div></div>';
     h += '<span class="cmp-bar-num" style="color:'+color+'">'+myVal+'</span></div>';
+    h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Meta</span>';
+    h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+tgtVal+'%;background:#f0c060"></div></div>';
+    h += '<span class="cmp-bar-num" style="color:#b45309">'+tgtVal+'</span></div>';
     h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Média</span>';
     h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+avgVal+'%;background:#ccc"></div></div>';
     h += '<span class="cmp-bar-num" style="color:var(--muted)">'+avgVal+'</span></div>';
-    h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Meta</span>';
-    h += '<div class="cmp-bar-track" style="position:relative"><div class="cmp-bar-fill" style="width:'+tgtVal+'%;background:#f0c060"></div></div>';
-    h += '<span class="cmp-bar-num" style="color:#b45309">'+tgtVal+'</span></div>';
     if(!atTop) h += '<div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:right">Faltam '+gap+' pontos para o top 20%</div>';
     h += '</div>';
   });

@@ -757,11 +757,17 @@ function load(){
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════
 function showScreen(id){
+  // Guard: redirect to login if not authenticated and trying to access main screens
+  var mainScreens = ['home','treinos','dieta','sono','exames'];
+  if(mainScreens.indexOf(id) !== -1 && !currentUser && fbAuth && firebaseConfig.apiKey !== 'FIREBASE_API_KEY'){
+    showLoginScreen();
+    return;
+  }
   curScreen = id;
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('screen-'+id).classList.add('active');
   var nav = document.getElementById('bottom-nav');
-  nav.style.display = (id==='setup') ? 'none' : 'flex';
+  nav.style.display = (id==='setup' || id==='login') ? 'none' : 'flex';
   document.querySelectorAll('.nav-item').forEach(function(b){
     var isA = b.dataset.screen === id;
     b.classList.toggle('active', isA);
@@ -1805,7 +1811,7 @@ document.addEventListener('touchend', function(e){
   // Skip if modals open
   if(document.getElementById('chat-back').classList.contains('open')) return;
   if(document.getElementById('wmodal-back').classList.contains('open')) return;
-  if(curScreen === 'setup') return;
+  if(curScreen === 'setup' || curScreen === 'login') return;
 
   // Skip if touch started inside a horizontal scrollable element
   var el = e.target;

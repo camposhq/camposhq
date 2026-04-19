@@ -74,6 +74,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .cmp-badge.good{background:#e8f5ee;color:#1a7a4a}
 .cmp-badge.bad{background:#faecea;color:#c0392b}
 .cmp-badge.ok{background:#f0f0ed;color:#888}
+.cmp-badge.top{background:#fdf3dc;color:#b45309}
 .ai-card{border-radius:var(--radius);padding:14px;margin-bottom:0}
 .ai-card.green{background:var(--green-light);border:1px solid rgba(26,122,74,.12)}
 .ai-card.indigo{background:var(--indigo-light);border:1px solid rgba(55,48,163,.12)}
@@ -989,15 +990,17 @@ function renderHome(){
     h += '</div>';
   }
   // Hero
-  var pop = getPopAvg(p.age);
-  var popAvgGeral = Math.round((pop.Saude+pop.Fitness+pop.Sono+pop.Nutricao)/4);
+  var bench = getPopBench(p.age);
+  var popAvgGeral = Math.round((bench.avg.Saude+bench.avg.Fitness+bench.avg.Sono+bench.avg.Nutricao)/4);
+  var popTgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
   var diffGeral = avg - popAvgGeral;
+  var pctToTgt = Math.min(100, Math.round(avg / popTgtGeral * 100));
   h += '<div class="dash-hero">';
   h += '<div class="dash-hero-top">';
-  h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral</div></div>';
+  h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
-  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média ('+p.age+' anos)</div>';
+  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média · '+pctToTgt+'% da meta</div>';
   h += '</div>';
   h += '</div>';
   h += '<div class="dash-score-row">';
@@ -1013,32 +1016,40 @@ function renderHome(){
   h += '<div class="metric-card"><div class="metric-val">'+p.calories+'<span class="metric-unit">kcal</span></div><div class="metric-label">Meta calorica</div><div class="metric-trend" style="color:var(--muted)">'+p.protein+'g prot.</div></div>';
   h += '<div class="metric-card"><div class="metric-val">'+p.age+'<span class="metric-unit">anos</span></div><div class="metric-label">Idade</div><div class="metric-trend" style="color:var(--muted)">'+p.height+'cm</div></div>';
   h += '</div></div>';
-  // Scores vs population
+  // Scores vs population avg + target
   var sColors = {Saude:'#1a7a4a',Fitness:'#5a3ab7',Sono:'#3730a3',Nutricao:'#c47a1a'};
   var sMeta = [{k:'Saude',i:'❤️'},{k:'Fitness',i:'💪'},{k:'Sono',i:'🌙'},{k:'Nutricao',i:'🥗'}];
   h += '<div class="section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
   h += '<div class="sec-label" style="margin:0">Scores vs. media mundial</div>';
-  h += '<div style="font-size:10px;color:var(--muted)">Faixa: '+p.age+' anos</div></div>';
+  h += '<div style="font-size:10px;color:var(--muted)">Faixa '+p.age+' anos</div></div>';
   sMeta.forEach(function(sc){
     var myVal = p.scores[sc.k]||0;
-    var popVal = pop[sc.k]||0;
-    var diff = myVal - popVal;
-    var isGood = diff >= 5;
-    var isBad = diff <= -5;
-    var badgeClass = isGood?'good':isBad?'bad':'ok';
-    var badgeTxt = isGood?('▲ +'+diff+' Acima'):isBad?('▼ '+diff+' Abaixo'):'Na média';
+    var avgVal = bench.avg[sc.k]||0;
+    var tgtVal = bench.tgt[sc.k]||0;
+    var diffAvg = myVal - avgVal;
+    var atTop = myVal >= tgtVal;
+    var isGood = !atTop && diffAvg >= 5;
+    var isBad = diffAvg <= -5;
+    var badgeClass = atTop?'top':isGood?'good':isBad?'bad':'ok';
+    var badgeTxt = atTop?'🏆 Top 20%':isGood?('▲ +'+diffAvg+' vs média'):isBad?('▼ '+diffAvg+' vs média'):'Na média';
+    var borderColor = atTop?'rgba(180,83,9,.25)':isGood?'rgba(26,122,74,.25)':isBad?'rgba(192,57,43,.2)':'var(--border)';
     var color = sColors[sc.k]||'var(--green)';
-    h += '<div class="cmp-card'+(isGood?' '+'' : isBad?' '+'' : '')+'" style="border-color:'+(isGood?'rgba(26,122,74,.25)':isBad?'rgba(192,57,43,.2)':'var(--border)')+';">';
-    h += '<div style="display:flex;align-items:center;justify-content:space-between">';
+    var gap = tgtVal - myVal;
+    h += '<div class="cmp-card" style="border-color:'+borderColor+'">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
     h += '<span style="font-size:14px;font-weight:500">'+sc.i+' '+sc.k+'</span>';
     h += '<span class="cmp-badge '+badgeClass+'">'+badgeTxt+'</span>';
     h += '</div>';
     h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Você</span>';
     h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+myVal+'%;background:'+color+'"></div></div>';
     h += '<span class="cmp-bar-num" style="color:'+color+'">'+myVal+'</span></div>';
-    h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Pop.</span>';
-    h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+popVal+'%;background:#ccc"></div></div>';
-    h += '<span class="cmp-bar-num" style="color:var(--muted)">'+popVal+'</span></div>';
+    h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Média</span>';
+    h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+avgVal+'%;background:#ccc"></div></div>';
+    h += '<span class="cmp-bar-num" style="color:var(--muted)">'+avgVal+'</span></div>';
+    h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Meta</span>';
+    h += '<div class="cmp-bar-track" style="position:relative"><div class="cmp-bar-fill" style="width:'+tgtVal+'%;background:#f0c060"></div></div>';
+    h += '<span class="cmp-bar-num" style="color:#b45309">'+tgtVal+'</span></div>';
+    if(!atTop) h += '<div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:right">Faltam '+gap+' pontos para o top 20%</div>';
     h += '</div>';
   });
   h += '</div>';
@@ -1987,17 +1998,17 @@ document.getElementById('file-exam').addEventListener('change', function(e){
 // ══════════════════════════════════════════════════════════════
 // AI CHAT
 // ══════════════════════════════════════════════════════════════
-// Population health benchmarks per age bracket (research-based estimates)
-// Format: [minAge, {Saude, Fitness, Sono, Nutricao}]
+// Population health benchmarks per age bracket
+// avg = media mundial estimada, tgt = top 20% (meta realista atingivel)
 var POP_BENCH = [
-  [65, {Saude:45, Fitness:28, Sono:52, Nutricao:62}],
-  [56, {Saude:50, Fitness:33, Sono:51, Nutricao:60}],
-  [46, {Saude:57, Fitness:39, Sono:53, Nutricao:58}],
-  [36, {Saude:63, Fitness:45, Sono:55, Nutricao:56}],
-  [26, {Saude:68, Fitness:51, Sono:58, Nutricao:54}],
-  [0,  {Saude:72, Fitness:57, Sono:62, Nutricao:52}]
+  [65, {avg:{Saude:45,Fitness:28,Sono:52,Nutricao:62}, tgt:{Saude:67,Fitness:48,Sono:68,Nutricao:80}}],
+  [56, {avg:{Saude:50,Fitness:33,Sono:51,Nutricao:60}, tgt:{Saude:73,Fitness:56,Sono:70,Nutricao:79}}],
+  [46, {avg:{Saude:57,Fitness:39,Sono:53,Nutricao:58}, tgt:{Saude:78,Fitness:64,Sono:72,Nutricao:78}}],
+  [36, {avg:{Saude:63,Fitness:45,Sono:55,Nutricao:56}, tgt:{Saude:83,Fitness:71,Sono:76,Nutricao:77}}],
+  [26, {avg:{Saude:68,Fitness:51,Sono:58,Nutricao:54}, tgt:{Saude:86,Fitness:76,Sono:79,Nutricao:76}}],
+  [0,  {avg:{Saude:72,Fitness:57,Sono:62,Nutricao:52}, tgt:{Saude:89,Fitness:80,Sono:82,Nutricao:74}}]
 ];
-function getPopAvg(age){
+function getPopBench(age){
   for(var i=0;i<POP_BENCH.length;i++){ if(age>=POP_BENCH[i][0]) return POP_BENCH[i][1]; }
   return POP_BENCH[POP_BENCH.length-1][1];
 }

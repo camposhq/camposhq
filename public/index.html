@@ -334,9 +334,87 @@ input[type=range]::-webkit-slider-thumb{width:22px;height:22px;border-radius:50%
 .toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:100;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 input[type=file]{display:none}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE — Tablet & Desktop
+═══════════════════════════════════════════════ */
+@media (min-width: 700px){
+  body{
+    background:#dce5dc;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  #app-shell{
+    width:100%;
+    max-width:480px;
+    background:var(--bg);
+    min-height:100vh;
+    position:relative;
+    box-shadow:0 0 80px rgba(0,0,0,.18);
+  }
+  /* Nav centered below app shell */
+  .bottom-nav{
+    max-width:480px;
+    left:50%;
+    right:auto;
+    transform:translateX(-50%);
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+  }
+  /* Toast follows app width */
+  .toast{
+    /* already uses left:50% translateX(-50%) — works fine */
+  }
+  /* Login doesn't need full-page height treatment on desktop */
+  #screen-login{
+    min-height:100vh;
+  }
+  /* Chat — slide from bottom within app frame */
+  .chat-modal{
+    max-width:480px;
+    margin:0 auto;
+  }
+  /* Weight modal centered */
+  .wmodal{
+    width:420px;
+  }
+  /* Setup wizard */
+  #screen-setup .sp-inner{
+    max-width:480px;
+    margin:0 auto;
+  }
+}
+
+@media (min-width:1024px){
+  body{
+    padding:24px 0;
+    align-items:flex-start;
+  }
+  #app-shell{
+    min-height:calc(100vh - 48px);
+    border-radius:24px;
+    overflow:hidden;
+  }
+  /* Keep bottom nav at the bottom of the shell, not the viewport */
+  .bottom-nav{
+    border-radius:0 0 24px 24px;
+  }
+}
+
+/* Small phones — compact spacing */
+@media (max-width:375px){
+  .topbar h1{font-size:19px}
+  .section{padding:0 14px}
+  .card{padding:12px 14px}
+  .nav-icon{font-size:19px}
+  .nav-label{font-size:9px}
+  .profiles{padding:0 14px 8px}
+}
 </style>
 </head>
 <body>
+<div id="app-shell">
 
 <!-- LOGIN SCREEN -->
 <div id="screen-login" class="screen active" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:40px 24px;background:var(--surface)">
@@ -472,6 +550,7 @@ input[type=file]{display:none}
   <button class="nav-item" data-screen="sono"><span class="nav-icon">🌙</span><span class="nav-label">Sono</span></button>
   <button class="nav-item" data-screen="exames"><span class="nav-icon">🧪</span><span class="nav-label">Exames</span></button>
 </nav>
+</div><!-- /app-shell -->
 
 <!-- WEIGHT MODAL -->
 <div class="wmodal-back" id="wmodal-back">

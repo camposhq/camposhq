@@ -1998,8 +1998,15 @@ function forgotPass(){
 // ── FIRESTORE SYNC ────────────────────────────────────────────
 function loadUserData(uid, callback){
   if(!fbDb){ if(callback) callback(); return; }
+  var done = false;
+  // Timeout: if Firestore takes more than 5s, proceed anyway
+  var timer = setTimeout(function(){
+    if(!done){ done = true; if(callback) callback(); }
+  }, 5000);
   fbDb.collection('users').doc(uid).get()
     .then(function(doc){
+      if(done) return;
+      done = true; clearTimeout(timer);
       if(doc.exists){
         var data = doc.data();
         if(data.appState){
@@ -2016,7 +2023,7 @@ function loadUserData(uid, callback){
       }
       if(callback) callback();
     })
-    .catch(function(){ if(callback) callback(); });
+    .catch(function(){ if(!done){ done=true; clearTimeout(timer); if(callback) callback(); } });
 }
 
 function saveToCloud(){

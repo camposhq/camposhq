@@ -134,6 +134,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .ex-wbtn{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;cursor:pointer;color:var(--text);min-width:48px;text-align:center;transition:all .15s;flex-shrink:0}
 .ex-wbtn:active{background:var(--green-light);border-color:var(--green)}
 .ex-wbtn.nw{color:var(--muted);font-weight:400;font-size:11px}
+.ex-vid{width:26px;height:26px;border-radius:7px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.ex-vid:active{background:#ffe8e8}
 .ex-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;cursor:pointer}
 .ex-check.done{background:var(--green);border-color:var(--green)}
 .ex-check.done::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);display:block}
@@ -1108,6 +1110,7 @@ function renderTreinosContent(){
     h += '<div class="ex-row">';
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
+    h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '<div class="ex-check'+(done?' done':'')+'" data-key="'+key+'"></div></div>';
   });
@@ -1190,6 +1193,9 @@ function renderTreinosContent(){
   document.querySelectorAll('.ex-wbtn').forEach(function(el){
     el.addEventListener('click', function(){ openWeight(this.dataset.wkey, this.dataset.wname, parseFloat(this.dataset.wcur)); });
   });
+  document.querySelectorAll('.ex-vid').forEach(function(el){
+    el.addEventListener('click', function(){ openExVideo(this.dataset.vid); });
+  });
   document.querySelectorAll('[data-cid]').forEach(function(el){
     el.addEventListener('click', function(){ var k=curP+'-'+curDay; cardioSel[k]=cardioSel[k]===this.dataset.cid?null:this.dataset.cid; save(); renderTreinosContent(); });
   });
@@ -1200,6 +1206,39 @@ function renderTreinosContent(){
   if(ta) ta.addEventListener('click', function(){ openChat('treino','Ajuste o treino de '+w.name+' de hoje para '+p.name+', '+p.age+' anos, objetivo: '+p.goal); });
   if(tg) tg.addEventListener('click', function(){ openChat('treino','Gere um plano semanal completo para '+p.name+', '+p.age+' anos, objetivo '+p.goal+'. Musculacao todos os dias de treino + opcao de cardio combinado.'); });
   if(tan) tan.addEventListener('click', function(){ openChat('treino','Analise completa do plano de treinos desta semana para '+p.name); });
+}
+
+function openExVideo(exName){
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';
+  var ytUrl = 'https://www.youtube.com/results?search_query='+encodeURIComponent(exName+' execucao correta musculacao');
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML = [
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">',
+      '<div>',
+        '<div style="font-family:Fraunces,serif;font-size:18px;margin-bottom:4px">'+exName+'</div>',
+        '<div style="font-size:12px;color:var(--muted)">Como executar corretamente</div>',
+      '</div>',
+      '<button id="ex-vid-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1">✕</button>',
+    '</div>',
+    '<a href="'+ytUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;background:#ff0000;color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;margin-bottom:12px">',
+      '<span style="font-size:22px">▶</span>',
+      '<div><div style="font-size:14px;font-weight:600">Ver video no YouTube</div><div style="font-size:11px;opacity:.85">Buscar videos de execucao</div></div>',
+    '</a>',
+    '<button id="ex-vid-ai" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;cursor:pointer;font-family:DM Sans,sans-serif">',
+      '<span style="font-size:22px">🤖</span>',
+      '<div style="text-align:left"><div style="font-size:14px;font-weight:600;color:var(--text)">Dicas do AI</div><div style="font-size:11px;color:var(--muted)">Execucao, erros e variacoes</div></div>',
+    '</button>',
+  ].join('');
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('ex-vid-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('ex-vid-ai').addEventListener('click', function(){
+    overlay.remove();
+    openChat('treino','Me explica como executar corretamente o exercicio "'+exName+'": postura, pegada, amplitude, erros comuns e dicas para '+PD[curP].name+'.');
+  });
 }
 
 // ══════════════════════════════════════════════════════════════

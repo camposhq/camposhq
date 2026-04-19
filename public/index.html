@@ -736,7 +736,7 @@ const SP_TOTAL = 7;
 const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg:'',
   bodyPhotos:{frente:'',lado:'',costas:''},
   age:'45',gender:'M',height:'178',weight:'82',
-  goals:['longevidade','hipertrofia'],trainingDays:'5',trainingLevel:'intermediario',
+  goals:['longevidade','hipertrofia','perda_gordura','recomposicao','performance','sono','cognitivo','hormonal','saude_geral','digestao'],trainingDays:'5',trainingLevel:'intermediario',
   sleepHours:'7',stressLevel:'3',medications:'',conditions:[],allergies:[]};
 
 // ══════════════════════════════════════════════════════════════
@@ -1695,7 +1695,7 @@ function spS3(){
 function spS4(){
   var goalsH = GOALS.map(function(g){ return '<div class="chip full'+(P.goals.includes(g.v)?' sel':'')+'" data-ma="goals" data-mv="'+g.v+'"><span class="chip-ic">'+g.i+'</span>'+g.l+'</div>'; }).join('');
   return '<div class="section">' +
-    '<div class="hint-box"><span style="font-size:18px">💡</span><div class="hint-txt">Selecione <strong>todos</strong> os objetivos que fazem sentido. O plano se adapta a cada um.</div></div>' +
+    '<div class="hint-box"><span style="font-size:18px">💡</span><div class="hint-txt">Todos selecionados por padrão. <strong>Desmarque</strong> os que não se aplicam a você.</div></div>' +
     '<div class="chips col">'+goalsH+'</div></div>';
 }
 

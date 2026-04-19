@@ -145,11 +145,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .meal-time{background:var(--green-light);color:var(--green-deep);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;font-family:'DM Mono',monospace}
 .meal-name{font-size:14px;font-weight:500}
 .meal-kcal{font-size:12px;color:var(--muted);margin-top:1px}
-.food-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border)}
+.food-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);gap:8px}
 .food-item:last-child{border-bottom:none}
 .food-name{font-size:13px}
 .food-portion{font-size:12px;color:var(--muted);margin-top:1px}
 .food-kcal{font-size:12px;font-weight:500;font-family:'DM Mono',monospace;color:var(--muted)}
+.food-swap{background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--muted);flex-shrink:0;transition:all .15s}
+.food-swap:active{background:var(--surface);color:var(--text)}
 .mcheck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;transition:all .15s;cursor:pointer}
 .mcheck.done{background:var(--green);border-color:var(--green)}
 .supp-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer}
@@ -1310,8 +1312,12 @@ function renderDietaContent(){
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
       h += '<div><div class="meal-name">'+meal.name+'</div><div class="meal-kcal">'+meal.kcal+' kcal</div></div></div>';
       h += '<div class="mcheck'+(done?' done':'')+'" data-mkey="'+key+'"></div></div>';
-      h += '<div style="'+(done?'opacity:.4':'')+'">'+meal.foods.map(function(f){
-        return '<div class="food-item"><div><div class="food-name">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div><div class="food-kcal">'+f.k+' kcal</div></div>';
+      h += '<div style="'+(done?'opacity:.4':'')+'">'+meal.foods.map(function(f,fi){
+        return '<div class="food-item">'+
+          '<div style="flex:1;min-width:0"><div class="food-name">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
+          '<div class="food-kcal">'+f.k+' kcal</div>'+
+          '<button class="food-swap" data-mealid="'+meal.id+'" data-fidx="'+fi+'" title="Substituir">🔄</button>'+
+        '</div>';
       }).join('')+'</div></div>';
     });
     h += '</div>';
@@ -1352,12 +1358,86 @@ function renderDietaContent(){
       waterGlasses[curP+'-water'] = (i<cur?i:i+1); save(); renderDietaContent();
     });
   });
+  document.querySelectorAll('.food-swap').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      substituirAlimento(this.dataset.mealid, parseInt(this.dataset.fidx));
+    });
+  });
   var bmph = document.getElementById('btn-meal-photo');
   if(bmph) bmph.addEventListener('click', function(){ mealPhotoCtx='geral'; document.getElementById('file-meal-photo').click(); });
   var da=document.getElementById('d-ajustar'); var ds=document.getElementById('d-sub'); var dan=document.getElementById('d-analise');
   if(da) da.addEventListener('click', function(){ openChat('dieta','Quero ajustar meu plano alimentar. Sou '+p.name+', '+p.age+' anos, objetivo: '+p.goal); });
   if(ds) ds.addEventListener('click', function(){ openChat('dieta','Sugestoes de substituicoes para meu plano alimentar atual'); });
   if(dan) dan.addEventListener('click', function(){ openChat('dieta','Analise nutricional completa para '+p.name+', '+p.age+' anos, '+p.weight+'kg, objetivo '+p.goal); });
+}
+
+function substituirAlimento(mealId, foodIdx){
+  var p = PD[curP];
+  var meal = p.meals.find(function(m){ return m.id===mealId; });
+  if(!meal || !meal.foods[foodIdx]) return;
+  var food = meal.foods[foodIdx];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML =
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'+
+      '<div>'+
+        '<div style="font-family:Fraunces,serif;font-size:18px">Substituir <em>alimento</em></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">Mantendo as calorias da refeicao</div>'+
+      '</div>'+
+      '<button id="fsub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+    '</div>'+
+    '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">'+
+      '<div><div style="font-size:14px;font-weight:500">'+food.n+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+food.p+'</div></div>'+
+      '<div style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:var(--muted)">'+food.k+' kcal</div>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Substituir por (deixe em branco para IA sugerir):</div>'+
+    '<input id="fsub-inp" type="text" placeholder="Ex: atum, frango, batata doce..." style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:12px">'+
+    '<button id="fsub-btn" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Substituir com IA</button>';
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  document.getElementById('fsub-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  setTimeout(function(){ document.getElementById('fsub-inp').focus(); }, 200);
+
+  document.getElementById('fsub-btn').addEventListener('click', function(){
+    var btn = this; btn.disabled = true; btn.textContent = 'Buscando substituto...';
+    var desejo = document.getElementById('fsub-inp').value.trim();
+    var instrucao = desejo
+      ? 'Substitua "'+food.n+'" ('+food.p+', '+food.k+' kcal) por "'+desejo+'" mantendo exatamente '+food.k+' kcal. Ajuste a porcao se necessario.'
+      : 'Sugira um substituto saudavel para "'+food.n+'" ('+food.p+', '+food.k+' kcal) mantendo exatamente '+food.k+' kcal. Objetivo: '+p.goal+'.';
+    instrucao += ' Retorne SOMENTE JSON valido, sem texto, sem markdown: {"n":"nome","p":"porcao","k":'+food.k+'}';
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6', max_tokens:200,
+        system:'Voce e um nutricionista. Retorne apenas JSON valido conforme solicitado. Mantenha o mesmo valor de kcal.',
+        messages:[{role:'user', content:instrucao}]
+      })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error();
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      if(!parsed.n) throw new Error();
+      // apply substitution
+      meal.foods[foodIdx] = {n:parsed.n, p:parsed.p||food.p, k:parsed.k||food.k};
+      meal.kcal = meal.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].meals = p.meals;
+      save();
+      overlay.remove();
+      showToast('"'+food.n+'" substituido por "'+parsed.n+'" ✓');
+      renderDietaContent();
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Substituir com IA';
+      showToast('Nao foi possivel substituir. Tente novamente.');
+    });
+  });
 }
 
 // ══════════════════════════════════════════════════════════════

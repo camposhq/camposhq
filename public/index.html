@@ -764,8 +764,14 @@ function showScreen(id){
     return;
   }
   curScreen = id;
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-'+id).classList.add('active');
+  // Force hide all screens (overrides any inline style)
+  document.querySelectorAll('.screen').forEach(function(s){
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  var target = document.getElementById('screen-'+id);
+  target.classList.add('active');
+  target.style.display = (id === 'login') ? 'flex' : 'block';
   var nav = document.getElementById('bottom-nav');
   nav.style.display = (id==='setup' || id==='login') ? 'none' : 'flex';
   document.querySelectorAll('.nav-item').forEach(function(b){
@@ -1872,8 +1878,13 @@ function initAuth(){
 }
 
 function showLoginScreen(){
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-login').classList.add('active');
+  document.querySelectorAll('.screen').forEach(function(s){
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  var login = document.getElementById('screen-login');
+  login.classList.add('active');
+  login.style.display = 'flex';
   document.getElementById('bottom-nav').style.display = 'none';
 }
 

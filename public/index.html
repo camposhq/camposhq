@@ -1410,8 +1410,8 @@ function renderSonoContent(){
 function renderExames(){
   renderProfiles('exames-profiles');
   document.getElementById('exames-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  var cats = ['todos','sangue','hormonal','metabolico','vitaminas'];
-  var catLabels = ['Todos','Sangue','Hormonal','Metabolico','Vitaminas'];
+  var cats = ['todos','energia','metabolismo','cardiovascular'];
+  var catLabels = ['Todos','⚡ Energia','🔥 Metabolismo','❤️ Cardio'];
   var th = '';
   cats.forEach(function(t,i){
     th += '<button class="tab" style="'+(examesTab===t?'background:var(--coral);color:#fff;border-color:var(--coral)':'')+'" data-etab="'+t+'">'+catLabels[i]+'</button>';
@@ -1423,74 +1423,200 @@ function renderExames(){
   renderExamesContent();
 }
 
+function getExamHistory(){
+  var o = pdOverride[curP];
+  return (o && o.examHistory) ? o.examHistory : [];
+}
+
 function renderExamesContent(){
-  var p = PD[curP]; var h = '';
-  h += '<div class="section"><div class="upload-area" id="exam-upload">';
-  h += '<div style="font-size:32px;margin-bottom:8px">📎</div>';
-  h += '<div style="font-size:14px;font-weight:500;color:var(--coral);margin-bottom:4px">Enviar novo exame</div>';
-  h += '<div style="font-size:12px;color:var(--muted)">PDF ou foto — IA faz a leitura automaticamente</div>';
-  h += '</div></div>';
+  var p = PD[curP];
+  var history = getExamHistory();
+  var current = history.length > 0 ? history[history.length-1].values : {};
+  var previous = history.length > 1 ? history[history.length-2].values : null;
+  var h = '';
 
-  var ok=p.exams.filter(function(e){return e.status==='ok';}).length;
-  var al=p.exams.filter(function(e){return e.status==='alert';}).length;
-  var da=p.exams.filter(function(e){return e.status==='danger';}).length;
-  h += '<div class="section"><div class="stats">';
-  h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+ok+'</div><div class="stat-lbl">Normais</div></div>';
-  h += '<div class="stat-card"><div class="stat-val" style="color:var(--amber)">'+al+'</div><div class="stat-lbl">Atencao</div></div>';
-  h += '<div class="stat-card"><div class="stat-val" style="color:var(--coral)">'+da+'</div><div class="stat-lbl">Alertas</div></div>';
-  h += '</div></div>';
+  var GROUPS_MAP = {energia:['vitd','ferro','vitb12'], metabolismo:['testo','tsh','gli'], cardiovascular:['pce','trig','hdl']};
+  var visMarkers = examesTab==='todos' ? EXAM_MARKER_DEFS : EXAM_MARKER_DEFS.filter(function(m){ return (GROUPS_MAP[examesTab]||[]).indexOf(m.key)>=0; });
 
-  var filtExams = examesTab==='todos' ? p.exams : p.exams.filter(function(e){return e.cat===examesTab;});
-  h += '<div class="section"><div class="sec-label">Resultados</div>';
-  filtExams.forEach(function(exam,ei){
-    var expanded = !!expandedExam[curP+'-'+ei];
-    var stBg = {ok:'#e8f5ee',alert:'#fdf3e3',danger:'#fdecea'}[exam.status];
-    var stCl = {ok:'var(--green)',alert:'var(--amber)',danger:'var(--coral)'}[exam.status];
-    var stLbl = {ok:'Normal',alert:'Atencao',danger:'Alerta'}[exam.status];
-    h += '<div class="exam-card"><div class="exam-hdr" data-ei="'+ei+'">';
-    h += '<div class="exam-hdr-l"><div class="exam-icon-wrap" style="background:'+stBg+'">'+exam.icon+'</div>';
-    h += '<div><div class="exam-name">'+exam.name+'</div><div class="exam-date">'+exam.date+' · '+exam.markers.length+' marcadores</div></div></div>';
-    h += '<div style="display:flex;align-items:center;gap:8px"><div class="s-badge" style="background:'+stBg+';color:'+stCl+'">'+stLbl+'</div>';
-    h += '<span style="color:var(--muted);font-size:14px">'+(expanded?'∧':'∨')+'</span></div></div>';
-    if(expanded){
-      h += '<div>';
-      exam.markers.forEach(function(m){
-        h += '<div class="marker-item"><div class="marker-top">';
-        h += '<div><div class="marker-name">'+m.n+'</div><div class="marker-ref">Ref: '+m.ref+'</div></div>';
-        h += '<div class="marker-val" style="color:'+m.c+'">'+m.v+' '+m.u+'</div></div>';
-        h += '<div class="marker-bw"><div class="marker-bf" style="width:'+m.pct+'%;background:'+m.c+'"></div></div>';
-        h += '</div>';
-      });
-      h += '</div>';
-    }
+  var allVals = EXAM_MARKER_DEFS.map(function(m){ return {m:m,v:parseFloat(current[m.key])}; }).filter(function(x){ return !isNaN(x.v); });
+  var normais = allVals.filter(function(x){ return x.v>=x.m.refLow && x.v<=x.m.refHigh; }).length;
+  var alertas = allVals.filter(function(x){ return x.v<x.m.refLow||x.v>x.m.refHigh; }).length;
+  var atencao = allVals.length - normais - alertas;
+
+  if(allVals.length===0){
+    h += '<div class="section"><div style="text-align:center;padding:40px 20px">';
+    h += '<div style="font-size:48px;margin-bottom:12px">🧪</div>';
+    h += '<div style="font-size:16px;font-weight:500;margin-bottom:8px">Sem exames registrados</div>';
+    h += '<div style="font-size:13px;color:var(--muted);margin-bottom:20px">Adicione seus resultados para acompanhar a evolucao e receber recomendacoes personalizadas da IA.</div>';
+    h += '<button id="e-add-first" style="background:var(--coral);color:#fff;border:none;border-radius:var(--radius-sm);padding:13px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Adicionar exames</button>';
+    h += '</div></div>';
+  } else {
+    h += '<div class="section"><div class="stats">';
+    h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+normais+'</div><div class="stat-lbl">Normais</div></div>';
+    h += '<div class="stat-card"><div class="stat-val" style="color:var(--amber)">'+atencao+'</div><div class="stat-lbl">Atencao</div></div>';
+    h += '<div class="stat-card"><div class="stat-val" style="color:var(--coral)">'+alertas+'</div><div class="stat-lbl">Alertas</div></div>';
+    h += '</div></div>';
+
+    h += '<div class="section">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+    h += '<div class="sec-label" style="margin:0">Ultima medicao: '+(history[history.length-1].dateLabel||'')+'</div>';
+    if(history.length>1) h += '<div style="font-size:11px;color:var(--muted)">'+history.length+' medicoes</div>';
     h += '</div>';
-  });
-  h += '</div>';
 
-  h += '<div class="section"><div class="ai-card coral"><div class="ai-hdr"><div class="ai-dot coral"></div><span class="ai-ttl coral">Analise IA</span></div>';
-  h += '<div class="ai-txt coral">'+p.insight+'</div></div></div>';
-  h += '<div class="section"><div class="actions">';
-  h += '<button class="act-btn" id="e-analise"><span class="act-icon">🔬</span><span class="act-lbl">Interpretar</span><span class="act-sub">O que esta fora</span></button>';
-  h += '<button class="act-btn" id="e-supp"><span class="act-icon">💊</span><span class="act-lbl">Suplementos</span><span class="act-sub">Pelos resultados</span></button>';
-  h += '<button class="act-btn" id="e-medico"><span class="act-icon">👨‍⚕️</span><span class="act-lbl">Consulta</span><span class="act-sub">Perguntas ao medico</span></button>';
-  h += '<button class="act-btn" id="e-tend"><span class="act-icon">📈</span><span class="act-lbl">Tendencias</span><span class="act-sub">Evolucao</span></button>';
-  h += '</div></div>';
-  h += '<div class="section"><button class="btn-full" id="e-full" style="background:var(--coral)">Analise completa com IA ↗</button></div>';
+    visMarkers.forEach(function(m){
+      var v = parseFloat(current[m.key]);
+      if(isNaN(v)) return;
+      var isLow = v < m.refLow;
+      var isHigh = m.refHigh < 999 && v > m.refHigh;
+      var isOk = !isLow && !isHigh;
+      var color = isOk ? 'var(--green)' : 'var(--coral)';
+      var statusLbl = isOk ? 'Normal' : isLow ? 'Baixo' : 'Alto';
+      var pct = m.refHigh < 999
+        ? Math.min(100,Math.max(0,((v-m.refLow)/(m.refHigh-m.refLow))*100))
+        : Math.min(100,(v/(m.refLow*1.8))*100);
+
+      var trendH = '';
+      if(previous && previous[m.key]!=null){
+        var prev = parseFloat(previous[m.key]);
+        if(!isNaN(prev) && prev!==v){
+          var diff = v - prev;
+          var trendIcon = diff>0 ? '↑' : '↓';
+          var trendColor = isOk ? 'var(--green)' : 'var(--coral)';
+          trendH = '<span style="font-size:11px;color:'+trendColor+';font-weight:600;margin-right:6px">'+trendIcon+(diff>0?'+':'')+diff.toFixed(1)+'</span>';
+        }
+      }
+
+      h += '<div class="card" style="padding:12px 16px;margin-bottom:8px">';
+      h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+      h += '<span style="font-size:13px;font-weight:500;color:var(--text)">'+m.n+'</span>';
+      h += '<div style="display:flex;align-items:center">'+trendH;
+      h += '<span style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+color+'">'+v+'</span>';
+      h += '<span style="font-size:11px;color:var(--muted);margin-left:3px">'+m.u+'</span></div></div>';
+      h += '<div style="height:5px;background:#eee;border-radius:3px;margin-bottom:4px">';
+      h += '<div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:3px"></div></div>';
+      h += '<div style="display:flex;justify-content:space-between">';
+      h += '<span style="font-size:10px;color:var(--muted)">Ref: '+m.refLow+(m.refHigh<999?'–'+m.refHigh:'+')+'</span>';
+      h += '<span style="font-size:10px;font-weight:600;color:'+color+'">'+statusLbl+'</span>';
+      h += '</div></div>';
+    });
+    h += '</div>';
+  }
+
+  h += '<div class="section"><button id="e-add-new" style="width:100%;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button></div>';
+
+  if(allVals.length>0){
+    h += '<div class="section"><div class="actions">';
+    h += '<button class="act-btn" id="e-analise"><span class="act-icon">🔬</span><span class="act-lbl">Interpretar</span><span class="act-sub">O que esta fora</span></button>';
+    h += '<button class="act-btn" id="e-supp"><span class="act-icon">💊</span><span class="act-lbl">Suplementos</span><span class="act-sub">Pelos resultados</span></button>';
+    h += '<button class="act-btn" id="e-medico"><span class="act-icon">👨‍⚕️</span><span class="act-lbl">Consulta</span><span class="act-sub">Perguntas medico</span></button>';
+    if(history.length>1) h += '<button class="act-btn" id="e-hist"><span class="act-icon">📈</span><span class="act-lbl">Historico</span><span class="act-sub">'+history.length+' medicoes</span></button>';
+    h += '</div></div>';
+  }
 
   document.getElementById('exames-content').innerHTML = h;
 
-  document.getElementById('exam-upload').addEventListener('click', function(){ document.getElementById('file-exam').click(); });
-  document.querySelectorAll('.exam-hdr[data-ei]').forEach(function(el){
-    el.addEventListener('click', function(){ var k=curP+'-'+this.dataset.ei; expandedExam[k]=!expandedExam[k]; save(); renderExamesContent(); });
+  var eAdd = document.getElementById('e-add-first')||document.getElementById('e-add-new');
+  if(eAdd) eAdd.addEventListener('click', openAddExam);
+
+  var exStr = getExamInputsText()||getExamsText(p);
+  var ea=document.getElementById('e-analise');
+  var es=document.getElementById('e-supp');
+  var em=document.getElementById('e-medico');
+  var ehist=document.getElementById('e-hist');
+  if(ea) ea.addEventListener('click', function(){ openChat('exames','Analise os exames de '+p.name+'. '+exStr+'. O que esta fora do ideal, prioridades e impacto em treino e suplementacao.'); });
+  if(es) es.addEventListener('click', function(){ openChat('exames','Com base nos exames de '+p.name+': '+exStr+'. Indique os top 5 suplementos com doses para corrigir deficiencias.'); });
+  if(em) em.addEventListener('click', function(){ openChat('exames','Prepare as perguntas mais importantes para levar ao medico com base nos exames de '+p.name+': '+exStr); });
+  if(ehist) ehist.addEventListener('click', showExamHistory);
+}
+
+var addExamInputs = {};
+function openAddExam(){
+  var EXAM_GROUPS_ADD = [
+    {title:'Energia e Performance', icon:'⚡', markers:[
+      {key:'vitd',n:'Vitamina D',u:'ng/mL',ref:'50–80'},{key:'ferro',n:'Ferritina',u:'ng/mL',ref:'30–150'},{key:'vitb12',n:'Vitamina B12',u:'pg/mL',ref:'400–900'}]},
+    {title:'Metabolismo', icon:'🔥', markers:[
+      {key:'testo',n:'Testosterona',u:'ng/dL',ref:'500–900'},{key:'tsh',n:'TSH',u:'mUI/L',ref:'0.5–2.5'},{key:'gli',n:'Glicemia jejum',u:'mg/dL',ref:'70–90'}]},
+    {title:'Cardiovascular', icon:'❤️', markers:[
+      {key:'pce',n:'PCR ultrassens.',u:'mg/L',ref:'<0.5'},{key:'trig',n:'Triglicerideos',u:'mg/dL',ref:'<100'},{key:'hdl',n:'HDL',u:'mg/dL',ref:'>60'}]},
+  ];
+  addExamInputs = {};
+  var h = '<div style="padding:20px 20px 0">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px">Nova <em>medicao</em></div>';
+  h += '<button id="add-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  EXAM_GROUPS_ADD.forEach(function(g){
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    g.markers.forEach(function(m){
+      h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      h += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+m.n+'</div><div style="font-size:11px;color:var(--muted)">Ref: '+m.ref+' '+m.u+'</div></div>';
+      h += '<input type="text" inputmode="decimal" placeholder="—" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="addExamInputs[this.dataset.ekey]=this.value.replace(\',\',\'.\')"> ';
+      h += '<div style="width:36px;font-size:10px;color:var(--muted)">'+m.u+'</div></div>';
+    });
+    h += '</div>';
   });
-  var exStr = p.exams.map(function(e){ return e.name+': '+e.markers.map(function(m){return m.n+'='+m.v+m.u;}).join(', '); }).join(' | ');
-  var ea=document.getElementById('e-analise'); var es=document.getElementById('e-supp');
-  var em=document.getElementById('e-medico'); var et=document.getElementById('e-tend'); var ef=document.getElementById('e-full');
-  if(ea) ea.addEventListener('click', function(){ openChat('exames','Analise os exames de '+p.name+'. Resultados: '+exStr+'. O que esta fora do normal e as prioridades.'); });
-  if(es) es.addEventListener('click', function(){ openChat('exames','Baseado nos exames de '+p.name+' ('+exStr+'), recomende suplementos com doses e horarios.'); });
-  if(em) em.addEventListener('click', function(){ openChat('exames','Prepare perguntas para a consulta medica de '+p.name+' com base nos exames: '+exStr); });
-  if(et) et.addEventListener('click', function(){ openChat('exames','Analise tendencias e evolucao dos marcadores de '+p.name); });
-  if(ef) ef.addEventListener('click', function(){ openChat('exames','Analise completa de todos os exames de '+p.name+', '+p.age+' anos: '+exStr); });
+  h += '<button id="add-exam-save" style="width:100%;padding:14px;background:var(--coral);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:20px">Salvar medicao</button>';
+  h += '</div>';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'add-exam-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding-bottom:var(--safe-bottom)';
+  panel.innerHTML = h;
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  document.getElementById('add-exam-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('add-exam-save').addEventListener('click', function(){
+    var vals = {}; var hasAny = false;
+    Object.keys(addExamInputs).forEach(function(k){ if(addExamInputs[k]){ vals[k]=parseFloat(addExamInputs[k]); hasAny=true; } });
+    if(!hasAny){ showToast('Preencha ao menos um campo'); return; }
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
+    var today = new Date();
+    pdOverride[curP].examHistory.push({date:today.toISOString().slice(0,10), dateLabel:today.toLocaleDateString('pt-BR',{month:'short',year:'numeric'}), values:vals});
+    save();
+    overlay.remove();
+    showToast('Medicao salva!');
+    renderExames();
+  });
+}
+
+function showExamHistory(){
+  var history = getExamHistory();
+  if(history.length<2){ showToast('Adicione mais medicoes para ver evolucao'); return; }
+  var h = '<div style="padding:20px 20px 0">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px">Historico <em>de exames</em></div>';
+  h += '<button id="hist-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  EXAM_MARKER_DEFS.forEach(function(m){
+    var entries = history.filter(function(e){ return e.values[m.key]!=null; });
+    if(entries.length<1) return;
+    h += '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+m.n+' <span style="font-size:11px;color:var(--muted);font-weight:400">'+m.u+'</span></div>';
+    h += '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">';
+    entries.forEach(function(e){
+      var v = parseFloat(e.values[m.key]);
+      var isOk = v>=m.refLow && v<=m.refHigh;
+      var color = isOk?'var(--green)':'var(--coral)';
+      h += '<div style="flex-shrink:0;text-align:center;background:var(--surface);border-radius:10px;padding:8px 12px">';
+      h += '<div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+color+'">'+v+'</div>';
+      h += '<div style="font-size:10px;color:var(--muted);margin-top:2px">'+e.dateLabel+'</div></div>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div>';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'hist-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding-bottom:calc(var(--safe-bottom)+20px)';
+  panel.innerHTML = h;
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('hist-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2192,6 +2318,14 @@ function spSave(){
   if(P.bodyPhotos.costas){ PD[curP].progressPhotos[2].img=P.bodyPhotos.costas; PD[curP].progressPhotos[2].date=today; }
 
   applyProfileToPD(curP);
+  // Save initial exam inputs as first history entry
+  var examVals = {}; var hasExam = false;
+  Object.keys(P.examInputs).forEach(function(k){ if(P.examInputs[k]){ examVals[k]=parseFloat(P.examInputs[k]); hasExam=true; } });
+  if(hasExam){
+    if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
+    var today2 = new Date();
+    pdOverride[curP].examHistory.push({date:today2.toISOString().slice(0,10), dateLabel:today2.toLocaleDateString('pt-BR',{month:'short',year:'numeric'}), values:examVals});
+  }
   profileComplete=true;
   save(); showToast('Perfil salvo! Treino e dieta atualizados ✓');
   showScreen('home');
@@ -2498,7 +2632,8 @@ function saveToCloud(){
       name:o.name, initials:o.initials, age:o.age, weight:o.weight, height:o.height,
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
       water:o.water, weekly:o.weekly, meals:o.meals,
-      sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight
+      sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
+      examHistory:o.examHistory
     };
   });
   var appState = {

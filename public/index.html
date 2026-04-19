@@ -1714,28 +1714,105 @@ document.getElementById('file-progress').addEventListener('change', function(e){
   };
   reader.readAsDataURL(file);
 });
+function suggestMealByHour(meals, hour){
+  // find meal whose time is closest and <= photo hour (or first meal if none)
+  var best = null, bestDiff = Infinity;
+  meals.forEach(function(m){
+    if(!m.time) return;
+    var parts = m.time.split(':'); var mh = parseInt(parts[0]), mm = parseInt(parts[1]||0);
+    var mMins = mh*60+mm; var pMins = hour*60;
+    var diff = pMins - mMins;
+    if(diff >= 0 && diff < bestDiff){ bestDiff = diff; best = m.id; }
+  });
+  return best || (meals[0] && meals[0].id) || null;
+}
+
+function openMealSelector(suggestedId, onSelect){
+  var p = PD[curP];
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  var rows = p.meals.map(function(m){
+    var isSug = m.id === suggestedId;
+    return '<div data-mid="'+m.id+'" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;margin-bottom:6px;cursor:pointer;border:2px solid '+(isSug?'var(--green)':'var(--border)')+';background:'+(isSug?'var(--green-light)':'var(--surface)')+'">'+
+      '<div style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:var(--muted);width:40px;flex-shrink:0">'+m.time+'</div>'+
+      '<div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">'+m.name+'</div><div style="font-size:11px;color:var(--muted)">'+m.kcal+' kcal</div></div>'+
+      (isSug?'<div style="font-size:11px;font-weight:600;color:var(--green);background:var(--green-light);padding:3px 8px;border-radius:99px">Sugerida</div>':'')+
+    '</div>';
+  }).join('');
+  panel.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+    '<div><div style="font-family:Fraunces,serif;font-size:18px">Adicionar a <em>qual refeicao?</em></div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:2px">Baseado no horario da foto</div></div>'+
+    '<button id="msel-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
+    rows;
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('msel-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  panel.querySelectorAll('[data-mid]').forEach(function(el){
+    el.addEventListener('click', function(){ overlay.remove(); onSelect(this.dataset.mid); });
+  });
+}
+
+function addPhotoFoodsToMeal(mealId, aiReply){
+  var p = PD[curP];
+  var meal = p.meals.find(function(m){ return m.id===mealId; });
+  if(!meal) return;
+  // Ask AI to extract foods as JSON from the analysis already in chatHistory
+  var jsonInstr = 'Com base na analise da foto que acabou de fazer, retorne SOMENTE um JSON valido, sem texto, sem markdown:\n{"foods":[{"n":"Nome do alimento","p":"porcao estimada","k":0}],"kcal":0}\nOs campos "k" sao as calorias de cada item. "kcal" e o total da refeicao.';
+  var msgs = [{role:'user',content:[{type:'text',text:'(foto ja analisada anteriormente)'}]},{role:'assistant',content:aiReply},{role:'user',content:jsonInstr}];
+  showToast('Adicionando ao plano...');
+  fetch('/api/claude',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({model:'claude-sonnet-4-6', max_tokens:600, system:'Retorne apenas JSON valido conforme solicitado.', messages:msgs})
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data.content||!data.content[0]||!data.content[0].text) throw new Error();
+    var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    var parsed = JSON.parse(txt);
+    if(Array.isArray(parsed.foods) && parsed.foods.length>0){
+      // append foods and recalc kcal
+      parsed.foods.forEach(function(f){ meal.foods.push(f); });
+      if(parsed.kcal>0) meal.kcal = (meal.kcal||0) + parsed.kcal;
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].meals = p.meals;
+      save();
+      showToast('Adicionado em "'+meal.name+'" ✓');
+      closeChat();
+      showScreen('dieta');
+    } else { throw new Error(); }
+  }).catch(function(){
+    showToast('Nao foi possivel adicionar. Tente manualmente.');
+  });
+}
+
 document.getElementById('file-meal-photo').addEventListener('change', function(e){
   var file = e.target.files[0]; if(!file) return;
   var p = PD[curP];
+  // get hour from file lastModified or current time
+  var photoDate = file.lastModified ? new Date(file.lastModified) : new Date();
+  var photoHour = photoDate.getHours();
+  var photoTimeStr = photoDate.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  var suggestedMealId = suggestMealByHour(p.meals, photoHour);
   var reader = new FileReader();
   reader.onload = function(ev){
     var b64 = ev.target.result.split(',')[1];
     var mediaType = file.type || 'image/jpeg';
     showToast('Analisando refeicao com IA...');
-    // Open chat with vision analysis
     chatCtx = 'dieta';
     chatHistory = [];
     document.getElementById('chat-ttl').textContent = 'Analise de Refeicao';
-    document.getElementById('chat-sub').textContent = p.name + ' · Contagem de calorias';
+    document.getElementById('chat-sub').textContent = p.name + ' · Foto das '+photoTimeStr;
     document.getElementById('chat-msgs').innerHTML = '';
     document.getElementById('chat-qps').innerHTML = '';
+    document.getElementById('chat-clear').style.display = 'none';
     document.getElementById('chat-back').classList.add('open');
-    addChatMsg('assistant', 'Foto recebida! Analisando os alimentos e calculando as calorias... 🔍');
+    addChatMsg('assistant', 'Foto das '+photoTimeStr+' recebida! Analisando os alimentos... 🔍');
     showTyping();
     var sysProm2 = 'Voce e um nutricionista especialista em analise de alimentos por imagem. Perfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, objetivo: '+p.goal+'. Meta calorica diaria: '+p.calories+'kcal, proteina: '+p.protein+'g.';
     var userMsg = [
       {type:'image', source:{type:'base64', media_type:mediaType, data:b64}},
-      {type:'text', text:'Analise esta foto de refeicao e me diga: 1) Identifique cada alimento visivel 2) Estime as porcoes em gramas 3) Calorias de cada item 4) Total de calorias da refeicao 5) Macros estimados (proteina, carbo, gordura) 6) Avaliacao nutricional para meu objetivo de '+p.goal+' 7) Sugestao de ajuste se necessario. Seja preciso e pratico.'}
+      {type:'text', text:'Analise esta foto de refeicao (tirada as '+photoTimeStr+'): 1) Identifique cada alimento visivel 2) Estime as porcoes em gramas 3) Calorias de cada item 4) Total de calorias 5) Macros (proteina, carbo, gordura) 6) Avaliacao para objetivo de '+p.goal+'. Seja preciso e pratico.'}
     ];
     fetch('/api/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -1743,11 +1820,23 @@ document.getElementById('file-meal-photo').addEventListener('change', function(e
     }).then(function(r){ return r.json(); }).then(function(data){
       hideTyping();
       if(data.content && data.content[0] && data.content[0].text){
-        addChatMsg('assistant', data.content[0].text);
-        chatHistory.push({role:'assistant', content:data.content[0].text});
-        // Add quick follow-ups
+        var reply = data.content[0].text;
+        addChatMsg('assistant', reply);
+        chatHistory.push({role:'assistant', content:reply});
+        // Add to meal button
+        var addBtn = document.createElement('button');
+        addBtn.style.cssText = 'display:block;width:100%;margin-top:8px;padding:11px 14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;text-align:center';
+        addBtn.textContent = '➕ Adicionar a uma refeicao';
+        var lastMsg = document.getElementById('chat-msgs').lastChild;
+        if(lastMsg) lastMsg.appendChild(addBtn);
+        addBtn.addEventListener('click', function(){
+          openMealSelector(suggestedMealId, function(mealId){
+            addPhotoFoodsToMeal(mealId, reply);
+          });
+        });
+        // quick follow-ups
         var qh = '';
-        ['Adicionar ao diario','Substituir por opcao mais leve','Calcular para 2 porcoes','Macros detalhados'].forEach(function(q){
+        ['Substituir por opcao mais leve','Calcular para 2 porcoes','Macros detalhados'].forEach(function(q){
           qh += '<button class="qp" data-cq="'+q+'">'+q+'</button>';
         });
         document.getElementById('chat-qps').innerHTML = qh;

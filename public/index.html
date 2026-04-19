@@ -843,7 +843,7 @@ function renderHome(){
   var avg = Math.round(Object.values(p.scores).reduce(function(a,b){return a+b;},0)/Object.keys(p.scores).length);
   var h = '';
   // Setup CTA banner
-  h += '<div id="setup-banner" style="margin:0 20px 14px;background:linear-gradient(135deg,var(--green),var(--green-deep));border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">';
+  h += '<div id="setup-banner" style="margin:0 20px 14px;background:linear-gradient(135deg,#e8630a,#c4621a);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">';
   h += '<div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">👤</div>';
   h += '<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:600;margin-bottom:2px">Complete seu perfil</div>';
   h += '<div style="color:rgba(255,255,255,.75);font-size:12px">Personalize dados, objetivos e gere seu plano com IA</div></div>';

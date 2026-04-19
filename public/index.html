@@ -257,6 +257,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .msg.assistant .msg-bbl{background:var(--surface);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border)}
 .msg-time{font-size:10px;color:var(--muted);margin-top:3px;text-align:right}
 .msg.assistant .msg-time{text-align:left}
+.apply-plan-btn{display:block;width:100%;margin-top:8px;padding:10px 14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:opacity .15s}
+.apply-plan-btn:disabled{opacity:.6;cursor:default}
 .typing-wrap{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--surface);border-radius:16px;border-bottom-left-radius:4px;border:1px solid var(--border);width:fit-content}
 .tdot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typing 1.2s infinite}
 .tdot:nth-child(2){animation-delay:.2s}
@@ -1816,12 +1818,19 @@ function closeChat(){ document.getElementById('chat-back').classList.remove('ope
 document.getElementById('chat-back').addEventListener('click', function(e){ if(e.target===this) closeChat(); });
 document.getElementById('chat-x').addEventListener('click', closeChat);
 
-function addChatMsg(role, text){
+function addChatMsg(role, text, showApply){
   var msgs = document.getElementById('chat-msgs');
   var time = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   var div = document.createElement('div'); div.className='msg '+role;
   var safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
   div.innerHTML = '<div class="msg-bbl">'+safe+'</div><div class="msg-time">'+time+'</div>';
+  if(showApply && role==='assistant'){
+    var btn = document.createElement('button');
+    btn.className = 'apply-plan-btn';
+    btn.textContent = (chatCtx==='treino' ? '✓ Aplicar treino ao app' : '✓ Aplicar dieta ao app');
+    btn.onclick = applyChatPlan;
+    div.appendChild(btn);
+  }
   msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
 }
 function showTyping(){
@@ -1845,12 +1854,56 @@ function sendMsg(){
   }).then(function(res){ return res.json(); }).then(function(data){
     hideTyping();
     if(data.content&&data.content[0]&&data.content[0].text){
-      var reply=data.content[0].text; addChatMsg('assistant',reply); chatHistory.push({role:'assistant',content:reply});
+      var reply=data.content[0].text;
+      var showApply = (chatCtx==='treino'||chatCtx==='dieta');
+      addChatMsg('assistant',reply,showApply); chatHistory.push({role:'assistant',content:reply});
     } else { addChatMsg('assistant','Desculpe, tive um problema. Tente novamente.'); }
     isTyping=false; document.getElementById('send-btn').disabled=false;
   }).catch(function(){
     hideTyping(); addChatMsg('assistant','Erro de conexao. Verifique sua internet.');
     isTyping=false; document.getElementById('send-btn').disabled=false;
+  });
+}
+
+function applyChatPlan(){
+  var isT = chatCtx==='treino'; var isD = chatCtx==='dieta';
+  if(!isT&&!isD) return;
+  var btn = event.currentTarget; btn.disabled=true; btn.textContent='Aplicando...';
+
+  var jsonInstr;
+  if(isT){
+    jsonInstr = 'Com base no plano de treino que acabamos de discutir, retorne SOMENTE um objeto JSON valido, sem texto adicional, sem markdown, sem explicacao. Formato exato:\n{"weekly":[{"name":"Nome do treino","color":"#1a7a4a","cl":"#e8f5ee","exs":[{"n":"Nome exercicio","s":"4x10","w":0}]},{"rest":true}]}\nRegras: array "weekly" deve ter exatamente 7 itens (Seg a Dom). Use {"rest":true} para dias de descanso. Cores por grupo: verde #1a7a4a/#e8f5ee (peito/triceps), azul #1a5a8a/#e3f0fd (costas/biceps), marrom #993c1d/#faece7 (pernas/gluteos), roxo #5a3ab7/#eeedfb (ombros/core), laranja #854f0b/#faeeda (full body). Campo "w" e peso em kg (0 para exercicios com peso corporal).';
+  } else {
+    jsonInstr = 'Com base no plano alimentar que acabamos de discutir, retorne SOMENTE um objeto JSON valido, sem texto adicional, sem markdown, sem explicacao. Formato exato:\n{"calories":2000,"meals":[{"id":"cafe","name":"Cafe da manha","time":"07:00","kcal":500,"foods":[{"n":"Alimento","p":"quantidade","k":200}]}]}\nRegras: ids aceitos para refeicoes: cafe, lanche1, almoco, lanche2, jantar, ceia. Campo "k" e as calorias de cada alimento. O campo "calories" e o total diario.';
+  }
+
+  var msgs = chatHistory.concat([{role:'user',content:jsonInstr}]);
+  fetch('/api/claude',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2500,system:getSysProm(),messages:msgs})
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data.content||!data.content[0]||!data.content[0].text) throw new Error('sem conteudo');
+    var txt = data.content[0].text.trim();
+    var jsonStr = txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    var parsed = JSON.parse(jsonStr);
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(isT && Array.isArray(parsed.weekly) && parsed.weekly.length===7){
+      PD[curP].weekly = parsed.weekly;
+      pdOverride[curP].weekly = parsed.weekly;
+      save(); showToast('Treino atualizado no app!'); closeChat();
+      showScreen('treinos');
+    } else if(isD && Array.isArray(parsed.meals) && parsed.meals.length>0){
+      PD[curP].meals = parsed.meals;
+      pdOverride[curP].meals = parsed.meals;
+      if(parsed.calories && parsed.calories>0){ PD[curP].calories=parsed.calories; pdOverride[curP].calories=parsed.calories; }
+      save(); showToast('Dieta atualizada no app!'); closeChat();
+      showScreen('dieta');
+    } else {
+      throw new Error('formato invalido');
+    }
+  }).catch(function(e){
+    btn.disabled=false; btn.textContent=(isT?'✓ Aplicar treino ao app':'✓ Aplicar dieta ao app');
+    showToast('Nao foi possivel aplicar. Tente novamente.');
   });
 }
 

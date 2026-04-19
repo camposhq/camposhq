@@ -1781,6 +1781,22 @@ function spS6(){
     '</div>';
 }
 
+function compressBase64(dataUrl, maxSize, quality, cb){
+  var img = new Image();
+  img.onload = function(){
+    var w = img.width, h = img.height;
+    if(w > maxSize || h > maxSize){
+      if(w > h){ h = Math.round(h * maxSize / w); w = maxSize; }
+      else { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
 function spGenerate(){
   var icon=document.getElementById('ai-gen-icon'); var spin=document.getElementById('ai-gen-spin');
   var ttl=document.getElementById('ai-gen-ttl'); var sub=document.getElementById('ai-gen-sub');
@@ -1791,42 +1807,58 @@ function spGenerate(){
   var goalsStr = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(', ')||'saude geral';
   var profileText = 'Perfil: '+(P.name||'Usuario')+', '+(P.age||'45')+' anos, '+(P.gender==='M'?'masculino':'feminino')+', '+(P.weight||'80')+'kg, '+(P.height||'175')+'cm, IMC '+spCalcIMC()+'. Objetivos: '+goalsStr+'. Treinos: '+P.trainingDays+'x/semana, nivel '+P.trainingLevel+'. Sono atual: '+P.sleepHours+'h.';
   var hasPhotos = P.bodyPhotos.frente || P.bodyPhotos.lado || P.bodyPhotos.costas;
-  var userContent = [];
-  if(hasPhotos){
-    if(P.bodyPhotos.frente) userContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:P.bodyPhotos.frente.split(',')[1]||P.bodyPhotos.frente}});
-    if(P.bodyPhotos.lado) userContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:P.bodyPhotos.lado.split(',')[1]||P.bodyPhotos.lado}});
-    if(P.bodyPhotos.costas) userContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:P.bodyPhotos.costas.split(',')[1]||P.bodyPhotos.costas}});
-    userContent.push({type:'text',text:'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado. Inclua: 1) Analise da composicao corporal vista nas fotos (pontos fortes e areas a desenvolver) 2) Top 3 prioridades com base no corpo e nos objetivos 3) Nutricao personalizada (calorias e macros) 4) Plano de treino semanal com musculacao + cardio baseado na composicao corporal 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, personalizada com base nas fotos, max 600 palavras.'});
-  } else {
-    userContent = 'Gere um plano de saude personalizado. Inclua: 1) Analise do perfil 2) Top 3 prioridades 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio combinado) 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 500 palavras.';
-  }
-  fetch('/api/claude',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:userContent}]})
-  }).then(function(r){
-    return r.text().then(function(txt){
-      try{ return JSON.parse(txt); }
-      catch(e){ throw new Error('Resposta invalida ('+r.status+'): '+txt.substring(0,200)); }
+
+  function doFetch(userContent){
+    fetch('/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:userContent}]})
+    }).then(function(r){
+      return r.text().then(function(txt){
+        try{ return JSON.parse(txt); }
+        catch(e){ throw new Error('Resposta invalida ('+r.status+'): '+txt.substring(0,200)); }
+      });
+    }).then(function(data){
+      spin.style.display='none';
+      if(data.content&&data.content[0]&&data.content[0].text){
+        ttl.textContent='✨ Plano gerado!'; sub.textContent='Salve para comecar a usar.';
+        res.innerHTML = data.content[0].text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+        res.style.display='block';
+        var nxt = document.getElementById('sp-next');
+        nxt.textContent='Salvar e entrar no app →';
+        nxt.onclick = spSave;
+      } else if(data.error){
+        throw new Error(data.error.message||data.error);
+      }
+    }).catch(function(err){
+      console.error('spGenerate error:', err);
+      spin.style.display='none'; icon.style.display='block'; icon.textContent='⚠️';
+      ttl.textContent='Erro ao gerar plano';
+      sub.textContent = err && err.message ? err.message.substring(0,120) : 'Verifique sua internet e tente novamente.';
+      document.getElementById('sp-next').onclick = spGenerate;
     });
-  }).then(function(data){
-    spin.style.display='none';
-    if(data.content&&data.content[0]&&data.content[0].text){
-      ttl.textContent='✨ Plano gerado!'; sub.textContent='Salve para comecar a usar.';
-      res.innerHTML = data.content[0].text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-      res.style.display='block';
-      var nxt = document.getElementById('sp-next');
-      nxt.textContent='Salvar e entrar no app →';
-      nxt.onclick = spSave;
-    } else if(data.error){
-      throw new Error(data.error.message||data.error);
-    }
-  }).catch(function(err){
-    console.error('spGenerate error:', err);
-    spin.style.display='none'; icon.style.display='block'; icon.textContent='⚠️';
-    ttl.textContent='Erro ao gerar plano';
-    sub.textContent = err && err.message ? err.message.substring(0,120) : 'Verifique sua internet e tente novamente.';
-    document.getElementById('sp-next').onclick = spGenerate;
-  });
+  }
+
+  if(hasPhotos){
+    var photos = ['frente','lado','costas'];
+    var compressed = {}; var done = 0; var total = photos.filter(function(k){ return P.bodyPhotos[k]; }).length;
+    photos.forEach(function(k){
+      if(!P.bodyPhotos[k]) return;
+      compressBase64(P.bodyPhotos[k], 800, 0.7, function(dataUrl){
+        compressed[k] = dataUrl;
+        done++;
+        if(done === total){
+          var uc = [];
+          ['frente','lado','costas'].forEach(function(k2){
+            if(compressed[k2]) uc.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:compressed[k2].split(',')[1]||compressed[k2]}});
+          });
+          uc.push({type:'text',text:'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado. Inclua: 1) Analise da composicao corporal vista nas fotos 2) Top 3 prioridades 3) Nutricao personalizada (calorias e macros) 4) Plano de treino semanal com musculacao + cardio 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 600 palavras.'});
+          doFetch(uc);
+        }
+      });
+    });
+  } else {
+    doFetch('Gere um plano de saude personalizado. Inclua: 1) Analise do perfil 2) Top 3 prioridades 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio combinado) 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 500 palavras.');
+  }
 }
 
 function spSave(){

@@ -860,6 +860,10 @@ function load(){
       if(o.water) PD[i].water = o.water;
       if(o.weekly) PD[i].weekly = o.weekly;
       if(o.meals) PD[i].meals = o.meals;
+      if(o.sleep) PD[i].sleep = o.sleep;
+      if(o.sleepTarget) PD[i].sleepTarget = o.sleepTarget;
+      if(o.scores) PD[i].scores = o.scores;
+      if(o.insight) PD[i].insight = o.insight;
       if(o.name) PD[i].name = o.name;
       if(o.initials) PD[i].initials = o.initials;
       if(o.age) PD[i].age = o.age;
@@ -2100,6 +2104,40 @@ function applyProfileToPD(idx){
   p.calories = calories; p.protein = protein; p.carbs = carbs; p.fat = fat;
   p.water = Math.round(weight*35/100)*100;
 
+  // Sleep
+  var sleepHours = parseFloat(P.sleepHours)||7;
+  p.sleep = sleepHours;
+  p.sleepTarget = sleepHours < 7 ? 8 : 8;
+
+  // Scores based on profile data
+  var scoreFitness = Math.min(95, 45 + trainDays*7 +
+    (P.trainingLevel==='avancado'?10:P.trainingLevel==='intermediario'?5:0));
+  var scoreSono = sleepHours>=8?90:sleepHours>=7?78:sleepHours>=6?62:45;
+  var scoreNutricao = Math.min(95, 65
+    + (hasGoal('perda_gordura')||hasGoal('hipertrofia')||hasGoal('recomposicao')?10:0)
+    + (hasGoal('digestao')||hasGoal('longevidade')?5:0));
+  var imc = weight/Math.pow(height/100,2);
+  var scoreSaude = Math.min(95, 60
+    + (imc>=18.5&&imc<25?15:imc<18.5||imc>=30?0:8)
+    + (age<40?10:age<50?6:3)
+    + (sleepHours>=7?5:0));
+  p.scores = {
+    Saude: Math.round(scoreSaude),
+    Fitness: Math.round(scoreFitness),
+    Sono: Math.round(scoreSono),
+    Nutricao: Math.round(scoreNutricao)
+  };
+
+  // Insight summary
+  var goalLabels = goals.slice(0,3).map(function(g){
+    var f=GOALS.find(function(x){return x.v===g;}); return f?f.l.toLowerCase():g;
+  }).join(', ');
+  var imcClass = imc<18.5?'abaixo do peso':imc<25?'peso ideal':imc<30?'sobrepeso':'obesidade grau I';
+  p.insight = 'Perfil atualizado: '+age+' anos, '+weight+'kg, IMC '+imc.toFixed(1)+' ('+imcClass+'). '
+    +'Treinos '+trainDays+'x/semana, nivel '+P.trainingLevel+'. Sono: '+sleepHours+'h'
+    +(sleepHours<7?' — aumentar para 8h e prioridade':'')+'.'
+    +' Foco: '+goalLabels+'. Meta: '+calories+'kcal/dia, '+protein+'g proteina.';
+
   // Adjust weekly: first trainDays are active, rest are rest days
   var activePlans = p.weekly.filter(function(d){ return !d.rest; });
   var newWeekly = [];
@@ -2125,7 +2163,9 @@ function applyProfileToPD(idx){
   pdOverride[idx].calories=p.calories; pdOverride[idx].protein=p.protein;
   pdOverride[idx].carbs=p.carbs; pdOverride[idx].fat=p.fat;
   pdOverride[idx].water=p.water; pdOverride[idx].weekly=p.weekly;
-  pdOverride[idx].meals=p.meals;
+  pdOverride[idx].meals=p.meals; pdOverride[idx].sleep=p.sleep;
+  pdOverride[idx].sleepTarget=p.sleepTarget; pdOverride[idx].scores=p.scores;
+  pdOverride[idx].insight=p.insight;
 }
 
 function spSave(){
@@ -2422,6 +2462,10 @@ function loadUserData(uid, callback){
                 if(o.water) PD[i].water = o.water;
                 if(o.weekly) PD[i].weekly = o.weekly;
                 if(o.meals) PD[i].meals = o.meals;
+                if(o.sleep) PD[i].sleep = o.sleep;
+                if(o.sleepTarget) PD[i].sleepTarget = o.sleepTarget;
+                if(o.scores) PD[i].scores = o.scores;
+                if(o.insight) PD[i].insight = o.insight;
               });
             }
           }catch(e){}
@@ -2442,7 +2486,8 @@ function saveToCloud(){
     pdOverrideSafe[idx] = {
       name:o.name, initials:o.initials, age:o.age, weight:o.weight, height:o.height,
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
-      water:o.water, weekly:o.weekly, meals:o.meals
+      water:o.water, weekly:o.weekly, meals:o.meals,
+      sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight
     };
   });
   var appState = {

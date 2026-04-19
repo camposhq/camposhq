@@ -1908,7 +1908,7 @@ function spS7(){
       h += '<div style="font-size:13px;font-weight:500;color:var(--text)">'+m.n+'</div>';
       h += '<div style="font-size:11px;color:var(--muted)">Ideal: '+m.ref+' '+m.u+' · '+m.hint+'</div>';
       h += '</div>';
-      h += '<input type="number" inputmode="decimal" placeholder="—" value="'+val+'" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="P.examInputs[this.dataset.ekey]=this.value">';
+      h += '<input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="—" value="'+val+'" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="P.examInputs[this.dataset.ekey]=this.value.replace(\',\',\'.\')">';
       h += '<div style="width:36px;font-size:10px;color:var(--muted)">'+m.u+'</div>';
       h += '</div>';
     });

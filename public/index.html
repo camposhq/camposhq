@@ -728,6 +728,7 @@ let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '';
 let progressPhotoAngle = 0;
+let pdOverride = {};
 let profileComplete = false;
 
 // Setup wizard state
@@ -748,7 +749,7 @@ function save(){
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,suppDone,habitDone,
       exChecked,exWeights,cardioSel,cardioChecked,
-      waterGlasses,sleepData,expandedExam,profileComplete,
+      waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
@@ -765,6 +766,24 @@ function load(){
     cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
     sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
     profileComplete = s.profileComplete||false;
+    pdOverride = s.pdOverride||{};
+    Object.keys(pdOverride).forEach(function(idx){
+      var i = parseInt(idx); if(!PD[i]) return;
+      var o = pdOverride[idx];
+      if(o.calories) PD[i].calories = o.calories;
+      if(o.protein) PD[i].protein = o.protein;
+      if(o.carbs) PD[i].carbs = o.carbs;
+      if(o.fat) PD[i].fat = o.fat;
+      if(o.water) PD[i].water = o.water;
+      if(o.weekly) PD[i].weekly = o.weekly;
+      if(o.meals) PD[i].meals = o.meals;
+      if(o.name) PD[i].name = o.name;
+      if(o.initials) PD[i].initials = o.initials;
+      if(o.age) PD[i].age = o.age;
+      if(o.weight) PD[i].weight = o.weight;
+      if(o.height) PD[i].height = o.height;
+      if(o.goal) PD[i].goal = o.goal;
+    });
     if(s.avatars){
       s.avatars.forEach(function(a,i){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
@@ -1861,20 +1880,81 @@ function spGenerate(){
   }
 }
 
-function spSave(){
-  if(P.name) PD[curP].name = P.name;
-  if(P.initials) PD[curP].initials = P.initials;
-  PD[curP].avatarBg = P.avatarBg;
-  PD[curP].avatarCl = P.avatarCl;
-  if(P.avatarImg) PD[curP].avatarImg = P.avatarImg;
-  if(P.age) PD[curP].age = parseInt(P.age);
-  if(P.weight) PD[curP].weight = parseFloat(P.weight);
-  if(P.height) PD[curP].height = parseInt(P.height);
-  if(P.goals.length){
-    PD[curP].goal = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
+function applyProfileToPD(idx){
+  var p = PD[idx];
+  var gender = P.gender||'M';
+  var age = parseInt(P.age)||45;
+  var weight = parseFloat(P.weight)||80;
+  var height = parseInt(P.height)||175;
+  var trainDays = parseInt(P.trainingDays)||5;
+  var goals = P.goals||[];
+  var hasGoal = function(v){ return goals.indexOf(v)>=0; };
+
+  // Mifflin-St Jeor BMR
+  var bmr = gender==='M'
+    ? 10*weight + 6.25*height - 5*age + 5
+    : 10*weight + 6.25*height - 5*age - 161;
+
+  // Activity multiplier by training days
+  var act = trainDays>=6?1.725:trainDays>=5?1.55:trainDays>=3?1.375:1.2;
+
+  // Goal calorie adjustment
+  var adj = hasGoal('perda_gordura')?0.85:(hasGoal('hipertrofia')||hasGoal('recomposicao'))?1.1:1.0;
+
+  var calories = Math.round(bmr*act*adj/50)*50;
+
+  // Protein: 2g/kg for muscle goals, 1.6g/kg otherwise
+  var protFactor = (hasGoal('hipertrofia')||hasGoal('recomposicao')||hasGoal('performance'))?2.0:1.6;
+  var protein = Math.round(weight*protFactor/5)*5;
+  var fat = Math.round(calories*0.25/9/5)*5;
+  var carbs = Math.max(Math.round((calories-protein*4-fat*9)/4/10)*10, 50);
+
+  p.calories = calories; p.protein = protein; p.carbs = carbs; p.fat = fat;
+  p.water = Math.round(weight*35/100)*100;
+
+  // Adjust weekly: first trainDays are active, rest are rest days
+  var activePlans = p.weekly.filter(function(d){ return !d.rest; });
+  var newWeekly = [];
+  var ai = 0;
+  for(var i=0; i<7; i++){
+    if(i<trainDays){ newWeekly.push(activePlans[ai%activePlans.length]); ai++; }
+    else { newWeekly.push({rest:true}); }
   }
-  profileComplete = true;
-  save(); showToast('Perfil salvo!');
+  p.weekly = newWeekly;
+
+  // Scale meal calories proportionally to new total
+  var mealTotal = p.meals.reduce(function(s,m){ return s+(m.kcal||0); },0);
+  if(mealTotal>0){
+    var ratio = calories/mealTotal;
+    p.meals.forEach(function(m){
+      m.kcal = Math.round(m.kcal*ratio/10)*10;
+      if(m.foods) m.foods.forEach(function(f){ f.k = Math.round(f.k*ratio/5)*5; });
+    });
+  }
+
+  // Persist override
+  if(!pdOverride[idx]) pdOverride[idx]={};
+  pdOverride[idx].calories=p.calories; pdOverride[idx].protein=p.protein;
+  pdOverride[idx].carbs=p.carbs; pdOverride[idx].fat=p.fat;
+  pdOverride[idx].water=p.water; pdOverride[idx].weekly=p.weekly;
+  pdOverride[idx].meals=p.meals;
+}
+
+function spSave(){
+  if(P.name){ PD[curP].name=P.name; if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].name=P.name; }
+  if(P.initials){ PD[curP].initials=P.initials; if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].initials=P.initials; }
+  PD[curP].avatarBg=P.avatarBg; PD[curP].avatarCl=P.avatarCl;
+  if(P.avatarImg) PD[curP].avatarImg=P.avatarImg;
+  if(P.age){ PD[curP].age=parseInt(P.age); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].age=PD[curP].age; }
+  if(P.weight){ PD[curP].weight=parseFloat(P.weight); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].weight=PD[curP].weight; }
+  if(P.height){ PD[curP].height=parseInt(P.height); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].height=PD[curP].height; }
+  if(P.goals.length){
+    PD[curP].goal=P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
+    if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].goal=PD[curP].goal;
+  }
+  applyProfileToPD(curP);
+  profileComplete=true;
+  save(); showToast('Perfil salvo! Treino e dieta atualizados ✓');
   showScreen('home');
 }
 

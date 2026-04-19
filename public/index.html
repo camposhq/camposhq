@@ -853,15 +853,15 @@ function load(){
     Object.keys(pdOverride).forEach(function(idx){
       var i = parseInt(idx); if(!PD[i]) return;
       var o = pdOverride[idx];
-      if(o.calories) PD[i].calories = o.calories;
-      if(o.protein) PD[i].protein = o.protein;
-      if(o.carbs) PD[i].carbs = o.carbs;
-      if(o.fat) PD[i].fat = o.fat;
-      if(o.water) PD[i].water = o.water;
+      if(o.calories!=null) PD[i].calories = o.calories;
+      if(o.protein!=null) PD[i].protein = o.protein;
+      if(o.carbs!=null) PD[i].carbs = o.carbs;
+      if(o.fat!=null) PD[i].fat = o.fat;
+      if(o.water!=null) PD[i].water = o.water;
       if(o.weekly) PD[i].weekly = o.weekly;
       if(o.meals) PD[i].meals = o.meals;
-      if(o.sleep) PD[i].sleep = o.sleep;
-      if(o.sleepTarget) PD[i].sleepTarget = o.sleepTarget;
+      if(o.sleep!=null) PD[i].sleep = o.sleep;
+      if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
       if(o.scores) PD[i].scores = o.scores;
       if(o.insight) PD[i].insight = o.insight;
       if(o.name) PD[i].name = o.name;
@@ -2169,17 +2169,24 @@ function applyProfileToPD(idx){
 }
 
 function spSave(){
-  if(P.name){ PD[curP].name=P.name; if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].name=P.name; }
-  if(P.initials){ PD[curP].initials=P.initials; if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].initials=P.initials; }
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  if(P.name){ PD[curP].name=P.name; pdOverride[curP].name=P.name; }
+  if(P.initials){ PD[curP].initials=P.initials; pdOverride[curP].initials=P.initials; }
   PD[curP].avatarBg=P.avatarBg; PD[curP].avatarCl=P.avatarCl;
   if(P.avatarImg) PD[curP].avatarImg=P.avatarImg;
-  if(P.age){ PD[curP].age=parseInt(P.age); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].age=PD[curP].age; }
-  if(P.weight){ PD[curP].weight=parseFloat(P.weight); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].weight=PD[curP].weight; }
-  if(P.height){ PD[curP].height=parseInt(P.height); if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].height=PD[curP].height; }
+  if(P.age){ PD[curP].age=parseInt(P.age); pdOverride[curP].age=PD[curP].age; }
+  if(P.weight){ PD[curP].weight=parseFloat(P.weight); pdOverride[curP].weight=PD[curP].weight; }
+  if(P.height){ PD[curP].height=parseInt(P.height); pdOverride[curP].height=PD[curP].height; }
   if(P.goals.length){
     PD[curP].goal=P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
-    if(!pdOverride[curP]) pdOverride[curP]={}; pdOverride[curP].goal=PD[curP].goal;
+    pdOverride[curP].goal=PD[curP].goal;
   }
+  // Save body photos from setup to progressPhotos
+  var today = new Date().toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
+  if(P.bodyPhotos.frente){ PD[curP].progressPhotos[0].img=P.bodyPhotos.frente; PD[curP].progressPhotos[0].date=today; }
+  if(P.bodyPhotos.lado){   PD[curP].progressPhotos[1].img=P.bodyPhotos.lado;   PD[curP].progressPhotos[1].date=today; }
+  if(P.bodyPhotos.costas){ PD[curP].progressPhotos[2].img=P.bodyPhotos.costas; PD[curP].progressPhotos[2].date=today; }
+
   applyProfileToPD(curP);
   profileComplete=true;
   save(); showToast('Perfil salvo! Treino e dieta atualizados ✓');
@@ -2455,15 +2462,15 @@ function loadUserData(uid, callback){
                 if(o.weight) PD[i].weight = o.weight;
                 if(o.height) PD[i].height = o.height;
                 if(o.goal) PD[i].goal = o.goal;
-                if(o.calories) PD[i].calories = o.calories;
-                if(o.protein) PD[i].protein = o.protein;
-                if(o.carbs) PD[i].carbs = o.carbs;
-                if(o.fat) PD[i].fat = o.fat;
-                if(o.water) PD[i].water = o.water;
+                if(o.calories!=null) PD[i].calories = o.calories;
+                if(o.protein!=null) PD[i].protein = o.protein;
+                if(o.carbs!=null) PD[i].carbs = o.carbs;
+                if(o.fat!=null) PD[i].fat = o.fat;
+                if(o.water!=null) PD[i].water = o.water;
                 if(o.weekly) PD[i].weekly = o.weekly;
                 if(o.meals) PD[i].meals = o.meals;
-                if(o.sleep) PD[i].sleep = o.sleep;
-                if(o.sleepTarget) PD[i].sleepTarget = o.sleepTarget;
+                if(o.sleep!=null) PD[i].sleep = o.sleep;
+                if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
                 if(o.scores) PD[i].scores = o.scores;
                 if(o.insight) PD[i].insight = o.insight;
               });

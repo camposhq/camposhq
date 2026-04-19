@@ -1461,8 +1461,8 @@ function substituirAlimento(mealId, foodIdx){
       var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
       var parsed = JSON.parse(txt);
       if(!parsed.n) throw new Error();
-      // apply substitution
-      meal.foods[foodIdx] = {n:parsed.n, p:parsed.p||food.p, k:parsed.k||food.k};
+      // apply substitution — always keep original kcal so daily total never changes
+      meal.foods[foodIdx] = {n:parsed.n, p:parsed.p||food.p, k:food.k};
       meal.kcal = meal.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
       if(!pdOverride[curP]) pdOverride[curP]={};
       pdOverride[curP].meals = p.meals;
@@ -1888,13 +1888,18 @@ function addPhotoFoodsToMeal(mealId, aiReply){
     var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
     var parsed = JSON.parse(txt);
     if(Array.isArray(parsed.foods) && parsed.foods.length>0){
-      // append foods and recalc kcal
-      parsed.foods.forEach(function(f){ meal.foods.push(f); });
-      if(parsed.kcal>0) meal.kcal = (meal.kcal||0) + parsed.kcal;
+      // Replace meal foods with photographed foods, scaling kcal to match planned total
+      var plannedKcal = meal.kcal; // preserve original planned kcal
+      var photoTotal = parsed.foods.reduce(function(s,f){ return s+(f.k||0); }, 0) || parsed.kcal || 1;
+      var ratio = plannedKcal / photoTotal;
+      meal.foods = parsed.foods.map(function(f){
+        return {n:f.n, p:f.p, k:Math.round((f.k||0)*ratio)};
+      });
+      meal.kcal = plannedKcal; // total stays exactly the same
       if(!pdOverride[curP]) pdOverride[curP]={};
       pdOverride[curP].meals = p.meals;
       save();
-      showToast('Adicionado em "'+meal.name+'" ✓');
+      showToast('Refeicao registrada em "'+meal.name+'" ✓');
       closeChat();
       showScreen('dieta');
     } else { throw new Error(); }

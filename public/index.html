@@ -1963,6 +1963,8 @@ function doAuth(){
       .then(function(cred){
         currentUser = cred.user;
         btn.textContent = 'Entrar'; btn.disabled = false;
+        var nome = (cred.user.displayName || cred.user.email).split(' ')[0];
+        showToast('Bem-vindo, ' + nome + '! 👋');
         loadUserData(cred.user.uid, function(){ showScreen('home'); });
       })
       .catch(function(err){
@@ -2069,6 +2071,8 @@ renderHome = function(){
     topbar.insertBefore(lb, topbar.querySelector('.ai-badge'));
   }
 };
+// Always hide nav until auth confirms user is logged in
+document.getElementById('bottom-nav').style.display = 'none';
 // Start auth flow
 initAuth();
 

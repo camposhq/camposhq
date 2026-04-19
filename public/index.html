@@ -1522,10 +1522,12 @@ document.getElementById('file-avatar').addEventListener('change', function(e){
   var file = e.target.files[0]; if(!file) return;
   var reader = new FileReader();
   reader.onload = function(ev){
-    PD[curP].avatarImg = ev.target.result;
-    save(); showToast('Foto de perfil atualizada!');
-    if(curScreen==='home') renderHome();
-    else spRender();
+    compressBase64(ev.target.result, 400, 0.8, function(c){
+      PD[curP].avatarImg = c;
+      save(); showToast('Foto de perfil atualizada!');
+      if(curScreen==='home') renderHome();
+      else spRender();
+    });
   };
   reader.readAsDataURL(file);
 });
@@ -1798,7 +1800,9 @@ function spRender(){
       inp.onchange = function(e){
         var file = e.target.files[0]; if(!file) return;
         var reader = new FileReader();
-        reader.onload = function(ev){ P.bodyPhotos[angle]=ev.target.result; spRender(); };
+        reader.onload = function(ev){
+          compressBase64(ev.target.result, 600, 0.75, function(c){ P.bodyPhotos[angle]=c; spRender(); });
+        };
         reader.readAsDataURL(file);
         inp.onchange = null;
       };

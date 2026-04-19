@@ -733,12 +733,13 @@ let profileComplete = false;
 
 // Setup wizard state
 let spStep = 1;
-const SP_TOTAL = 7;
+const SP_TOTAL = 8;
 const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg:'',
   bodyPhotos:{frente:'',lado:'',costas:''},
   age:'45',gender:'M',height:'178',weight:'82',
   goals:['longevidade','hipertrofia','perda_gordura','recomposicao','performance','sono','cognitivo','hormonal','saude_geral','digestao'],trainingDays:'5',trainingLevel:'intermediario',
-  sleepHours:'7',stressLevel:'3',medications:'',conditions:[],allergies:[]};
+  sleepHours:'7',stressLevel:'3',medications:'',conditions:[],allergies:[],
+  examInputs:{}};
 
 // ══════════════════════════════════════════════════════════════
 // STORAGE
@@ -1528,6 +1529,33 @@ var CHAT_QPS = {
   saude:['Analise geral de saude','Prioridades desta semana','Longevidade','Meu score de saude'],
 };
 
+var EXAM_MARKER_DEFS = [
+  {key:'vitd',  n:'Vitamina D',        u:'ng/mL',  refLow:50,  refHigh:80},
+  {key:'vitb12',n:'Vitamina B12',       u:'pg/mL',  refLow:200, refHigh:900},
+  {key:'mag',   n:'Magnesio',           u:'mg/dL',  refLow:1.7, refHigh:2.4},
+  {key:'ferro', n:'Ferritina',          u:'ng/mL',  refLow:12,  refHigh:150},
+  {key:'col',   n:'Colesterol total',   u:'mg/dL',  refLow:0,   refHigh:200},
+  {key:'ldl',   n:'LDL',               u:'mg/dL',  refLow:0,   refHigh:130},
+  {key:'hdl',   n:'HDL',               u:'mg/dL',  refLow:40,  refHigh:999},
+  {key:'trig',  n:'Triglicerideos',     u:'mg/dL',  refLow:0,   refHigh:150},
+  {key:'gli',   n:'Glicemia jejum',     u:'mg/dL',  refLow:70,  refHigh:99},
+  {key:'tsh',   n:'TSH',               u:'mUI/L',  refLow:0.5, refHigh:4.5},
+  {key:'testo', n:'Testosterona total', u:'ng/dL',  refLow:300, refHigh:1000},
+  {key:'pce',   n:'PCR ultrassensivel', u:'mg/L',   refLow:0,   refHigh:1.0},
+];
+function getExamInputsText(){
+  var inputs = P.examInputs||{};
+  var lines = [];
+  EXAM_MARKER_DEFS.forEach(function(m){
+    var v = parseFloat(inputs[m.key]);
+    if(isNaN(v)) return;
+    var flag = v < m.refLow ? '⚠️ BAIXO' : v > m.refHigh ? '⚠️ ALTO' : '✓ OK';
+    lines.push(m.n+': '+v+' '+m.u+' (ref: '+m.refLow+'–'+m.refHigh+') '+flag);
+  });
+  if(!lines.length) return '';
+  return 'Exames laboratoriais informados pelo usuario:\n'+lines.join('\n');
+}
+
 function getExamsText(p){
   if(!p.exams || !p.exams.length) return '';
   var lines = ['Exames laboratoriais recentes:'];
@@ -1637,7 +1665,8 @@ var SP_META = [
   {label:'Objetivos',ttl:'Seus <em>objetivos</em>',sub:'Selecione quantos quiser simultaneamente.'},
   {label:'Rotina',ttl:'Sua <em>rotina</em> de treinos',sub:'Para adaptar o plano a sua disponibilidade.'},
   {label:'Fotos do corpo',ttl:'Fotos do <em>corpo</em>',sub:'A IA analisa sua composicao e personaliza treino e dieta.'},
-  {label:'Gerar plano',ttl:'Plano <em>personalizado</em>',sub:'A IA analisa suas fotos e dados para criar seu plano.'},
+  {label:'Exames',ttl:'Seus <em>exames</em>',sub:'Opcional: a IA usa os resultados para personalizar suplementos e recomendacoes.'},
+  {label:'Gerar plano',ttl:'Plano <em>personalizado</em>',sub:'A IA analisa seus dados para criar seu plano.'},
 ];
 
 function spRender(){
@@ -1662,7 +1691,7 @@ function spRender(){
   nxt.textContent = spStep===SP_TOTAL ? 'Gerar meu plano ✨' : 'Continuar →';
   nxt.onclick = spStep===SP_TOTAL ? spGenerate : spNext;
 
-  var fns = [spS1,spS2,spS3,spS4,spS5,spS6,spS7];
+  var fns = [spS1,spS2,spS3,spS4,spS5,spS6,spS7,spS8];
   document.getElementById('sp-content').innerHTML = '<div class="sp-hdr"><div class="sp-num">'+spStep+' / '+SP_TOTAL+'</div><div class="sp-ttl">'+m.ttl+'</div><div class="sp-sub">'+m.sub+'</div></div>'+fns[spStep-1]();
   window.scrollTo(0,0);
 
@@ -1755,6 +1784,42 @@ function spS5(){
 }
 
 function spS7(){
+  var EXAM_MARKERS = [
+    {key:'vitd',   n:'Vitamina D',        u:'ng/mL',  ref:'50–80',   hint:'Imunidade e ossos'},
+    {key:'vitb12', n:'Vitamina B12',       u:'pg/mL',  ref:'200–900', hint:'Energia e nervoso'},
+    {key:'mag',    n:'Magnesio',           u:'mg/dL',  ref:'1.7–2.4', hint:'Sono e musculos'},
+    {key:'ferro',  n:'Ferritina',          u:'ng/mL',  ref:'12–150',  hint:'Energia e forca'},
+    {key:'col',    n:'Colesterol total',   u:'mg/dL',  ref:'<200',    hint:'Saude cardiovascular'},
+    {key:'ldl',    n:'LDL',               u:'mg/dL',  ref:'<130',    hint:'Colesterol ruim'},
+    {key:'hdl',    n:'HDL',               u:'mg/dL',  ref:'>40',     hint:'Colesterol bom'},
+    {key:'trig',   n:'Triglicerideos',     u:'mg/dL',  ref:'<150',    hint:'Gordura sanguinea'},
+    {key:'gli',    n:'Glicemia jejum',     u:'mg/dL',  ref:'70–99',   hint:'Controle glicemico'},
+    {key:'tsh',    n:'TSH',               u:'mUI/L',  ref:'0.5–4.5', hint:'Funcao tireoidiana'},
+    {key:'testo',  n:'Testosterona total', u:'ng/dL',  ref:'300–1000',hint:'Hormonio e energia'},
+    {key:'pce',    n:'PCR ultrassensivel', u:'mg/L',   ref:'<1.0',    hint:'Inflamacao'},
+  ];
+  var h = '<div class="section">';
+  h += '<div style="background:#f0f9f4;border-radius:12px;padding:14px 16px;margin-bottom:16px;border-left:3px solid var(--green)">';
+  h += '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:4px">✓ Opcional — Pule se nao tiver exames</div>';
+  h += '<div style="font-size:12px;color:var(--muted)">A IA usa esses valores para personalizar suplementos, treino e dieta com base na sua saude real.</div>';
+  h += '</div>';
+  EXAM_MARKERS.forEach(function(m){
+    var val = P.examInputs[m.key]||'';
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:13px;font-weight:500;color:var(--text)">'+m.n+'</div>';
+    h += '<div style="font-size:11px;color:var(--muted)">Ref: '+m.ref+' '+m.u+' · '+m.hint+'</div>';
+    h += '</div>';
+    h += '<input type="number" inputmode="decimal" placeholder="—" value="'+val+'" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="P.examInputs[this.dataset.ekey]=this.value">';
+    h += '<div style="width:28px;font-size:11px;color:var(--muted);text-align:left">'+m.u+'</div>';
+    h += '</div>';
+  });
+  h += '<button onclick="spNext()" style="width:100%;padding:14px;border:none;border-radius:12px;background:none;color:var(--muted);font-size:14px;cursor:pointer;margin-top:4px">Pular exames →</button>';
+  h += '</div>';
+  return h;
+}
+
+function spS8(){
   var goalsStr = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.i+' '+f.l:g; }).join(', ') || 'Nenhum selecionado';
   return '<div class="section">' +
     '<div class="card" style="padding:14px 16px;margin-bottom:14px">' +
@@ -1844,7 +1909,8 @@ function spGenerate(){
   icon.style.display='none'; spin.style.display='block';
   ttl.textContent='Gerando seu plano...'; sub.textContent='O Claude esta analisando seus dados.';
   var goalsStr = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(', ')||'saude geral';
-  var exTxt = getExamsText(PD[curP]);
+  var exTxt = getExamInputsText();
+  if(!exTxt) exTxt = getExamsText(PD[curP]); // fallback to hardcoded if user didn't input
   var profileText = 'Perfil: '+(P.name||'Usuario')+', '+(P.age||'45')+' anos, '+(P.gender==='M'?'masculino':'feminino')+', '+(P.weight||'80')+'kg, '+(P.height||'175')+'cm, IMC '+spCalcIMC()+'. Objetivos: '+goalsStr+'. Treinos: '+P.trainingDays+'x/semana, nivel '+P.trainingLevel+'. Sono atual: '+P.sleepHours+'h.'+(exTxt?'\n\n'+exTxt:'');
   var hasPhotos = P.bodyPhotos.frente || P.bodyPhotos.lado || P.bodyPhotos.costas;
 

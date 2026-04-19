@@ -1528,6 +1528,20 @@ var CHAT_QPS = {
   saude:['Analise geral de saude','Prioridades desta semana','Longevidade','Meu score de saude'],
 };
 
+function getExamsText(p){
+  if(!p.exams || !p.exams.length) return '';
+  var lines = ['Exames laboratoriais recentes:'];
+  p.exams.forEach(function(ex){
+    var status = ex.status==='danger'?'CRITICO':ex.status==='alert'?'ATENCAO':'OK';
+    var markers = ex.markers.map(function(m){
+      var flag = m.c==='#c0392b'?'⚠️ BAIXO':m.c==='#c47a1a'?'⚠️ LIMÍTROFE':'✓ OK';
+      return m.n+': '+m.v+' '+m.u+' (ref: '+m.ref+') '+flag;
+    }).join(', ');
+    lines.push('- '+ex.name+' ['+ex.date+'] ['+status+']: '+markers);
+  });
+  return lines.join('\n');
+}
+
 function getSysProm(){
   var p = PD[curP];
   var ctxMap = {
@@ -1537,7 +1551,10 @@ function getSysProm(){
     exames:'medico especialista em medicina preventiva e interpretacao de exames',
     saude:'especialista em saude integrativa e longevidade'
   };
-  return 'Voce e um '+(ctxMap[chatCtx]||'especialista em saude')+'. Responda em portugues brasileiro, de forma pratica, objetiva e personalizada. Use emojis com moderacao.\n\nPerfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, objetivo: '+p.goal+'. Sono medio: '+p.sleep+'h (meta: '+p.sleepTarget+'h). Calorias: '+p.calories+'kcal, proteina: '+p.protein+'g.';
+  var base = 'Voce e um '+(ctxMap[chatCtx]||'especialista em saude')+'. Responda em portugues brasileiro, de forma pratica, objetiva e personalizada. Use emojis com moderacao.\n\nPerfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, objetivo: '+p.goal+'. Sono medio: '+p.sleep+'h (meta: '+p.sleepTarget+'h). Calorias: '+p.calories+'kcal, proteina: '+p.protein+'g.';
+  var exTxt = getExamsText(p);
+  if(exTxt) base += '\n\n'+exTxt+'\n\nUse os resultados dos exames para personalizar suas recomendacoes de treino, dieta e suplementacao.';
+  return base;
 }
 
 function openChat(ctx, initialMsg){
@@ -1827,7 +1844,8 @@ function spGenerate(){
   icon.style.display='none'; spin.style.display='block';
   ttl.textContent='Gerando seu plano...'; sub.textContent='O Claude esta analisando seus dados.';
   var goalsStr = P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(', ')||'saude geral';
-  var profileText = 'Perfil: '+(P.name||'Usuario')+', '+(P.age||'45')+' anos, '+(P.gender==='M'?'masculino':'feminino')+', '+(P.weight||'80')+'kg, '+(P.height||'175')+'cm, IMC '+spCalcIMC()+'. Objetivos: '+goalsStr+'. Treinos: '+P.trainingDays+'x/semana, nivel '+P.trainingLevel+'. Sono atual: '+P.sleepHours+'h.';
+  var exTxt = getExamsText(PD[curP]);
+  var profileText = 'Perfil: '+(P.name||'Usuario')+', '+(P.age||'45')+' anos, '+(P.gender==='M'?'masculino':'feminino')+', '+(P.weight||'80')+'kg, '+(P.height||'175')+'cm, IMC '+spCalcIMC()+'. Objetivos: '+goalsStr+'. Treinos: '+P.trainingDays+'x/semana, nivel '+P.trainingLevel+'. Sono atual: '+P.sleepHours+'h.'+(exTxt?'\n\n'+exTxt:'');
   var hasPhotos = P.bodyPhotos.frente || P.bodyPhotos.lado || P.bodyPhotos.costas;
 
   function doFetch(userContent){
@@ -1873,13 +1891,13 @@ function spGenerate(){
           ['frente','lado','costas'].forEach(function(k2){
             if(compressed[k2]) uc.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:compressed[k2].split(',')[1]||compressed[k2]}});
           });
-          uc.push({type:'text',text:'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado. Inclua: 1) Analise da composicao corporal vista nas fotos 2) Top 3 prioridades 3) Nutricao personalizada (calorias e macros) 4) Plano de treino semanal com musculacao + cardio 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 600 palavras.'});
+          uc.push({type:'text',text:'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado considerando tambem os exames laboratoriais do perfil. Inclua: 1) Analise da composicao corporal 2) Alertas dos exames que impactam o plano 3) Top 3 prioridades 4) Nutricao personalizada (calorias e macros) 5) Plano de treino semanal com musculacao + cardio 6) Top 5 suplementos com doses baseados nos exames 7) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 700 palavras.'});
           doFetch(uc);
         }
       });
     });
   } else {
-    doFetch('Gere um plano de saude personalizado. Inclua: 1) Analise do perfil 2) Top 3 prioridades 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio combinado) 5) Top 5 suplementos com doses 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 500 palavras.');
+    doFetch('Gere um plano de saude personalizado considerando os exames laboratoriais do perfil. Inclua: 1) Analise do perfil e alertas dos exames 2) Top 3 prioridades baseadas nos exames e objetivos 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio) 5) Top 5 suplementos com doses baseados nos exames 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 600 palavras.');
   }
 }
 

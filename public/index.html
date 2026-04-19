@@ -1530,18 +1530,15 @@ var CHAT_QPS = {
 };
 
 var EXAM_MARKER_DEFS = [
-  {key:'vitd',  n:'Vitamina D',        u:'ng/mL',  refLow:50,  refHigh:80},
-  {key:'vitb12',n:'Vitamina B12',       u:'pg/mL',  refLow:200, refHigh:900},
-  {key:'mag',   n:'Magnesio',           u:'mg/dL',  refLow:1.7, refHigh:2.4},
-  {key:'ferro', n:'Ferritina',          u:'ng/mL',  refLow:12,  refHigh:150},
-  {key:'col',   n:'Colesterol total',   u:'mg/dL',  refLow:0,   refHigh:200},
-  {key:'ldl',   n:'LDL',               u:'mg/dL',  refLow:0,   refHigh:130},
-  {key:'hdl',   n:'HDL',               u:'mg/dL',  refLow:40,  refHigh:999},
-  {key:'trig',  n:'Triglicerideos',     u:'mg/dL',  refLow:0,   refHigh:150},
-  {key:'gli',   n:'Glicemia jejum',     u:'mg/dL',  refLow:70,  refHigh:99},
-  {key:'tsh',   n:'TSH',               u:'mUI/L',  refLow:0.5, refHigh:4.5},
-  {key:'testo', n:'Testosterona total', u:'ng/dL',  refLow:300, refHigh:1000},
-  {key:'pce',   n:'PCR ultrassensivel', u:'mg/L',   refLow:0,   refHigh:1.0},
+  {key:'vitd',  n:'Vitamina D',         u:'ng/mL', refLow:50,  refHigh:80},
+  {key:'ferro', n:'Ferritina',           u:'ng/mL', refLow:30,  refHigh:150},
+  {key:'vitb12',n:'Vitamina B12',        u:'pg/mL', refLow:400, refHigh:900},
+  {key:'testo', n:'Testosterona total',  u:'ng/dL', refLow:500, refHigh:900},
+  {key:'tsh',   n:'TSH',                u:'mUI/L', refLow:0.5, refHigh:2.5},
+  {key:'gli',   n:'Glicemia em jejum',   u:'mg/dL', refLow:70,  refHigh:90},
+  {key:'pce',   n:'PCR ultrassensivel',  u:'mg/L',  refLow:0,   refHigh:0.5},
+  {key:'trig',  n:'Triglicerideos',      u:'mg/dL', refLow:0,   refHigh:100},
+  {key:'hdl',   n:'HDL',                u:'mg/dL', refLow:60,  refHigh:999},
 ];
 function getExamInputsText(){
   var inputs = P.examInputs||{};
@@ -1784,37 +1781,62 @@ function spS5(){
 }
 
 function spS7(){
-  var EXAM_MARKERS = [
-    {key:'vitd',   n:'Vitamina D',        u:'ng/mL',  ref:'50–80',   hint:'Imunidade e ossos'},
-    {key:'vitb12', n:'Vitamina B12',       u:'pg/mL',  ref:'200–900', hint:'Energia e nervoso'},
-    {key:'mag',    n:'Magnesio',           u:'mg/dL',  ref:'1.7–2.4', hint:'Sono e musculos'},
-    {key:'ferro',  n:'Ferritina',          u:'ng/mL',  ref:'12–150',  hint:'Energia e forca'},
-    {key:'col',    n:'Colesterol total',   u:'mg/dL',  ref:'<200',    hint:'Saude cardiovascular'},
-    {key:'ldl',    n:'LDL',               u:'mg/dL',  ref:'<130',    hint:'Colesterol ruim'},
-    {key:'hdl',    n:'HDL',               u:'mg/dL',  ref:'>40',     hint:'Colesterol bom'},
-    {key:'trig',   n:'Triglicerideos',     u:'mg/dL',  ref:'<150',    hint:'Gordura sanguinea'},
-    {key:'gli',    n:'Glicemia jejum',     u:'mg/dL',  ref:'70–99',   hint:'Controle glicemico'},
-    {key:'tsh',    n:'TSH',               u:'mUI/L',  ref:'0.5–4.5', hint:'Funcao tireoidiana'},
-    {key:'testo',  n:'Testosterona total', u:'ng/dL',  ref:'300–1000',hint:'Hormonio e energia'},
-    {key:'pce',    n:'PCR ultrassensivel', u:'mg/L',   ref:'<1.0',    hint:'Inflamacao'},
+  // Groups organized by impact on training/nutrition/supps
+  var EXAM_GROUPS = [
+    {
+      title:'Energia e Performance', icon:'⚡',
+      why:'Impacto direto na disposicao, forca e recuperacao muscular.',
+      markers:[
+        {key:'vitd',  n:'Vitamina D',     u:'ng/mL', ref:'50–80',   hint:'Recuperacao, imunidade, testosterona'},
+        {key:'ferro', n:'Ferritina',       u:'ng/mL', ref:'30–150',  hint:'Transporte de oxigenio e energia'},
+        {key:'vitb12',n:'Vitamina B12',    u:'pg/mL', ref:'400–900', hint:'Energia, celulas vermelhas, sistema nervoso'},
+      ]
+    },
+    {
+      title:'Metabolismo e Composicao Corporal', icon:'🔥',
+      why:'Define calorias, macros ideais e resposta ao treino de forca.',
+      markers:[
+        {key:'testo', n:'Testosterona total', u:'ng/dL', ref:'500–900', hint:'Massa muscular, gordura, recuperacao'},
+        {key:'tsh',   n:'TSH (tireoide)',     u:'mUI/L', ref:'0.5–2.5', hint:'Metabolismo basal e peso'},
+        {key:'gli',   n:'Glicemia em jejum',  u:'mg/dL', ref:'70–90',   hint:'Sensibilidade a insulina e carboidratos'},
+      ]
+    },
+    {
+      title:'Inflamacao e Saude Cardiovascular', icon:'❤️',
+      why:'Guia intensidade do treino e escolha de gorduras na dieta.',
+      markers:[
+        {key:'pce',  n:'PCR ultrassensivel', u:'mg/L',  ref:'<0.5',    hint:'Inflamacao cronica e recuperacao'},
+        {key:'trig', n:'Triglicerideos',     u:'mg/dL', ref:'<100',    hint:'Metabolismo de gordura e dieta'},
+        {key:'hdl',  n:'HDL',               u:'mg/dL', ref:'>60',     hint:'Protecao cardiovascular'},
+      ]
+    },
   ];
+
   var h = '<div class="section">';
-  h += '<div style="background:#f0f9f4;border-radius:12px;padding:14px 16px;margin-bottom:16px;border-left:3px solid var(--green)">';
-  h += '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:4px">✓ Opcional — Pule se nao tiver exames</div>';
-  h += '<div style="font-size:12px;color:var(--muted)">A IA usa esses valores para personalizar suplementos, treino e dieta com base na sua saude real.</div>';
+  h += '<div style="background:#f0f9f4;border-radius:12px;padding:12px 16px;margin-bottom:16px;border-left:3px solid var(--green)">';
+  h += '<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:2px">Opcional — pule se nao tiver exames</div>';
+  h += '<div style="font-size:12px;color:var(--muted)">Com esses 9 marcadores a IA personaliza suplementos, macros e intensidade de treino com base na sua bioquimica real.</div>';
   h += '</div>';
-  EXAM_MARKERS.forEach(function(m){
-    var val = P.examInputs[m.key]||'';
-    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-    h += '<div style="flex:1;min-width:0">';
-    h += '<div style="font-size:13px;font-weight:500;color:var(--text)">'+m.n+'</div>';
-    h += '<div style="font-size:11px;color:var(--muted)">Ref: '+m.ref+' '+m.u+' · '+m.hint+'</div>';
-    h += '</div>';
-    h += '<input type="number" inputmode="decimal" placeholder="—" value="'+val+'" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="P.examInputs[this.dataset.ekey]=this.value">';
-    h += '<div style="width:28px;font-size:11px;color:var(--muted);text-align:left">'+m.u+'</div>';
+
+  EXAM_GROUPS.forEach(function(g){
+    h += '<div style="margin-bottom:20px">';
+    h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">'+g.icon+' '+g.title+'</div>';
+    h += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+g.why+'</div>';
+    g.markers.forEach(function(m){
+      var val = P.examInputs[m.key]||'';
+      h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      h += '<div style="flex:1;min-width:0">';
+      h += '<div style="font-size:13px;font-weight:500;color:var(--text)">'+m.n+'</div>';
+      h += '<div style="font-size:11px;color:var(--muted)">Ideal: '+m.ref+' '+m.u+' · '+m.hint+'</div>';
+      h += '</div>';
+      h += '<input type="number" inputmode="decimal" placeholder="—" value="'+val+'" data-ekey="'+m.key+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff" oninput="P.examInputs[this.dataset.ekey]=this.value">';
+      h += '<div style="width:36px;font-size:10px;color:var(--muted)">'+m.u+'</div>';
+      h += '</div>';
+    });
     h += '</div>';
   });
-  h += '<button onclick="spNext()" style="width:100%;padding:14px;border:none;border-radius:12px;background:none;color:var(--muted);font-size:14px;cursor:pointer;margin-top:4px">Pular exames →</button>';
+
+  h += '<button onclick="spNext()" style="width:100%;padding:14px;border:1.5px dashed #ccc;border-radius:12px;background:none;color:var(--muted);font-size:14px;cursor:pointer;margin-top:4px">Nao tenho exames — Pular →</button>';
   h += '</div>';
   return h;
 }

@@ -574,7 +574,10 @@ input[type=file]{display:none}
     <div class="chat-handle"></div>
     <div class="chat-hdr">
       <div><div class="chat-ttl" id="chat-ttl">MyHealth IA</div><div class="chat-sub" id="chat-sub"></div></div>
-      <button class="chat-x" id="chat-x">✕</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="chat-clear" style="display:none;background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:8px;border:1px solid var(--border)">Limpar</button>
+        <button class="chat-x" id="chat-x">✕</button>
+      </div>
     </div>
     <div class="chat-msgs" id="chat-msgs"></div>
     <div class="qps" id="chat-qps"></div>
@@ -808,6 +811,7 @@ let exChecked = {}, exWeights = {}, cardioSel = {}, cardioChecked = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '';
+let chatHistories = {}; // persisted per profile+context: key = 'profileIdx_ctx'
 let progressPhotoAngle = 0;
 let pdOverride = {};
 let profileComplete = false;
@@ -831,7 +835,7 @@ function save(){
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,suppDone,habitDone,
       exChecked,exWeights,cardioSel,cardioChecked,
-      waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,
+      waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
@@ -852,6 +856,7 @@ function load(){
     sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
     profileComplete = s.profileComplete||false;
     pdOverride = s.pdOverride||{};
+    chatHistories = s.chatHistories||{};
     Object.keys(pdOverride).forEach(function(idx){
       var i = parseInt(idx); if(!PD[i]) return;
       var o = pdOverride[idx];
@@ -1795,8 +1800,18 @@ function getSysProm(){
   return base;
 }
 
+function chatHistKey(){ return curP+'_'+chatCtx; }
+function saveChatHistory(){
+  var key = chatHistKey();
+  if(chatCtx==='treino'||chatCtx==='dieta'){
+    // cap at last 60 messages to avoid storage bloat
+    chatHistories[key] = chatHistory.slice(-60);
+    save();
+  }
+}
+
 function openChat(ctx, initialMsg){
-  chatCtx = ctx; chatHistory = [];
+  chatCtx = ctx;
   var p = PD[curP];
   var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA',sono:'Especialista em Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
   document.getElementById('chat-ttl').textContent = titles[ctx]||'MyHealth IA';
@@ -1808,15 +1823,50 @@ function openChat(ctx, initialMsg){
   document.getElementById('chat-qps').innerHTML = qh;
   document.querySelectorAll('[data-cq]').forEach(function(b){ b.addEventListener('click', function(){ sendQuick(this.dataset.cq); }); });
   document.getElementById('chat-back').classList.add('open');
-  addChatMsg('assistant','Ola! Pronto para ajudar '+(p.name.split(' ')[0])+'. Como posso ajudar? 💪');
-  if(initialMsg){
-    setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
+  // show/hide clear button for persistent contexts
+  var clearBtn = document.getElementById('chat-clear');
+  clearBtn.style.display = (ctx==='treino'||ctx==='dieta') ? '' : 'none';
+
+  var saved = (ctx==='treino'||ctx==='dieta') ? (chatHistories[curP+'_'+ctx]||[]) : [];
+  if(saved.length>0){
+    // restore previous conversation
+    chatHistory = saved.slice();
+    var showApply = (ctx==='treino'||ctx==='dieta');
+    for(var i=0;i<saved.length;i++){
+      var isLast = (i===saved.length-1);
+      addChatMsg(saved[i].role, saved[i].content, showApply && isLast && saved[i].role==='assistant');
+    }
+    // show a subtle separator
+    var msgs = document.getElementById('chat-msgs');
+    var sep = document.createElement('div');
+    sep.style.cssText='text-align:center;font-size:11px;color:var(--muted);padding:6px 0 2px';
+    sep.textContent='— continuar conversa —';
+    msgs.appendChild(sep);
+    msgs.scrollTop = msgs.scrollHeight;
+    if(initialMsg){
+      setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
+    }
+  } else {
+    chatHistory = [];
+    addChatMsg('assistant','Ola! Pronto para ajudar '+(p.name.split(' ')[0])+'. Como posso ajudar? 💪');
+    if(initialMsg){
+      setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
+    }
   }
 }
 
 function closeChat(){ document.getElementById('chat-back').classList.remove('open'); }
 document.getElementById('chat-back').addEventListener('click', function(e){ if(e.target===this) closeChat(); });
 document.getElementById('chat-x').addEventListener('click', closeChat);
+document.getElementById('chat-clear').addEventListener('click', function(){
+  if(!confirm('Apagar todo o historico desta conversa?')) return;
+  delete chatHistories[curP+'_'+chatCtx];
+  chatHistory = [];
+  save();
+  var msgs = document.getElementById('chat-msgs');
+  msgs.innerHTML = '';
+  addChatMsg('assistant','Historico apagado. Como posso ajudar? 💪');
+});
 
 function addChatMsg(role, text, showApply){
   var msgs = document.getElementById('chat-msgs');
@@ -1847,6 +1897,7 @@ function sendMsg(){
   if(!text||isTyping) return;
   inp.value=''; inp.style.height='auto';
   addChatMsg('user',text); chatHistory.push({role:'user',content:text});
+  saveChatHistory();
   isTyping=true; document.getElementById('send-btn').disabled=true; showTyping();
   fetch('/api/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
@@ -1857,6 +1908,7 @@ function sendMsg(){
       var reply=data.content[0].text;
       var showApply = (chatCtx==='treino'||chatCtx==='dieta');
       addChatMsg('assistant',reply,showApply); chatHistory.push({role:'assistant',content:reply});
+      saveChatHistory();
     } else { addChatMsg('assistant','Desculpe, tive um problema. Tente novamente.'); }
     isTyping=false; document.getElementById('send-btn').disabled=false;
   }).catch(function(){

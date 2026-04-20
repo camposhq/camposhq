@@ -995,12 +995,37 @@ function renderHome(){
   var popTgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
   var diffGeral = avg - popAvgGeral;
   var pctToTgt = Math.min(100, Math.round(avg / popTgtGeral * 100));
+  var gapToTgt = Math.max(0, popTgtGeral - avg);
+  var atTop = avg >= popTgtGeral;
   h += '<div class="dash-hero">';
   h += '<div class="dash-hero-top">';
   h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
-  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média · '+pctToTgt+'% da meta</div>';
+  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média</div>';
+  h += '</div>';
+  h += '</div>';
+  // Score vs Top 20% comparison bar
+  h += '<div style="margin:14px 0 4px">';
+  h += '<div style="display:flex;justify-content:space-between;margin-bottom:5px">';
+  h += '<span style="font-size:11px;opacity:.75">Você <strong style="font-family:DM Mono,monospace">'+avg+'</strong></span>';
+  h += '<span style="font-size:11px;opacity:.75">'+(atTop?'🏆 Top 20% atingido!':'Faltam <strong style="font-family:DM Mono,monospace">'+gapToTgt+'</strong> pts para o top 20%')+'</span>';
+  h += '</div>';
+  // track with two markers
+  h += '<div style="position:relative;height:10px;background:rgba(255,255,255,.2);border-radius:5px">';
+  h += '<div style="height:100%;width:'+Math.min(100,Math.round(avg/100*100))+'%;background:rgba(255,255,255,.9);border-radius:5px;transition:width .4s"></div>';
+  // avg marker
+  h += '<div style="position:absolute;top:-2px;left:'+popAvgGeral+'%;transform:translateX(-50%);width:2px;height:14px;background:rgba(255,255,255,.4);border-radius:1px"></div>';
+  // top 20% marker
+  h += '<div style="position:absolute;top:-3px;left:'+Math.min(99,popTgtGeral)+'%;transform:translateX(-50%);width:3px;height:16px;background:#f0c060;border-radius:2px"></div>';
+  h += '</div>';
+  h += '<div style="display:flex;justify-content:space-between;margin-top:4px">';
+  h += '<span style="font-size:9px;opacity:.6">0</span>';
+  h += '<div style="position:relative;width:100%">';
+  h += '<span style="position:absolute;left:'+popAvgGeral+'%;transform:translateX(-50%);font-size:9px;opacity:.6">Média '+popAvgGeral+'</span>';
+  h += '<span style="position:absolute;left:'+Math.min(96,popTgtGeral)+'%;transform:translateX(-50%);font-size:9px;color:#f0c060;font-weight:600">★ '+popTgtGeral+'</span>';
+  h += '</div>';
+  h += '<span style="font-size:9px;opacity:.6">100</span>';
   h += '</div>';
   h += '</div>';
   h += '<div class="dash-score-row">';

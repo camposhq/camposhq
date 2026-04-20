@@ -150,6 +150,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .ex-vid:active{background:#ffe8e8}
 .ex-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;cursor:pointer}
 .ex-check.done{background:var(--green);border-color:var(--green)}
+.rt-preset{flex:1;padding:13px 4px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);cursor:pointer;transition:all .15s}
+.rt-preset:active,.rt-preset.sel{background:var(--green-light);border-color:var(--green);color:var(--green)}
 .ex-check.done::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);display:block}
 .meal-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:10px}
 .meal-hdr{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer}
@@ -1212,6 +1214,86 @@ function renderTreinosStrip(){
   });
 }
 
+// ── Rest timer ────────────────────────────────────────────────
+var restTimer={interval:null,remaining:0,total:0};
+function showRestTimer(){
+  if(document.getElementById('rest-timer-overlay')) return;
+  var ov=document.createElement('div');
+  ov.id='rest-timer-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;display:flex;align-items:flex-end';
+  var panel=document.createElement('div');
+  panel.style.cssText='background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:22px 20px calc(24px + var(--safe-bottom));text-align:center';
+  panel.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'+
+    '<div style="font-family:Fraunces,serif;font-size:20px">Descanso <em>entre séries</em></div>'+
+    '<button id="rt-skip" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:4px 8px">Pular ✕</button></div>'+
+    '<div id="rt-presets" style="display:flex;gap:8px;margin-bottom:6px">'+
+    '<button class="rt-preset" data-secs="30">0:30</button>'+
+    '<button class="rt-preset" data-secs="45">0:45</button>'+
+    '<button class="rt-preset" data-secs="60">1:00</button>'+
+    '<button class="rt-preset" data-secs="90">1:30</button>'+
+    '</div>'+
+    '<div id="rt-countdown" style="display:none;padding-top:6px">'+
+    '<svg width="150" height="150" viewBox="0 0 150 150" style="display:block;margin:0 auto 8px">'+
+    '<circle cx="75" cy="75" r="64" fill="none" stroke="var(--border)" stroke-width="9"/>'+
+    '<circle id="rt-circle" cx="75" cy="75" r="64" fill="none" stroke="var(--green)" stroke-width="9" stroke-linecap="round"'+
+    ' stroke-dasharray="402" stroke-dashoffset="0" transform="rotate(-90 75 75)" style="transition:stroke-dashoffset .9s linear"/>'+
+    '</svg>'+
+    '<div id="rt-time" style="font-size:52px;font-weight:700;font-family:DM Mono,monospace;color:var(--text);line-height:1;margin-bottom:6px">1:30</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Próxima série em breve</div>'+
+    '<button id="rt-cancel" style="padding:10px 28px;border:1.5px solid var(--border);border-radius:99px;background:none;font-size:13px;color:var(--muted);cursor:pointer">Cancelar</button>'+
+    '</div>';
+  ov.appendChild(panel);
+  document.body.appendChild(ov);
+  document.getElementById('rt-skip').addEventListener('click',closeRestTimer);
+  document.getElementById('rt-cancel').addEventListener('click',closeRestTimer);
+  panel.querySelectorAll('.rt-preset').forEach(function(btn){
+    btn.addEventListener('click',function(){ startRestCountdown(parseInt(this.dataset.secs)); });
+  });
+}
+function startRestCountdown(totalSecs){
+  var presetsEl=document.getElementById('rt-presets');
+  var countdownEl=document.getElementById('rt-countdown');
+  if(!presetsEl||!countdownEl) return;
+  presetsEl.style.display='none';
+  countdownEl.style.display='block';
+  var circle=document.getElementById('rt-circle');
+  var timeEl=document.getElementById('rt-time');
+  var circ=402;
+  restTimer.remaining=totalSecs; restTimer.total=totalSecs;
+  function tick(){
+    var pct=restTimer.remaining/restTimer.total;
+    if(circle) circle.setAttribute('stroke-dashoffset',(circ*(1-pct)).toFixed(1));
+    if(circle) circle.style.stroke=pct>0.4?'var(--green)':pct>0.15?'#f59e0b':'var(--coral)';
+    var m=Math.floor(restTimer.remaining/60),s=restTimer.remaining%60;
+    if(timeEl) timeEl.textContent=m+':'+(s<10?'0':'')+s;
+    if(restTimer.remaining<=0){
+      clearInterval(restTimer.interval); restTimer.interval=null;
+      try{
+        var ac=new(window.AudioContext||window.webkitAudioContext)();
+        [0,180,360].forEach(function(d){
+          var o=ac.createOscillator(),g=ac.createGain();
+          o.connect(g); g.connect(ac.destination);
+          o.frequency.value=880; g.gain.value=0.25;
+          o.start(ac.currentTime+d/1000); o.stop(ac.currentTime+d/1000+0.18);
+        });
+      }catch(e){}
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      setTimeout(closeRestTimer,1400);
+      return;
+    }
+    restTimer.remaining--;
+  }
+  tick();
+  restTimer.interval=setInterval(tick,1000);
+}
+function closeRestTimer(){
+  if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
+  var ov=document.getElementById('rest-timer-overlay');
+  if(ov) ov.remove();
+}
+// ──────────────────────────────────────────────────────────────
+
 function renderTreinosContent(){
   var p = PD[curP]; var w = p.weekly[curDay]; var h = '';
   if(w.rest){
@@ -1323,7 +1405,13 @@ function renderTreinosContent(){
   document.getElementById('treinos-content').innerHTML = h;
 
   document.querySelectorAll('.ex-check').forEach(function(el){
-    el.addEventListener('click', function(){ var k=this.dataset.key; exChecked[k]=!exChecked[k]; save(); renderTreinosContent(); });
+    el.addEventListener('click', function(){
+      var k=this.dataset.key;
+      var wasDone=!!exChecked[k];
+      exChecked[k]=!wasDone;
+      save(); renderTreinosContent();
+      if(!wasDone) showRestTimer();
+    });
   });
   document.querySelectorAll('.ex-wbtn').forEach(function(el){
     el.addEventListener('click', function(){ openWeight(this.dataset.wkey, this.dataset.wname, parseFloat(this.dataset.wcur)); });

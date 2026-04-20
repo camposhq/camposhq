@@ -1705,19 +1705,33 @@ function renderSonoContent(){
   h += '<div class="hero-score">'+score+'</div>';
   h += '<div class="hero-tag">'+label+'</div>';
   h += '<div class="hero-meta">';
-  h += '<div><div class="hm-val">'+entry.hours.toFixed(1)+'h</div><div class="hm-lbl">Dormido</div></div>';
+  var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60);
+  var sleepDisp=eH+'h'+(eM>0?' '+eM+'min':'');
+  h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
   h += '<div><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta</div></div>';
   h += '<div><div class="hm-val">'+hDone+'/'+p.habits.length+'</div><div class="hm-lbl">Habitos</div></div>';
   h += '</div></div></div>';
 
   // Registrar
+  var sH=Math.floor(entry.hours), sM=Math.round((entry.hours-sH)*60);
   h += '<div class="section"><div class="sec-label">Registrar sono</div><div class="card" style="padding:0;overflow:hidden">';
-  h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">';
-  h += '<span style="font-size:14px;font-weight:500">Horas dormidas</span>';
-  h += '<div style="display:flex;align-items:center;gap:10px">';
-  h += '<button style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" id="s-minus">−</button>';
-  h += '<span style="font-size:17px;font-weight:600;font-family:DM Mono,monospace;min-width:44px;text-align:center" id="s-hours">'+entry.hours.toFixed(1)+'h</span>';
-  h += '<button style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" id="s-plus">+</button>';
+  h += '<div style="padding:14px 16px;border-bottom:1px solid var(--border)">';
+  h += '<div style="font-size:14px;font-weight:500;margin-bottom:12px">Horas dormidas</div>';
+  h += '<div style="display:flex;align-items:center;gap:16px">';
+  // hours spinner
+  h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
+  h += '<button style="width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1" id="sh-minus">−</button>';
+  h += '<div style="text-align:center;min-width:52px"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;line-height:1" id="s-hval">'+sH+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">horas</div></div>';
+  h += '<button style="width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1" id="sh-plus">+</button>';
+  h += '</div>';
+  // divider
+  h += '<div style="font-size:22px;font-weight:300;color:var(--muted)">:</div>';
+  // minutes spinner
+  h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
+  h += '<button style="width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1" id="sm-minus">−</button>';
+  h += '<div style="text-align:center;min-width:52px"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;line-height:1" id="s-mval">'+(sM<10?'0':'')+sM+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">minutos</div></div>';
+  h += '<button style="width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1" id="sm-plus">+</button>';
+  h += '</div>';
   h += '</div></div>';
   h += '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">';
   h += '<span style="font-size:14px;font-weight:500">Qualidade</span>';
@@ -1749,16 +1763,21 @@ function renderSonoContent(){
   document.getElementById('sono-content').innerHTML = h;
 
   var entry2 = sleepData[curP] || {hours:p.sleep, quality:3};
-  document.getElementById('s-minus').addEventListener('click', function(){
-    entry2.hours = Math.max(0, parseFloat((entry2.hours-.5).toFixed(1)));
-    sleepData[curP] = entry2; save();
-    document.getElementById('s-hours').textContent = entry2.hours.toFixed(1)+'h';
-  });
-  document.getElementById('s-plus').addEventListener('click', function(){
-    entry2.hours = Math.min(12, parseFloat((entry2.hours+.5).toFixed(1)));
-    sleepData[curP] = entry2; save();
-    document.getElementById('s-hours').textContent = entry2.hours.toFixed(1)+'h';
-  });
+  function sleepHM(){ return {h:Math.floor(entry2.hours), m:Math.round((entry2.hours-Math.floor(entry2.hours))*60)}; }
+  function updateSleepDisplay(){
+    var hm=sleepHM();
+    document.getElementById('s-hval').textContent=hm.h;
+    document.getElementById('s-mval').textContent=(hm.m<10?'0':'')+hm.m;
+  }
+  function setSleepHours(newH, newM){
+    newH=Math.max(0,Math.min(14,newH)); newM=Math.max(0,Math.min(55,newM));
+    entry2.hours=parseFloat((newH+newM/60).toFixed(4));
+    sleepData[curP]=entry2; save(); updateSleepDisplay();
+  }
+  document.getElementById('sh-minus').addEventListener('click',function(){ var hm=sleepHM(); setSleepHours(hm.h-1,hm.m); });
+  document.getElementById('sh-plus').addEventListener('click',function(){ var hm=sleepHM(); setSleepHours(hm.h+1,hm.m); });
+  document.getElementById('sm-minus').addEventListener('click',function(){ var hm=sleepHM(); var nm=hm.m-5; if(nm<0){nm=55; setSleepHours(hm.h-1,nm);}else{setSleepHours(hm.h,nm);} });
+  document.getElementById('sm-plus').addEventListener('click',function(){ var hm=sleepHM(); var nm=hm.m+5; if(nm>=60){nm=0; setSleepHours(hm.h+1,nm);}else{setSleepHours(hm.h,nm);} });
   document.querySelectorAll('[data-q]').forEach(function(btn){
     btn.addEventListener('click', function(){ entry2.quality=parseInt(this.dataset.q); sleepData[curP]=entry2; save(); renderSonoContent(); });
   });

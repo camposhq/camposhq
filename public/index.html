@@ -1033,13 +1033,56 @@ function renderHome(){
     h += '<div class="dsi"><div class="dsi-val">'+p.scores[sc.k]+'</div><div class="dsi-lbl">'+sc.i+' '+sc.k+'</div></div>';
   });
   h += '</div></div>';
-  // Metrics
-  var imc = (p.weight/Math.pow(p.height/100,2)).toFixed(1);
+  // Metrics with mini comparison bars
+  var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+  // mini comparison bar: val/avg/tgt on a min-max scale, lowerBetter flips color logic
+  function miniBar(val, min, max, avg, tgt, avgLbl, tgtLbl, lowerBetter){
+    var pct = function(v){ return Math.min(100,Math.max(0,Math.round((v-min)/(max-min)*100))); };
+    var vPct=pct(val), aPct=pct(avg), tPct=pct(tgt);
+    var isGood = lowerBetter ? val<=tgt : val>=tgt;
+    var vsAvg = lowerBetter ? val<=avg : val>=avg;
+    var fillColor = isGood?'#1a7a4a':vsAvg?'#c47a1a':'#c0392b';
+    var h2 = '<div style="margin-top:9px">';
+    h2 += '<div style="position:relative;height:5px;background:#e8e8e4;border-radius:3px">';
+    h2 += '<div style="height:100%;width:'+vPct+'%;background:'+fillColor+';border-radius:3px"></div>';
+    h2 += '<div style="position:absolute;top:-2px;left:'+Math.min(98,aPct)+'%;width:2px;height:9px;background:rgba(0,0,0,.2);border-radius:1px"></div>';
+    h2 += '<div style="position:absolute;top:-3px;left:'+Math.min(97,tPct)+'%;width:2.5px;height:11px;background:#b45309;border-radius:1px"></div>';
+    h2 += '</div>';
+    h2 += '<div style="display:flex;justify-content:space-between;margin-top:3px">';
+    h2 += '<span style="font-size:9px;color:var(--muted)">Média '+avgLbl+'</span>';
+    h2 += '<span style="font-size:9px;color:#b45309;font-weight:600">★ '+tgtLbl+'</span>';
+    h2 += '</div></div>';
+    return h2;
+  }
+  // IMC benchmarks (scale 15–40, lower is better — target: 22, avg: 27)
+  var imcColor = imc<=24.9?'var(--green)':imc<=29.9?'var(--amber)':'var(--coral)';
+  var imcLbl = imc<=24.9?'Normal':imc<=29.9?'Sobrepeso':'Obesidade';
+  // Sono benchmarks (scale 4–10h, higher is better — target: 7.8h, avg: 6.8h)
+  var sonoColor = p.sleep>=7.5?'var(--green)':p.sleep>=6.5?'var(--amber)':'var(--coral)';
+  var sonoLbl = p.sleep>=7.5?'Otimo':p.sleep>=6.5?'Regular':'Insuficiente';
   h += '<div class="section"><div class="metric-grid">';
-  h += '<div class="metric-card"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div><div class="metric-label">Peso atual</div><div class="metric-trend" style="color:var(--muted)">IMC '+imc+'</div></div>';
-  h += '<div class="metric-card"><div class="metric-val">'+p.sleep+'<span class="metric-unit">h</span></div><div class="metric-label">Sono media</div><div class="metric-trend '+(p.sleep>=7?'trend-up':'trend-down')+'">'+(p.sleep>=7?'Adequado':'Abaixo da meta')+'</div></div>';
-  h += '<div class="metric-card"><div class="metric-val">'+p.calories+'<span class="metric-unit">kcal</span></div><div class="metric-label">Meta calorica</div><div class="metric-trend" style="color:var(--muted)">'+p.protein+'g prot.</div></div>';
-  h += '<div class="metric-card"><div class="metric-val">'+p.age+'<span class="metric-unit">anos</span></div><div class="metric-label">Idade</div><div class="metric-trend" style="color:var(--muted)">'+p.height+'cm</div></div>';
+  // IMC card
+  h += '<div class="metric-card"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
+  h += '<div class="metric-label">Peso atual</div>';
+  h += '<div class="metric-trend" style="color:'+imcColor+'">IMC '+imc+' · '+imcLbl+'</div>';
+  h += miniBar(imc,15,40,27,22,'27','22',true);
+  h += '</div>';
+  // Sono card
+  h += '<div class="metric-card"><div class="metric-val">'+p.sleep+'<span class="metric-unit">h</span></div>';
+  h += '<div class="metric-label">Sono media</div>';
+  h += '<div class="metric-trend" style="color:'+sonoColor+'">'+sonoLbl+'</div>';
+  h += miniBar(p.sleep,4,10,6.8,7.8,'6.8h','7.8h',false);
+  h += '</div>';
+  // Calories card
+  h += '<div class="metric-card"><div class="metric-val">'+p.calories+'<span class="metric-unit">kcal</span></div>';
+  h += '<div class="metric-label">Meta calorica</div>';
+  h += '<div class="metric-trend" style="color:var(--muted)">'+p.protein+'g proteina</div>';
+  h += '</div>';
+  // Idade card
+  h += '<div class="metric-card"><div class="metric-val">'+p.age+'<span class="metric-unit">anos</span></div>';
+  h += '<div class="metric-label">Idade</div>';
+  h += '<div class="metric-trend" style="color:var(--muted)">'+p.height+'cm · '+p.weight+'kg</div>';
+  h += '</div>';
   h += '</div></div>';
   // Scores vs population avg + target
   var sColors = {Saude:'#1a7a4a',Fitness:'#5a3ab7',Sono:'#3730a3',Nutricao:'#c47a1a'};

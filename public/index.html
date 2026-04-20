@@ -876,6 +876,40 @@ const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg
 // ══════════════════════════════════════════════════════════════
 // STORAGE
 // ══════════════════════════════════════════════════════════════
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function kcalConsumedToday(pi){
+  var idx=pi!=null?pi:curP;
+  return (PD[idx]||{meals:[]}).meals.reduce(function(s,m){ return s+(mealDone[idx+'-'+m.id]?m.kcal:0); },0);
+}
+function totalSetsDoneToday(pi){
+  var idx=pi!=null?pi:curP; var p=PD[idx]; if(!p||!p.weekly) return 0;
+  var tot=0;
+  p.weekly.forEach(function(w,d){ if(w.rest||!w.exs) return; w.exs.forEach(function(ex,i){ var k=idx+'-'+d+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) tot++; } }); });
+  return tot;
+}
+function handleDayChange(oldDate){
+  // snapshot yesterday into historyData for all profiles
+  PD.forEach(function(p,pi){
+    if(!historyData[pi]) historyData[pi]=[];
+    var d=new Date(oldDate+'T12:00:00'); var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    var imc=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+    var entry=sleepData[pi]||{hours:p.sleep};
+    var kcal=kcalConsumedToday(pi);
+    var existing=historyData[pi].find(function(e){return e.date===oldDate;});
+    if(!existing){
+      historyData[pi].push({date:oldDate,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:entry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories});
+    }
+  });
+  // reset daily state
+  mealDone={}; suppDone={}; habitDone={};
+  Object.keys(exChecked).forEach(function(k){ delete exChecked[k]; });
+  Object.keys(exSets).forEach(function(k){ delete exSets[k]; });
+  Object.keys(cardioSel).forEach(function(k){ delete cardioSel[k]; });
+  Object.keys(cardioChecked).forEach(function(k){ delete cardioChecked[k]; });
+  Object.keys(walkParams).forEach(function(k){ delete walkParams[k]; });
+  Object.keys(waterGlasses).forEach(function(k){ delete waterGlasses[k]; });
+  Object.keys(sleepData).forEach(function(k){ delete sleepData[k]; });
+}
 var saveCloudTimer = null;
 function save(){
   try{
@@ -883,6 +917,7 @@ function save(){
       curP,curDay,mealDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
+      lastSavedDate:todayStr(),
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
@@ -905,6 +940,8 @@ function load(){
     pdOverride = s.pdOverride||{};
     chatHistories = s.chatHistories||{};
     historyData = s.historyData||{};
+    // Auto-reset if day changed
+    if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
     Object.keys(pdOverride).forEach(function(idx){
       var i = parseInt(idx); if(!PD[i]) return;
       var o = pdOverride[idx];
@@ -1464,6 +1501,14 @@ function renderTreinosContent(){
 
   // Stats + AI + buttons
   var weekDone = PD[curP].weekly.filter(function(wk2,d){ return !wk2.rest && wk2.exs && wk2.exs.some(function(_,i){ return !!exChecked[wk(curP,d,i)]; }); }).length;
+  var totalSetsPlanned = exs.reduce(function(s,ex){ return s+(parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3); },0);
+  var setsPct = totalSetsPlanned>0?Math.round(totalSetsDone/totalSetsPlanned*100):0;
+  h += '<div class="section"><div class="card" style="padding:14px 16px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h += '<span style="font-size:13px;font-weight:600">📋 Progresso de hoje</span>';
+  h += '<span style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+totalSetsDone+'/'+totalSetsPlanned+' séries · '+setsPct+'%</span></div>';
+  h += '<div style="height:8px;border-radius:99px;background:#f0f0ed;overflow:hidden"><div style="height:100%;border-radius:99px;background:var(--green);width:'+setsPct+'%;transition:width .4s"></div></div>';
+  h += '</div>';
   h += '<div class="section"><div class="stats">';
   h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+weekDone+'</div><div class="stat-lbl">Treinos feitos</div></div>';
   h += '<div class="stat-card"><div class="stat-val">'+PD[curP].weekly.filter(function(d){return !d.rest;}).length+'</div><div class="stat-lbl">Planejados</div></div>';
@@ -1584,26 +1629,43 @@ function renderDietaContent(){
   var mDone = p.meals.filter(function(m){ return mealDone[curP+'-'+m.id]; }).length;
   var sDone = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var wk2 = curP+'-water'; var glasses = waterGlasses[wk2]||0; var totalG = Math.round(p.water/250);
+  var kcalConsumed = kcalConsumedToday(); var kcalPct = Math.min(100, Math.round(kcalConsumed/p.calories*100));
+  var kcalLeft = Math.max(0, p.calories - kcalConsumed); var kcalOver = Math.max(0, kcalConsumed - p.calories);
 
   if(dietaTab==='all'||dietaTab==='cafe'||dietaTab==='almoco'||dietaTab==='jantar'){
     var tot = p.protein*4+p.carbs*4+p.fat*9;
     var pp = Math.round(p.protein*4/tot*100); var cp = Math.round(p.carbs*4/tot*100); var fp = Math.round(p.fat*9/tot*100);
     var r=38,cx=44,cy=44,circ=2*Math.PI*r,g=2;
     var pd2=circ*pp/100, cd2=circ*cp/100, fd2=circ*fp/100;
+    // Daily kcal progress ring (consumed vs target)
+    var cR=38,cCx=44,cCy=44,cCirc=2*Math.PI*cR;
+    var consumedArc=cCirc*Math.min(1,kcalConsumed/p.calories);
+    var ringColor=kcalOver>0?'#c0392b':kcalPct>=90?'#c47a1a':'#1a7a4a';
     h += '<div class="section"><div class="macro-card">';
     h += '<div class="ring-wrap"><svg width="88" height="88" viewBox="0 0 88 88">';
-    h += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#f0f0ed" stroke-width="8"/>';
-    h += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#1a7a4a" stroke-width="8" stroke-dasharray="'+(pd2-g)+' '+(circ-pd2+g)+'" stroke-dashoffset="0"/>';
-    h += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#c47a1a" stroke-width="8" stroke-dasharray="'+(cd2-g)+' '+(circ-cd2+g)+'" stroke-dashoffset="'+(-pd2)+'"/>';
-    h += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#1a5a8a" stroke-width="8" stroke-dasharray="'+(fd2-g)+' '+(circ-fd2+g)+'" stroke-dashoffset="'+(-(pd2+cd2))+'"/>';
-    h += '</svg><div class="ring-center"><div class="ring-kcal">'+p.calories+'</div><div class="ring-lbl">kcal</div></div></div>';
+    h += '<circle cx="'+cCx+'" cy="'+cCy+'" r="'+cR+'" fill="none" stroke="#f0f0ed" stroke-width="8"/>';
+    h += '<circle cx="'+cCx+'" cy="'+cCy+'" r="'+cR+'" fill="none" stroke="'+ringColor+'" stroke-width="8" stroke-dasharray="'+(consumedArc-2)+' '+(cCirc-consumedArc+2)+'" stroke-dashoffset="'+(-cCirc/4)+'"/>';
+    h += '</svg><div class="ring-center"><div class="ring-kcal" style="color:'+ringColor+'">'+kcalConsumed+'</div><div class="ring-lbl">consumido</div></div></div>';
     h += '<div class="macros-detail">';
-    [{c:'#1a7a4a',n:'Proteina',v:p.protein+'g',p:pp},{c:'#c47a1a',n:'Carboidrato',v:p.carbs+'g',p:cp},{c:'#1a5a8a',n:'Gordura',v:p.fat+'g',p:fp}].forEach(function(m){
+    h += '<div class="macro-row"><div class="macro-dot" style="background:'+ringColor+'"></div><span class="macro-nm">Meta diária</span><span class="macro-vl" style="font-weight:700">'+p.calories+' kcal</span></div>';
+    h += '<div class="macro-row"><div class="macro-dot" style="background:#1a7a4a"></div><span class="macro-nm">Consumido</span><span class="macro-vl" style="color:'+ringColor+';font-weight:700">'+kcalConsumed+' kcal</span></div>';
+    if(kcalOver>0){
+      h += '<div class="macro-row"><div class="macro-dot" style="background:#c0392b"></div><span class="macro-nm">Excesso</span><span class="macro-vl" style="color:#c0392b;font-weight:700">+'+kcalOver+' kcal</span></div>';
+    } else {
+      h += '<div class="macro-row"><div class="macro-dot" style="background:#c47a1a"></div><span class="macro-nm">Disponível</span><span class="macro-vl" style="color:#c47a1a;font-weight:700">'+kcalLeft+' kcal</span></div>';
+    }
+    h += '<div style="margin-top:8px"><div style="height:6px;border-radius:99px;background:#f0f0ed;overflow:hidden"><div style="height:100%;border-radius:99px;background:'+ringColor+';width:'+kcalPct+'%;transition:width .4s"></div></div>';
+    h += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:10px;color:var(--muted)">0</span><span style="font-size:10px;font-weight:700;color:'+ringColor+'">'+kcalPct+'%</span><span style="font-size:10px;color:var(--muted)">'+p.calories+'</span></div></div>';
+    h += '</div></div></div>';
+    // macros breakdown (plan)
+    h += '<div class="section"><div class="card" style="padding:12px 16px">';
+    h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Plano de macros</div>';
+    [{c:'#1a7a4a',n:'Proteína',v:p.protein+'g',p:pp},{c:'#c47a1a',n:'Carboidrato',v:p.carbs+'g',p:cp},{c:'#1a5a8a',n:'Gordura',v:p.fat+'g',p:fp}].forEach(function(m){
       h += '<div class="macro-row"><div class="macro-dot" style="background:'+m.c+'"></div><span class="macro-nm">'+m.n+'</span>';
       h += '<div class="macro-bw"><div class="macro-bf" style="width:'+m.p+'%;background:'+m.c+'"></div></div>';
       h += '<span class="macro-vl">'+m.v+'</span></div>';
     });
-    h += '</div></div></div>';
+    h += '</div></div>';
     h += '<div class="section"><div class="stats">';
     h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+mDone+'/'+p.meals.length+'</div><div class="stat-lbl">Refeicoes</div></div>';
     h += '<div class="stat-card"><div class="stat-val" style="color:var(--amber)">'+sDone+'/'+p.supps.length+'</div><div class="stat-lbl">Suplementos</div></div>';

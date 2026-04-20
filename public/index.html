@@ -150,6 +150,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .ex-vid:active{background:#ffe8e8}
 .ex-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;cursor:pointer}
 .ex-check.done{background:var(--green);border-color:var(--green)}
+.ex-set-dot{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--muted);cursor:pointer;transition:all .15s;flex-shrink:0}
+.ex-set-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.ex-set-dot:active{transform:scale(.9)}
 .rt-preset{flex:1;padding:13px 4px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text);cursor:pointer;transition:all .15s}
 .rt-preset:active,.rt-preset.sel{background:var(--green-light);border-color:var(--green);color:var(--green)}
 .ex-check.done::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);display:block}
@@ -840,7 +843,7 @@ let dietaTab = 'all';
 let examesTab = 'todos';
 let expandedExam = {};
 let mealDone = {}, suppDone = {}, habitDone = {};
-let exChecked = {}, exWeights = {}, cardioSel = {}, cardioChecked = {};
+let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '';
@@ -868,7 +871,7 @@ function save(){
   try{
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,suppDone,habitDone,
-      exChecked,exWeights,cardioSel,cardioChecked,
+      exChecked,exSets,exWeights,cardioSel,cardioChecked,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
@@ -885,7 +888,7 @@ function load(){
     curP = s.curP||0; curDay = s.curDay||curDay;
     mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
-    exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
+    exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
     cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
     sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
     profileComplete = s.profileComplete||false;
@@ -1309,7 +1312,12 @@ function renderTreinosContent(){
   }
   var exs = w.exs;
   var doneMus = 0;
-  exs.forEach(function(_,i){ if(exChecked[wk(curP,curDay,i)]) doneMus++; });
+  exs.forEach(function(ex,i){
+    var key=wk(curP,curDay,i);
+    var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    var dc=0; for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) dc++; }
+    if(dc>=ns) doneMus++;
+  });
   var pctMus = exs.length > 0 ? Math.round(doneMus/exs.length*100) : 0;
 
   // Musculacao
@@ -1322,14 +1330,26 @@ function renderTreinosContent(){
   h += '<div class="ex-block">';
   exs.forEach(function(ex,i){
     var key = wk(curP,curDay,i);
-    var done = !!exChecked[key];
+    var numSets = parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    var doneCount = 0;
+    for(var si=0;si<numSets;si++){ if(exSets[key+'-s'+si]) doneCount++; }
+    var done = doneCount>=numSets;
+    if(done && !exChecked[key]){ exChecked[key]=true; }
+    else if(!done && exChecked[key]){ exChecked[key]=false; }
     var wval = exWeights[key] !== undefined ? exWeights[key] : ex.w;
-    h += '<div class="ex-row">';
+    // set bubbles
+    var bubbles='';
+    for(var si=0;si<numSets;si++){
+      var sd=!!exSets[key+'-s'+si];
+      bubbles+='<div class="ex-set-dot'+(sd?' done':'')+'" data-skey="'+key+'" data-sidx="'+si+'" data-stotal="'+numSets+'">'+(si+1)+'</div>';
+    }
+    h += '<div class="ex-row" style="flex-wrap:wrap;gap:6px 0">';
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
-    h += '<div class="ex-check'+(done?' done':'')+'" data-key="'+key+'"></div></div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:6px;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+'</div>';
   });
   h += '</div>';
   h += '<div class="prog-card" style="border-radius:0 0 var(--radius) var(--radius);border-top:none">';
@@ -1404,13 +1424,15 @@ function renderTreinosContent(){
 
   document.getElementById('treinos-content').innerHTML = h;
 
-  document.querySelectorAll('.ex-check').forEach(function(el){
+  document.querySelectorAll('.ex-set-dot').forEach(function(el){
     el.addEventListener('click', function(){
-      var k=this.dataset.key;
-      var wasDone=!!exChecked[k];
-      exChecked[k]=!wasDone;
+      var skey=this.dataset.skey, sidx=parseInt(this.dataset.sidx), stotal=parseInt(this.dataset.stotal);
+      var dotKey=skey+'-s'+sidx;
+      var wasDone=!!exSets[dotKey];
+      exSets[dotKey]=!wasDone;
       save(); renderTreinosContent();
-      if(!wasDone) showRestTimer();
+      // show timer when marking done, not on last set
+      if(!wasDone && sidx < stotal-1) showRestTimer();
     });
   });
   document.querySelectorAll('.ex-wbtn').forEach(function(el){
@@ -3347,7 +3369,7 @@ function loadUserData(uid, callback){
             curP = s.curP||0; curDay = s.curDay||curDay;
             mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
             habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
-            exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
+            exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
             cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
             sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
@@ -3401,7 +3423,7 @@ function saveToCloud(){
   });
   var appState = {
     curP:curP, curDay:curDay, mealDone:mealDone, suppDone:suppDone,
-    habitDone:habitDone, exChecked:exChecked, exWeights:exWeights,
+    habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,

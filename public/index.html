@@ -1894,21 +1894,30 @@ function snapshotHistory(idx){
   save();
 }
 
-function sparklineSVG(values, labels, color){
-  var w=220, h=52, pad=4;
+function sparklineSVG(values, labels, color, tgt){
+  var w=220, h=56, pad=6;
   if(!values||values.length<1) return '<div style="height:'+h+'px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">Sem historico ainda</div>';
   if(values.length===1) return '<div style="height:'+h+'px;display:flex;align-items:center;font-size:12px;color:var(--muted)">1 registro · adicione mais para ver evolucao</div>';
-  var min=Math.min.apply(null,values), max=Math.max.apply(null,values);
+  // include target in scale so the goal line is always visible
+  var allVals = tgt!=null ? values.concat([tgt]) : values;
+  var min=Math.min.apply(null,allVals), max=Math.max.apply(null,allVals);
   var range=max-min||1;
   var innerH=h-pad*2;
+  var toY=function(v){ return pad+innerH-((v-min)/range)*innerH; };
   var pts=values.map(function(v,i){
-    return {x:(values.length>1?i/(values.length-1):0.5)*w, y:pad+innerH-((v-min)/range)*innerH, v:v};
+    return {x:(values.length>1?i/(values.length-1):0.5)*w, y:toY(v), v:v};
   });
   var pathD=pts.map(function(p,i){ return (i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1); }).join(' ');
   var areaD=pathD+' L'+pts[pts.length-1].x.toFixed(1)+' '+(h)+' L'+pts[0].x.toFixed(1)+' '+(h)+' Z';
   var gid='g'+Math.random().toString(36).slice(2,6);
   var svg='<svg width="'+w+'" height="'+(h+16)+'" viewBox="0 0 '+w+' '+(h+16)+'" style="overflow:visible;display:block">';
-  svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.25"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/></linearGradient></defs>';
+  svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.2"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0"/></linearGradient></defs>';
+  // target dashed line
+  if(tgt!=null){
+    var tgtY=toY(tgt).toFixed(1);
+    svg+='<line x1="0" y1="'+tgtY+'" x2="'+w+'" y2="'+tgtY+'" stroke="#b45309" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>';
+    svg+='<text x="'+w+'" y="'+(parseFloat(tgtY)-3)+'" text-anchor="end" font-size="8" fill="#b45309" font-weight="600">★ meta</text>';
+  }
   svg+='<path d="'+areaD+'" fill="url(#'+gid+')"/>';
   svg+='<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
   pts.forEach(function(p,i){
@@ -1919,7 +1928,7 @@ function sparklineSVG(values, labels, color){
   return svg;
 }
 
-function evoCard(title, icon, values, labels, current, unit, color, lowerBetter){
+function evoCard(title, icon, values, labels, current, unit, color, lowerBetter, tgt){
   if(!values) values=[];
   var first = values.length>1?values[0]:null;
   var diff = first!==null?parseFloat((current-first).toFixed(1)):null;
@@ -1931,12 +1940,23 @@ function evoCard(title, icon, values, labels, current, unit, color, lowerBetter)
   } else if(diff===0){
     deltaHtml='<div class="evo-delta-flat">Sem mudança</div>';
   }
+  // target badge
+  var tgtBadge='';
+  if(tgt!=null){
+    var atTgt = lowerBetter ? current<=tgt : current>=tgt;
+    var gapToTgt = lowerBetter ? parseFloat((current-tgt).toFixed(1)) : parseFloat((tgt-current).toFixed(1));
+    if(atTgt){
+      tgtBadge='<div style="font-size:10px;color:#b45309;font-weight:700">🏆 Meta atingida</div>';
+    } else {
+      tgtBadge='<div style="font-size:10px;color:#b45309">Faltam '+gapToTgt+' '+unit+' p/ meta</div>';
+    }
+  }
   var h='<div class="evo-card">';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">';
-  h+='<span style="font-size:13px;font-weight:500;color:var(--text)">'+icon+' '+title+'</span>';
+  h+='<div><span style="font-size:13px;font-weight:500;color:var(--text)">'+icon+' '+title+'</span>'+tgtBadge+'</div>';
   h+='<div style="text-align:right"><div class="evo-val" style="color:'+color+'">'+current+'<span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:2px">'+unit+'</span></div>'+deltaHtml+'</div>';
   h+='</div>';
-  h+=sparklineSVG(values, labels, color);
+  h+=sparklineSVG(values, labels, color, tgt);
   h+='</div>';
   return h;
 }
@@ -1945,36 +1965,41 @@ function renderEvolucao(){
   renderProfiles('evolucao-profiles');
   document.getElementById('evolucao-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var p = PD[curP];
-  var hist = (historyData[curP]||[]).slice(-8); // last 8 months
+  var hist = (historyData[curP]||[]).slice(-8);
   var labels = hist.map(function(e){ return e.label; });
+  var bench = getPopBench(p.age);
+  // target values (top 20%)
+  var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
+  var tgtPeso = Math.round(22 * Math.pow(p.height/100,2)); // IMC 22 target weight
+  var tgtFat = 15; // ~15% body fat top 20% general target
   var h='';
-  // Add measurement button
   h+='<div class="section"><button class="btn-full" id="evo-add-btn" style="background:var(--green)">+ Registrar medicao agora</button></div>';
   if(hist.length===0){
     h+='<div class="section"><div class="card" style="padding:32px 20px;text-align:center"><div style="font-size:40px;margin-bottom:12px">📊</div><div style="font-size:15px;font-weight:500;margin-bottom:8px">Sem historico ainda</div><div style="font-size:13px;color:var(--muted)">Salve seu perfil ou adicione uma medicao para comecar a acompanhar sua evolucao.</div></div></div>';
   } else {
-    // Group: scores
-    h+='<div class="section"><div class="sec-label">Scores de saude</div>';
-    h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg;}),labels,p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,'pts','#1a7a4a',false);
-    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude;}),labels,p.scores&&p.scores.Saude||0,'pts','#1a7a4a',false);
-    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness;}),labels,p.scores&&p.scores.Fitness||0,'pts','#5a3ab7',false);
-    h+=evoCard('Sono','🌙',hist.map(function(e){return e.scores&&e.scores.Sono;}),labels,p.scores&&p.scores.Sono||0,'pts','#3730a3',false);
-    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao;}),labels,p.scores&&p.scores.Nutricao||0,'pts','#c47a1a',false);
+    // Scores
+    h+='<div class="section"><div class="sec-label">Scores de saude · meta: top 20% da sua faixa</div>';
+    var avgCur=p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0;
+    h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
+    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude;}),labels,p.scores&&p.scores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
+    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness;}),labels,p.scores&&p.scores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
+    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono;}),labels,p.scores&&p.scores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
+    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao;}),labels,p.scores&&p.scores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
     h+='</div>';
-    // Group: corpo
-    h+='<div class="section"><div class="sec-label">Composicao corporal</div>';
-    h+=evoCard('Peso','⚖️',hist.map(function(e){return e.weight;}),labels,p.weight,'kg','#993c1d',true);
+    // Corpo
+    h+='<div class="section"><div class="sec-label">Composicao corporal · meta: top 20%</div>';
     var imcCur=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-    h+=evoCard('IMC','📐',hist.map(function(e){return e.imc;}),labels,imcCur,'','#993c1d',true);
+    h+=evoCard('Peso','⚖️',hist.map(function(e){return e.weight;}),labels,p.weight,'kg','#993c1d',true,tgtPeso);
+    h+=evoCard('IMC','📐',hist.map(function(e){return e.imc;}),labels,imcCur,'','#993c1d',true,22);
     var fatVals=hist.map(function(e){return e.fat;}).filter(function(v){return v!=null;});
     var fatLabels=hist.filter(function(e){return e.fat!=null;}).map(function(e){return e.label;});
     var lastFat=fatVals.length>0?fatVals[fatVals.length-1]:null;
-    if(lastFat!==null) h+=evoCard('% Gordura','🔬',fatVals,fatLabels,lastFat,'%','#e8630a',true);
+    if(lastFat!==null) h+=evoCard('% Gordura','🔬',fatVals,fatLabels,lastFat,'%','#e8630a',true,tgtFat);
     h+='</div>';
-    // Group: habitos
-    h+='<div class="section"><div class="sec-label">Habitos</div>';
-    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep;}),labels,p.sleep,'h','#1a5a8a',false);
-    h+=evoCard('Meta calorica','🔥',hist.map(function(e){return e.calories;}),labels,p.calories,'kcal','#c47a1a',false);
+    // Habitos
+    h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
+    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep;}),labels,p.sleep,'h','#1a5a8a',false,7.8);
+    h+=evoCard('Meta calorica','🔥',hist.map(function(e){return e.calories;}),labels,p.calories,'kcal','#c47a1a',false,null);
     h+='</div>';
   }
   // AI analysis button

@@ -677,7 +677,17 @@ const CARDIO_OPTS = [
   {id:'corda',icon:'⛹️',label:'Corda',color:'#5a3ab7',cl:'#eeedfb',title:'Pular corda',sub:'Alta queima calorica',dur:'20 min',
    params:[{v:'2min',l:'Serie'},{v:'1min',l:'Descanso'},{v:'6x',l:'Rodadas'},{v:'~250',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Pular leve 2 min',t:'2 min'},{n:'Series x6',d:'2 min / 1 min descanso',t:'15 min'},{n:'Alongamento',d:'Panturrilhas',t:'3 min'}]},
+  {id:'walk',icon:'🚶',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
+   params:[],steps:[]},
 ];
+function calcWalkKcal(weight, speedKmh, incPct, mins){
+  var met = 2.8 + Math.max(0,(speedKmh-3.2)*0.5) + incPct*0.35;
+  return Math.round(met * weight * (mins/60));
+}
+function calcMusKcal(weight, totalSets){
+  // MET=5 for weight training, ~2.2 min per set (work + rest)
+  return Math.round(totalSets * weight * 0.18);
+}
 
 // ══════════════════════════════════════════════════════════════
 // PROFILES DATA
@@ -843,7 +853,7 @@ let dietaTab = 'all';
 let examesTab = 'todos';
 let expandedExam = {};
 let mealDone = {}, suppDone = {}, habitDone = {};
-let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {};
+let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {}, walkParams = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '';
@@ -871,7 +881,7 @@ function save(){
   try{
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,suppDone,habitDone,
-      exChecked,exSets,exWeights,cardioSel,cardioChecked,
+      exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
@@ -889,7 +899,7 @@ function load(){
     mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
-    cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
+    cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{}; waterGlasses = s.waterGlasses||{};
     sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
     profileComplete = s.profileComplete||false;
     pdOverride = s.pdOverride||{};
@@ -1360,6 +1370,7 @@ function renderTreinosContent(){
   // Cardio picker
   var cselKey = curP+'-'+curDay;
   var selId = cardioSel[cselKey] || null;
+  var wp = walkParams[cselKey] || {inc:5, spd:5.5, mins:30};
   h += '<div class="section"><div class="card">';
   h += '<div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">';
   h += '<span style="font-size:14px;font-weight:500">🏃 Cardio de hoje</span>';
@@ -1378,34 +1389,78 @@ function renderTreinosContent(){
   if(selId){
     var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
     if(co){
-      var doneC = 0;
-      co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curDay+'-'+selId+'-'+i]) doneC++; });
-      h += '<div style="margin-top:10px"><div style="background:'+co.color+';border-radius:var(--radius) var(--radius) 0 0;padding:13px 16px;color:#fff">';
-      h += '<div style="font-size:15px;font-weight:500">'+co.title+'</div>';
-      h += '<div style="font-size:12px;opacity:.8;margin-top:2px">'+co.sub+' · '+co.dur+'</div></div>';
-      h += '<div style="display:flex;background:rgba(0,0,0,.12);border-left:1px solid '+co.color+';border-right:1px solid '+co.color+'">';
-      co.params.forEach(function(pm){
-        h += '<div style="flex:1;padding:10px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.15)">';
-        h += '<div style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;color:'+co.color+'">'+pm.v+'</div>';
-        h += '<div style="font-size:10px;color:var(--muted);margin-top:2px">'+pm.l+'</div></div>';
-      });
-      h += '</div>';
-      h += '<div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius)">';
-      co.steps.forEach(function(st,i){
-        var ckey = 'c'+curP+'-'+curDay+'-'+selId+'-'+i;
-        var cdone = !!cardioChecked[ckey];
-        h += '<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer" data-ckey="'+ckey+'">';
-        h += '<div style="width:24px;height:24px;border-radius:6px;background:'+co.cl+';color:'+co.color+';font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>';
-        h += '<div style="flex:1"><div style="font-size:13px;font-weight:500'+(cdone?';text-decoration:line-through;opacity:.4':'')+'">' +st.n+'</div>';
-        h += '<div style="font-size:11px;color:var(--muted);margin-top:1px">'+st.d+'</div></div>';
-        h += '<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+co.color+';flex-shrink:0">'+st.t+'</div>';
-        h += '<div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0'+(cdone?';background:var(--green);border-color:var(--green)':'')+'"></div>';
+      if(co.editable){
+        // ── Caminhada editável ──
+        var wKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+        h += '<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
+        h += '<div style="background:'+co.color+';padding:13px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between">';
+        h += '<div><div style="font-size:15px;font-weight:500">'+co.title+'</div><div style="font-size:12px;opacity:.8;margin-top:2px">Personalize abaixo</div></div>';
+        h += '<div style="text-align:right"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace" id="walk-kcal">~'+wKcal+'</div><div style="font-size:10px;opacity:.8">kcal</div></div></div>';
+        // param rows
+        function walkRow(label, id, val, unit, step, min, max){
+          return '<div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border)">'+
+            '<div style="flex:1;font-size:14px;font-weight:500">'+label+'</div>'+
+            '<div style="display:flex;align-items:center;gap:10px">'+
+            '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="minus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">−</button>'+
+            '<span style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;min-width:52px;text-align:center" id="wv-'+id+'">'+val+unit+'</span>'+
+            '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="plus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">+</button>'+
+            '</div></div>';
+        }
+        h += walkRow('Inclinação','inc', wp.inc, '%', 0.5, 0, 20);
+        h += walkRow('Velocidade','spd', wp.spd, ' km/h', 0.5, 2, 12);
+        h += walkRow('Tempo','mins', wp.mins, ' min', 5, 5, 120);
         h += '</div>';
-      });
-      h += '</div></div>';
+      } else {
+        var doneC = 0;
+        co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curDay+'-'+selId+'-'+i]) doneC++; });
+        h += '<div style="margin-top:10px"><div style="background:'+co.color+';border-radius:var(--radius) var(--radius) 0 0;padding:13px 16px;color:#fff">';
+        h += '<div style="font-size:15px;font-weight:500">'+co.title+'</div>';
+        h += '<div style="font-size:12px;opacity:.8;margin-top:2px">'+co.sub+' · '+co.dur+'</div></div>';
+        h += '<div style="display:flex;background:rgba(0,0,0,.12);border-left:1px solid '+co.color+';border-right:1px solid '+co.color+'">';
+        co.params.forEach(function(pm){
+          h += '<div style="flex:1;padding:10px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.15)">';
+          h += '<div style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;color:'+co.color+'">'+pm.v+'</div>';
+          h += '<div style="font-size:10px;color:var(--muted);margin-top:2px">'+pm.l+'</div></div>';
+        });
+        h += '</div>';
+        h += '<div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius)">';
+        co.steps.forEach(function(st,i){
+          var ckey = 'c'+curP+'-'+curDay+'-'+selId+'-'+i;
+          var cdone = !!cardioChecked[ckey];
+          h += '<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer" data-ckey="'+ckey+'">';
+          h += '<div style="width:24px;height:24px;border-radius:6px;background:'+co.cl+';color:'+co.color+';font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>';
+          h += '<div style="flex:1"><div style="font-size:13px;font-weight:500'+(cdone?';text-decoration:line-through;opacity:.4':'')+'">' +st.n+'</div>';
+          h += '<div style="font-size:11px;color:var(--muted);margin-top:1px">'+st.d+'</div></div>';
+          h += '<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+co.color+';flex-shrink:0">'+st.t+'</div>';
+          h += '<div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0'+(cdone?';background:var(--green);border-color:var(--green)':'')+'"></div>';
+          h += '</div>';
+        });
+        h += '</div></div>';
+      }
     }
   }
   h += '</div>';
+
+  // ── Total kcal ──
+  var totalSetsDone = 0;
+  exs.forEach(function(ex,i){
+    var key=wk(curP,curDay,i);
+    var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) totalSetsDone++; }
+  });
+  var musKcal = calcMusKcal(p.weight, totalSetsDone);
+  var cardioKcal = 0;
+  if(selId==='walk'){ cardioKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins); }
+  else if(selId){ var coK=CARDIO_OPTS.find(function(o){return o.id===selId;}); if(coK){ var pm=coK.params.find(function(x){return x.l==='Kcal';}); if(pm) cardioKcal=parseInt(pm.v.replace('~',''))||0; } }
+  var totalKcal = musKcal + cardioKcal;
+  h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
+  h += '<div style="padding:11px 16px;background:var(--green-light);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">';
+  h += '<span style="font-size:16px">🔥</span><span style="font-size:14px;font-weight:600;color:var(--green)">Gasto calórico estimado</span></div>';
+  h += '<div style="display:flex">';
+  h += '<div style="flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+musKcal+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Musculação</div></div>';
+  h += '<div style="flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+(cardioKcal||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Cardio</div></div>';
+  h += '<div style="flex:1;padding:12px 14px;text-align:center;background:var(--green-light)"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+totalKcal+'</div><div style="font-size:11px;color:var(--green);margin-top:2px;font-weight:600">Total</div></div>';
+  h += '</div></div>';
 
   // Stats + AI + buttons
   var weekDone = PD[curP].weekly.filter(function(wk2,d){ return !wk2.rest && wk2.exs && wk2.exs.some(function(_,i){ return !!exChecked[wk(curP,d,i)]; }); }).length;
@@ -1443,6 +1498,25 @@ function renderTreinosContent(){
   });
   document.querySelectorAll('[data-cid]').forEach(function(el){
     el.addEventListener('click', function(){ var k=curP+'-'+curDay; cardioSel[k]=cardioSel[k]===this.dataset.cid?null:this.dataset.cid; save(); renderTreinosContent(); });
+  });
+  // Walk param buttons
+  document.querySelectorAll('[data-wact]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var wid=this.dataset.wid, act=this.dataset.wact;
+      var step=parseFloat(this.dataset.step), mn=parseFloat(this.dataset.min), mx=parseFloat(this.dataset.max);
+      var k=curP+'-'+curDay;
+      walkParams[k]=walkParams[k]||{inc:5,spd:5.5,mins:30};
+      var cur=walkParams[k][wid];
+      var nv=act==='plus'?Math.min(mx,parseFloat((cur+step).toFixed(1))):Math.max(mn,parseFloat((cur-step).toFixed(1)));
+      walkParams[k][wid]=nv;
+      save();
+      // update display without full re-render
+      var unit=wid==='inc'?'%':wid==='spd'?' km/h':' min';
+      var el2=document.getElementById('wv-'+wid); if(el2) el2.textContent=nv+unit;
+      var wp2=walkParams[k];
+      var kc=calcWalkKcal(p.weight,wp2.spd,wp2.inc,wp2.mins);
+      var kcEl=document.getElementById('walk-kcal'); if(kcEl) kcEl.textContent='~'+kc;
+    });
   });
   document.querySelectorAll('[data-ckey]').forEach(function(el){
     el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
@@ -3389,7 +3463,7 @@ function loadUserData(uid, callback){
             mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
             habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
             exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
-            cardioChecked = s.cardioChecked||{}; waterGlasses = s.waterGlasses||{};
+            cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{}; waterGlasses = s.waterGlasses||{};
             sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
@@ -3443,7 +3517,7 @@ function saveToCloud(){
   var appState = {
     curP:curP, curDay:curDay, mealDone:mealDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
-    cardioSel:cardioSel, cardioChecked:cardioChecked,
+    cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
     historyData:historyData[curP]||[],

@@ -593,7 +593,7 @@ input[type=file]{display:none}
 <!-- WEIGHT MODAL -->
 <div class="wmodal-back" id="wmodal-back">
   <div class="wmodal">
-    <div class="wmodal-title">Editar peso</div>
+    <div class="wmodal-title" id="wmodal-title">Editar peso</div>
     <div class="wmodal-ex" id="wmodal-ex"></div>
     <input class="wmodal-input" id="wmodal-inp" type="number" step="0.5" placeholder="0">
     <div class="wmodal-unit">kg</div>
@@ -1126,18 +1126,23 @@ function renderHome(){
   // Sono benchmarks (scale 4–10h, higher is better — target: 7.8h, avg: 6.8h)
   var sonoColor = p.sleep>=7.5?'var(--green)':p.sleep>=6.5?'var(--amber)':'var(--coral)';
   var sonoLbl = p.sleep>=7.5?'Otimo':p.sleep>=6.5?'Regular':'Insuficiente';
+  // Sleep average from history
+  var sleepHist = (historyData[curP]||[]).filter(function(e){ return e.sleep&&e.sleep>0; });
+  var avgSleep = sleepHist.length>0 ? Math.round(sleepHist.reduce(function(s,e){return s+e.sleep;},0)/sleepHist.length*10)/10 : p.sleep;
+  var sonoColor2 = avgSleep>=7.5?'var(--green)':avgSleep>=6.5?'var(--amber)':'var(--coral)';
+  var sonoLbl2 = avgSleep>=7.5?'Otimo':avgSleep>=6.5?'Regular':'Insuficiente';
   h += '<div class="section"><div class="metric-grid">';
-  // IMC card
-  h += '<div class="metric-card"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
-  h += '<div class="metric-label">Peso atual</div>';
+  // IMC card — tappable to update body weight
+  h += '<div class="metric-card" onclick="openBodyWeight()" style="cursor:pointer"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
+  h += '<div class="metric-label">Peso atual <span style="font-size:10px;color:var(--green)">✎</span></div>';
   h += '<div class="metric-trend" style="color:'+imcColor+'">IMC '+imc+' · '+imcLbl+'</div>';
   h += miniBar(imc,15,40,27,22,'27','22',true);
   h += '</div>';
-  // Sono card
-  h += '<div class="metric-card"><div class="metric-val">'+p.sleep+'<span class="metric-unit">h</span></div>';
+  // Sono card — average from history
+  h += '<div class="metric-card"><div class="metric-val">'+avgSleep+'<span class="metric-unit">h</span></div>';
   h += '<div class="metric-label">Sono media</div>';
-  h += '<div class="metric-trend" style="color:'+sonoColor+'">'+sonoLbl+'</div>';
-  h += miniBar(p.sleep,4,10,6.8,7.8,'6.8h','7.8h',false);
+  h += '<div class="metric-trend" style="color:'+sonoColor2+'">'+sonoLbl2+'</div>';
+  h += miniBar(avgSleep,4,10,6.8,7.8,'6.8h','7.8h',false);
   h += '</div>';
   // Calories card
   h += '<div class="metric-card"><div class="metric-val">'+p.calories+'<span class="metric-unit">kcal</span></div>';
@@ -2351,19 +2356,41 @@ function openAddHistory(){
 
 // WEIGHT MODAL
 // ══════════════════════════════════════════════════════════════
+var bodyWeightMode = false;
+function openBodyWeight(){
+  bodyWeightMode = true;
+  document.getElementById('wmodal-title').textContent = 'Atualizar peso corporal';
+  document.getElementById('wmodal-ex').textContent = 'Peso atual: '+PD[curP].weight+'kg';
+  document.getElementById('wmodal-inp').value = PD[curP].weight||'';
+  document.getElementById('wmodal-back').classList.add('open');
+  setTimeout(function(){ document.getElementById('wmodal-inp').focus(); },100);
+}
 function openWeight(key,exName,cur){
+  bodyWeightMode = false;
   weightKey=key; weightExName=exName;
+  document.getElementById('wmodal-title').textContent = 'Editar peso';
   document.getElementById('wmodal-ex').textContent = exName;
   document.getElementById('wmodal-inp').value = cur||'';
   document.getElementById('wmodal-back').classList.add('open');
   setTimeout(function(){ document.getElementById('wmodal-inp').focus(); },100);
 }
-function closeWeight(){ document.getElementById('wmodal-back').classList.remove('open'); }
+function closeWeight(){ document.getElementById('wmodal-back').classList.remove('open'); bodyWeightMode=false; }
 function saveWeight(){
   var val = parseFloat(document.getElementById('wmodal-inp').value);
-  if(!isNaN(val)&&val>=0){ exWeights[weightKey]=val; save(); showToast('Peso atualizado: '+val+'kg'); }
+  if(bodyWeightMode){
+    if(!isNaN(val)&&val>0){
+      PD[curP].weight=val;
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].weight=val;
+      snapshotHistory(curP);
+      save(); showToast('Peso atualizado: '+val+'kg');
+      renderHome();
+    }
+  } else {
+    if(!isNaN(val)&&val>=0){ exWeights[weightKey]=val; save(); showToast('Peso atualizado: '+val+'kg'); }
+    if(curScreen==='treinos') renderTreinosContent();
+  }
   closeWeight();
-  if(curScreen==='treinos') renderTreinosContent();
 }
 document.getElementById('wmodal-back').addEventListener('click', function(e){ if(e.target===this) closeWeight(); });
 document.getElementById('wmodal-cancel').addEventListener('click', closeWeight);

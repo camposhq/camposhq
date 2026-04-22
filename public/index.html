@@ -2379,9 +2379,14 @@ document.getElementById('file-avatar').addEventListener('change', function(e){
   reader.onload = function(ev){
     compressBase64(ev.target.result, 400, 0.8, function(c){
       PD[curP].avatarImg = c;
-      save(); showToast('Foto de perfil atualizada!');
-      if(curScreen==='home') renderHome();
-      else spRender();
+      // Also save cloud-safe compressed version for Firestore sync
+      compressBase64(c, 120, 0.7, function(cloudImg){
+        if(!pdOverride[curP]) pdOverride[curP] = {};
+        pdOverride[curP].avatarImg = cloudImg;
+        save(); showToast('Foto de perfil atualizada!');
+        if(curScreen==='home') renderHome();
+        else spRender();
+      });
     });
   };
   reader.readAsDataURL(file);
@@ -2391,11 +2396,18 @@ document.getElementById('file-progress').addEventListener('change', function(e){
   var reader = new FileReader();
   reader.onload = function(ev){
     var today = new Date().toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
-    PD[curP].progressPhotos[progressPhotoAngle] = {
-      angle:['Frente','Lado','Costas'][progressPhotoAngle], date:today, img:ev.target.result
-    };
-    save(); showToast('Foto salva!');
-    if(curScreen==='home') renderHome();
+    var angleLabel = ['Frente','Lado','Costas'][progressPhotoAngle];
+    compressBase64(ev.target.result, 600, 0.8, function(displayImg){
+      PD[curP].progressPhotos[progressPhotoAngle] = {angle:angleLabel, date:today, img:displayImg};
+      // Cloud-safe compressed version for Firestore sync
+      compressBase64(displayImg, 200, 0.7, function(cloudImg){
+        if(!pdOverride[curP]) pdOverride[curP] = {};
+        if(!pdOverride[curP].progressPhotos) pdOverride[curP].progressPhotos = PD[curP].progressPhotos.map(function(ph){ return {angle:ph.angle,date:ph.date,img:''}; });
+        pdOverride[curP].progressPhotos[progressPhotoAngle] = {angle:angleLabel, date:today, img:cloudImg};
+        save(); showToast('Foto salva!');
+        if(curScreen==='home') renderHome();
+      });
+    });
   };
   reader.readAsDataURL(file);
 });
@@ -3239,7 +3251,14 @@ function spSave(){
   if(P.name){ PD[curP].name=P.name; pdOverride[curP].name=P.name; }
   if(P.initials){ PD[curP].initials=P.initials; pdOverride[curP].initials=P.initials; }
   PD[curP].avatarBg=P.avatarBg; PD[curP].avatarCl=P.avatarCl;
-  if(P.avatarImg) PD[curP].avatarImg=P.avatarImg;
+  if(P.avatarImg){
+    PD[curP].avatarImg=P.avatarImg;
+    // Cloud-safe compressed avatar for Firestore
+    compressBase64(P.avatarImg, 120, 0.7, function(cloudImg){
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].avatarImg = cloudImg;
+    });
+  }
   if(P.age){ PD[curP].age=parseInt(P.age); pdOverride[curP].age=PD[curP].age; }
   if(P.weight){ PD[curP].weight=parseFloat(P.weight); pdOverride[curP].weight=PD[curP].weight; }
   if(P.height){ PD[curP].height=parseInt(P.height); pdOverride[curP].height=PD[curP].height; }
@@ -3249,9 +3268,21 @@ function spSave(){
   }
   // Save body photos from setup to progressPhotos
   var today = new Date().toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
-  if(P.bodyPhotos.frente){ PD[curP].progressPhotos[0].img=P.bodyPhotos.frente; PD[curP].progressPhotos[0].date=today; }
-  if(P.bodyPhotos.lado){   PD[curP].progressPhotos[1].img=P.bodyPhotos.lado;   PD[curP].progressPhotos[1].date=today; }
-  if(P.bodyPhotos.costas){ PD[curP].progressPhotos[2].img=P.bodyPhotos.costas; PD[curP].progressPhotos[2].date=today; }
+  var photoMap = [{key:'frente',idx:0,angle:'Frente'},{key:'lado',idx:1,angle:'Lado'},{key:'costas',idx:2,angle:'Costas'}];
+  photoMap.forEach(function(pm){
+    if(P.bodyPhotos[pm.key]){
+      PD[curP].progressPhotos[pm.idx].img = P.bodyPhotos[pm.key];
+      PD[curP].progressPhotos[pm.idx].date = today;
+      // Cloud-safe compressed progress photo
+      (function(idx,angle,src,dt){
+        compressBase64(src, 200, 0.7, function(cloudImg){
+          if(!pdOverride[curP]) pdOverride[curP]={};
+          if(!pdOverride[curP].progressPhotos) pdOverride[curP].progressPhotos = PD[curP].progressPhotos.map(function(ph){ return {angle:ph.angle,date:ph.date,img:''}; });
+          pdOverride[curP].progressPhotos[idx] = {angle:angle, date:dt, img:cloudImg};
+        });
+      })(pm.idx, pm.angle, P.bodyPhotos[pm.key], today);
+    }
+  });
 
   applyProfileToPD(curP);
   snapshotHistory(curP);
@@ -3548,6 +3579,8 @@ function loadUserData(uid, callback){
                 if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
                 if(o.scores) PD[i].scores = o.scores;
                 if(o.insight) PD[i].insight = o.insight;
+                if(o.avatarImg) PD[i].avatarImg = o.avatarImg;
+                if(o.progressPhotos && o.progressPhotos.length) PD[i].progressPhotos = o.progressPhotos;
               });
             }
             if(s.historyData){ if(!historyData[curP]) historyData[curP]=[]; historyData[curP]=s.historyData; }
@@ -3573,7 +3606,9 @@ function saveToCloud(){
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
       water:o.water, weekly:o.weekly, meals:o.meals,
       sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
-      examHistory:o.examHistory
+      examHistory:o.examHistory,
+      avatarImg: o.avatarImg||'',
+      progressPhotos: o.progressPhotos||[]
     };
   });
   var appState = {

@@ -902,13 +902,10 @@ function handleDayChange(oldDate){
   });
   // reset daily state
   mealDone={}; suppDone={}; habitDone={};
-  Object.keys(exChecked).forEach(function(k){ delete exChecked[k]; });
-  Object.keys(exSets).forEach(function(k){ delete exSets[k]; });
-  Object.keys(cardioSel).forEach(function(k){ delete cardioSel[k]; });
-  Object.keys(cardioChecked).forEach(function(k){ delete cardioChecked[k]; });
-  Object.keys(walkParams).forEach(function(k){ delete walkParams[k]; });
-  Object.keys(waterGlasses).forEach(function(k){ delete waterGlasses[k]; });
-  Object.keys(sleepData).forEach(function(k){ delete sleepData[k]; });
+  exChecked={}; exSets={}; cardioSel={}; cardioChecked={}; walkParams={};
+  waterGlasses={}; sleepData={};
+  // persist reset immediately
+  save();
 }
 var saveCloudTimer = null;
 function save(){
@@ -3554,6 +3551,8 @@ function loadUserData(uid, callback){
               });
             }
             if(s.historyData){ if(!historyData[curP]) historyData[curP]=[]; historyData[curP]=s.historyData; }
+            // day-change detection for Firestore data
+            if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
           }catch(e){}
         }
       }
@@ -3584,6 +3583,7 @@ function saveToCloud(){
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
     historyData:historyData[curP]||[],
+    lastSavedDate:todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})

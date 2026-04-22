@@ -1158,6 +1158,66 @@ function renderHome(){
   h += '<div class="metric-trend" style="color:var(--muted)">'+p.height+'cm · '+p.weight+'kg</div>';
   h += '</div>';
   h += '</div></div>';
+
+  // ── Resumo do dia ──────────────────────────────────────────
+  var dayW = p.weekly[curDay]||{};
+  var dayExs = (!dayW.rest && dayW.exs) ? dayW.exs : [];
+  var planSets=0, doneSets=0;
+  dayExs.forEach(function(ex,i){
+    var k=curP+'-'+curDay+'-'+i;
+    var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    planSets+=ns;
+    for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) doneSets++; }
+  });
+  var treinoIsRest = !!dayW.rest;
+  var kcalC = kcalConsumedToday(); var kcalPct2 = p.calories>0?Math.min(100,Math.round(kcalC/p.calories*100)):0;
+  var glasses2 = waterGlasses[curP+'-water']||0; var totalG2 = Math.round(p.water/250)||8;
+  var waterPct = Math.min(100,Math.round(glasses2/totalG2*100));
+  var todaySleepEntry = sleepData[curP]; var sleepDone = todaySleepEntry && todaySleepEntry.hours>0;
+  var sleepH2=sleepDone?Math.floor(todaySleepEntry.hours):0; var sleepM2=sleepDone?Math.round((todaySleepEntry.hours-sleepH2)*60):0;
+
+  function dayBar(pct,color){
+    return '<div style="height:4px;border-radius:2px;background:var(--border);margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:2px;transition:width .4s"></div></div>';
+  }
+  h += '<div class="section"><div class="sec-label">Hoje</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  // Treino
+  var treinoColor = treinoIsRest?'var(--muted)':doneSets===planSets&&planSets>0?'var(--green)':'var(--coral)';
+  var treinoVal = treinoIsRest?'Descanso':doneSets+'/'+planSets+' séries';
+  var treinoPct = treinoIsRest?100:(planSets>0?Math.round(doneSets/planSets*100):0);
+  h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'treinos\')">';
+  h += '<div style="font-size:18px;margin-bottom:2px">💪</div>';
+  h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+treinoVal+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">Treino</div>';
+  h += dayBar(treinoPct,'var(--green)');
+  h += '</div>';
+  // Dieta
+  var dietaColor = kcalPct2>=100?'var(--coral)':kcalPct2>=60?'var(--amber)':'var(--green)';
+  h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'dieta\')">';
+  h += '<div style="font-size:18px;margin-bottom:2px">🥗</div>';
+  h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+kcalC+' / '+p.calories+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">kcal consumidas</div>';
+  h += dayBar(kcalPct2,dietaColor);
+  h += '</div>';
+  // Agua
+  var aguaColor = waterPct>=100?'var(--green)':waterPct>=50?'var(--amber)':'var(--coral)';
+  h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'dieta\')">';
+  h += '<div style="font-size:18px;margin-bottom:2px">💧</div>';
+  h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+glasses2+' / '+totalG2+' copos</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">Hidratacao</div>';
+  h += dayBar(waterPct,aguaColor);
+  h += '</div>';
+  // Sono
+  var sonoVal2 = sleepDone?(sleepH2+'h'+(sleepM2>0?' '+sleepM2+'min':'')):'Nao registrado';
+  var sonoColor3 = sleepDone?(todaySleepEntry.hours>=7.5?'var(--green)':todaySleepEntry.hours>=6?'var(--amber)':'var(--coral)'):'var(--muted)';
+  var sonoPct2 = sleepDone?Math.min(100,Math.round(todaySleepEntry.hours/p.sleepTarget*100)):0;
+  h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'sono\')">';
+  h += '<div style="font-size:18px;margin-bottom:2px">🌙</div>';
+  h += '<div style="font-size:13px;font-weight:600;color:'+(sleepDone?'var(--text)':'var(--muted)')+'">'+sonoVal2+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted)">Sono de hoje</div>';
+  h += dayBar(sonoPct2,sonoColor3);
+  h += '</div>';
+  h += '</div></div>';
+
   // Scores vs population avg + target
   var sColors = {Saude:'#1a7a4a',Fitness:'#5a3ab7',Sono:'#3730a3',Nutricao:'#c47a1a'};
   var sMeta = [{k:'Saude',i:'❤️'},{k:'Fitness',i:'💪'},{k:'Sono',i:'🌙'},{k:'Nutricao',i:'🥗'}];
@@ -1212,13 +1272,6 @@ function renderHome(){
   // AI
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise do dia</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
-  // Actions
-  h += '<div class="section"><div class="actions">';
-  h += '<button class="act-btn" id="h-treinos"><span class="act-icon">💪</span><span class="act-lbl">Ver treinos</span><span class="act-sub">Plano de hoje</span></button>';
-  h += '<button class="act-btn" id="h-exames"><span class="act-icon">🧪</span><span class="act-lbl">Enviar exame</span><span class="act-sub">Upload de PDF</span></button>';
-  h += '<button class="act-btn" id="h-analise"><span class="act-icon">✨</span><span class="act-lbl">Analise IA</span><span class="act-sub">Plano completo</span></button>';
-  h += '<button class="act-btn" id="h-perfil"><span class="act-icon">👤</span><span class="act-lbl">Editar perfil</span><span class="act-sub">Dados e objetivos</span></button>';
-  h += '</div></div>';
 
   document.getElementById('home-content').innerHTML = h;
 
@@ -1232,14 +1285,6 @@ function renderHome(){
   document.querySelectorAll('.angle-slot').forEach(function(el){
     el.addEventListener('click', function(){ progressPhotoAngle = parseInt(this.dataset.angle); document.getElementById('file-progress').click(); });
   });
-  var ht = document.getElementById('h-treinos');
-  var he = document.getElementById('h-exames');
-  var ha = document.getElementById('h-analise');
-  var hp = document.getElementById('h-perfil');
-  if(ht) ht.addEventListener('click', function(){ showScreen('treinos'); });
-  if(he) he.addEventListener('click', function(){ document.getElementById('file-exam').click(); });
-  if(ha) ha.addEventListener('click', function(){ openChat('saude','Faca uma analise completa do meu perfil de saude, scores, sono, treino e dieta, e me da as prioridades de acao para esta semana'); });
-  if(hp) hp.addEventListener('click', function(){ spStep=1; showScreen('setup'); document.getElementById('bottom-nav').style.display='none'; spRender(); });
 }
 
 // ══════════════════════════════════════════════════════════════

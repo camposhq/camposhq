@@ -1126,9 +1126,12 @@ function renderHome(){
   // Sono benchmarks (scale 4–10h, higher is better — target: 7.8h, avg: 6.8h)
   var sonoColor = p.sleep>=7.5?'var(--green)':p.sleep>=6.5?'var(--amber)':'var(--coral)';
   var sonoLbl = p.sleep>=7.5?'Otimo':p.sleep>=6.5?'Regular':'Insuficiente';
-  // Sleep average from history
+  // Sleep average from history + today's entry
   var sleepHist = (historyData[curP]||[]).filter(function(e){ return e.sleep&&e.sleep>0; });
-  var avgSleep = sleepHist.length>0 ? Math.round(sleepHist.reduce(function(s,e){return s+e.sleep;},0)/sleepHist.length*10)/10 : p.sleep;
+  var todaySleep = sleepData[curP] && sleepData[curP].hours>0 ? sleepData[curP].hours : null;
+  var allSleepEntries = sleepHist.map(function(e){return e.sleep;});
+  if(todaySleep) allSleepEntries.push(todaySleep);
+  var avgSleep = allSleepEntries.length>0 ? Math.round(allSleepEntries.reduce(function(s,v){return s+v;},0)/allSleepEntries.length*10)/10 : p.sleep;
   var sonoColor2 = avgSleep>=7.5?'var(--green)':avgSleep>=6.5?'var(--amber)':'var(--coral)';
   var sonoLbl2 = avgSleep>=7.5?'Otimo':avgSleep>=6.5?'Regular':'Insuficiente';
   h += '<div class="section"><div class="metric-grid">';

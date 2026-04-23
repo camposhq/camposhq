@@ -1961,6 +1961,9 @@ function renderDietaContent(){
   h += '<button class="act-btn" id="d-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar plano</span><span class="act-sub">Calorias e macros</span></button>';
   h += '<button class="act-btn" id="d-analise"><span class="act-icon">🔬</span><span class="act-lbl">Analisar dieta</span><span class="act-sub">Deficiencias e melhoras</span></button>';
   h += '</div></div>';
+  if(pdOverride[curP]&&pdOverride[curP].meals){
+    h += '<div class="section"><button class="btn-outline" id="d-reset-meals" style="font-size:12px;color:var(--muted)">↩ Restaurar plano original</button></div>';
+  }
 
   document.getElementById('dieta-content').innerHTML = h;
 
@@ -2054,6 +2057,14 @@ function renderDietaContent(){
       });
     }, 80);
   }
+  var dReset = document.getElementById('d-reset-meals');
+  if(dReset) dReset.addEventListener('click', function(){
+    if(!confirm('Restaurar o plano alimentar original? As alteracoes feitas serao perdidas.')) return;
+    if(pdOverride[curP]) delete pdOverride[curP].meals;
+    if(pdOverride[curP]) delete pdOverride[curP].calories;
+    save();
+    location.reload();
+  });
 }
 
 function adicionarAlimento(mealIdx){
@@ -3453,6 +3464,17 @@ function applyChatPlan(){
       save(); showToast('Treino atualizado no app!'); closeChat();
       showScreen('treinos');
     } else if(isD && Array.isArray(parsed.meals) && parsed.meals.length>0){
+      // ensure every meal has a unique id
+      var idCounts = {};
+      parsed.meals = parsed.meals.map(function(m,mi){
+        var base = (m.id||'refeicao').toLowerCase().replace(/\s+/g,'');
+        idCounts[base] = (idCounts[base]||0) + 1;
+        if(idCounts[base]>1) m.id = base+idCounts[base];
+        else m.id = base;
+        if(!m.foods) m.foods = [];
+        m.kcal = m.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
+        return m;
+      });
       PD[curP].meals = parsed.meals;
       pdOverride[curP].meals = parsed.meals;
       if(parsed.calories && parsed.calories>0){ PD[curP].calories=parsed.calories; pdOverride[curP].calories=parsed.calories; }

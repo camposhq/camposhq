@@ -2623,6 +2623,8 @@ function renderExamesContent(){
   var GROUPS_MAP = {energia:['vitd','ferro','vitb12'], metabolismo:['testo','tsh','gli'], cardiovascular:['pce','trig','hdl']};
   var visMarkers = examesTab==='todos' ? EXAM_MARKER_DEFS : EXAM_MARKER_DEFS.filter(function(m){ return (GROUPS_MAP[examesTab]||[]).indexOf(m.key)>=0; });
 
+  h += '<div class="section"><button id="e-add-new" style="width:100%;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button></div>';
+
   var allVals = EXAM_MARKER_DEFS.map(function(m){ return {m:m,v:parseFloat(current[m.key])}; }).filter(function(x){ return !isNaN(x.v); });
   var normais = allVals.filter(function(x){ return x.v>=x.m.refLow && x.v<=x.m.refHigh; }).length;
   var alertas = allVals.filter(function(x){ return x.v<x.m.refLow||x.v>x.m.refHigh; }).length;
@@ -2686,8 +2688,6 @@ function renderExamesContent(){
     });
     h += '</div>';
   }
-
-  h += '<div class="section"><button id="e-add-new" style="width:100%;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button></div>';
 
   if(allVals.length>0){
     h += '<div class="section"><div class="actions">';

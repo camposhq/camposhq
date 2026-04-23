@@ -1017,7 +1017,6 @@ function load(){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
       });
     }
-    applyResetMealsFlag();
     return true;
   }catch(e){ return false; }
 }
@@ -4317,11 +4316,11 @@ function forgotPass(){
 
 // ── FIRESTORE SYNC ────────────────────────────────────────────
 function loadUserData(uid, callback){
-  if(!fbDb){ if(callback) callback(); return; }
+  if(!fbDb){ applyResetMealsFlag(); if(callback) callback(); return; }
   var done = false;
   // Timeout: if Firestore takes more than 5s, proceed anyway
   var timer = setTimeout(function(){
-    if(!done){ done = true; if(callback) callback(); }
+    if(!done){ done = true; applyResetMealsFlag(); if(callback) callback(); }
   }, 5000);
   fbDb.collection('users').doc(uid).get()
     .then(function(doc){
@@ -4380,7 +4379,7 @@ function loadUserData(uid, callback){
       applyResetMealsFlag(); // apply after Firebase so it overrides corrupt Firebase data
       if(callback) callback();
     })
-    .catch(function(){ if(!done){ done=true; clearTimeout(timer); if(callback) callback(); } });
+    .catch(function(){ if(!done){ done=true; clearTimeout(timer); applyResetMealsFlag(); if(callback) callback(); } });
 }
 
 function saveToCloud(){

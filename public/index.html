@@ -2927,11 +2927,10 @@ function openChat(ctx, initialMsg, customGreeting){
       var isLast = (i===saved.length-1);
       addChatMsg(saved[i].role, saved[i].content, showApply && isLast && saved[i].role==='assistant');
     }
-    // show a subtle separator
     var msgs = document.getElementById('chat-msgs');
     var sep = document.createElement('div');
     sep.style.cssText='text-align:center;font-size:11px;color:var(--muted);padding:6px 0 2px';
-    sep.textContent='— continuar conversa —';
+    sep.textContent = customGreeting ? '— '+customGreeting.split('.')[0]+' —' : '— continuar conversa —';
     msgs.appendChild(sep);
     msgs.scrollTop = msgs.scrollHeight;
     if(initialMsg){
@@ -2944,18 +2943,7 @@ function openChat(ctx, initialMsg, customGreeting){
     if(initialMsg){
       setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
     }
-  } else {
-    // existing conversation — if there's a custom greeting, add it as separator context
-    if(customGreeting){
-      var msgs = document.getElementById('chat-msgs');
-      var sep = document.createElement('div');
-      sep.style.cssText='text-align:center;font-size:11px;color:var(--muted);padding:6px 0 2px';
-      sep.textContent='— '+customGreeting.split('.')[0]+' —';
-      msgs.appendChild(sep);
-      msgs.scrollTop = msgs.scrollHeight;
-    }
   }
-  // reset chatSystemExtra after use so it doesn't bleed into other chats
   if(!customGreeting) chatSystemExtra = '';
 }
 

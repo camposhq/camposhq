@@ -1030,8 +1030,9 @@ function showScreen(id){
     b.classList.toggle('active', isA);
     b.querySelector('.nav-label').style.color = isA ? 'var(--green)' : 'var(--muted)';
   });
-  var rmap = {home:renderHome, treinos:renderTreinos, dieta:renderDieta, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
+  var rmap = {home:renderHome, treinos:renderTreinos, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
   if(rmap[id]) rmap[id]();
+  else if(id==='dieta') renderDieta(true);
 }
 
 document.querySelectorAll('.nav-item').forEach(function(btn){
@@ -1059,8 +1060,9 @@ function renderProfiles(containerId){
       curP = parseInt(this.dataset.pi);
       save();
       renderProfiles(containerId);
-      var rmap = {home:renderHome, treinos:renderTreinos, dieta:renderDieta, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
+      var rmap = {home:renderHome, treinos:renderTreinos, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
       if(rmap[curScreen]) rmap[curScreen]();
+      else if(curScreen==='dieta') renderDieta(true);
     });
   });
 }
@@ -1782,8 +1784,18 @@ function openExVideo(exName){
 // ══════════════════════════════════════════════════════════════
 // DIETA
 // ══════════════════════════════════════════════════════════════
-function renderDieta(){
-  dietaTab = 'all'; // always start on Tudo when entering the tab
+function getDietaTabByTime(){
+  var h = new Date().getHours();
+  if(h>=5  && h<10) return 'cafe';
+  if(h>=10 && h<12) return 'lanche';
+  if(h>=12 && h<15) return 'almoco';
+  if(h>=15 && h<18) return 'lanche';
+  if(h>=18 && h<23) return 'jantar';
+  return 'all';
+}
+
+function renderDieta(resetTab){
+  if(resetTab) dietaTab = getDietaTabByTime();
   renderProfiles('dieta-profiles');
   document.getElementById('dieta-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var tabs = ['all','cafe','lanche','almoco','jantar','supp'];

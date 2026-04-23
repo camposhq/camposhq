@@ -935,6 +935,12 @@ function totalSetsDoneToday(pi){
   p.weekly.forEach(function(w,d){ if(w.rest||!w.exs) return; w.exs.forEach(function(ex,i){ var k=idx+'-'+d+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) tot++; } }); });
   return tot;
 }
+function resetDailyState(){
+  mealDone={}; suppDone={}; habitDone={}; foodDone={};
+  exChecked={}; exSets={}; cardioChecked={};
+  waterGlasses={}; sleepData={};
+}
+
 function handleDayChange(oldDate){
   // backfill all missed days between oldDate and yesterday
   var today = new Date(); today.setHours(0,0,0,0);
@@ -945,6 +951,15 @@ function handleDayChange(oldDate){
     cursor.setDate(cursor.getDate()+1);
   }
   if(datesToFill.length===0) datesToFill=[oldDate];
+
+  // compute summary for the active profile before resetting
+  var p0 = PD[curP];
+  var kcal0 = kcalConsumedToday(curP);
+  var gasto0 = getBasalKcal(p0)+calcWorkoutKcalToday(curP);
+  var deficit0 = kcal0-gasto0;
+  var sleep0 = (sleepData[curP]||{hours:p0.sleep}).hours;
+  var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
+  var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
 
   PD.forEach(function(p,pi){
     if(!historyData[pi]) historyData[pi]=[];
@@ -961,19 +976,62 @@ function handleDayChange(oldDate){
         historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit});
       }
     });
-    // keep sorted by date
     historyData[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
   });
-  // reset daily state (keep exWeights, walkParams, cardioSel — they are permanent preferences)
-  mealDone={}; suppDone={}; habitDone={}; foodDone={};
-  exChecked={}; exSets={}; cardioChecked={};
-  waterGlasses={}; sleepData={};
+
+  // show day summary popup before resetting (only if it was yesterday, not multiple days ago)
+  if(datesToFill.length===1){
+    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length);
+  } else {
+    resetDailyState();
+    save();
+  }
   // reset to today's day of week
   curDay = (new Date().getDay()+6)%7;
   curDayManualOverride = false;
-  // persist reset immediately
-  save();
 }
+
+function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, mealsTotal){
+  var defColor = deficit<=0?'var(--green)':'var(--coral)';
+  var defLabel = deficit<=0?'Deficit de '+(Math.abs(deficit))+' kcal':'Superávit de '+deficit+' kcal';
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:20px;width:100%;max-width:380px;padding:24px;text-align:center">'+
+      '<div style="font-size:32px;margin-bottom:8px">🌅</div>'+
+      '<div style="font-family:Fraunces,serif;font-size:20px;margin-bottom:4px">Resumo do dia</div>'+
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px;text-transform:capitalize">'+dateLabel+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+kcal+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">kcal consumidas</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+gasto+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">kcal gastas</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:'+defColor+'">'+defLabel+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">balanço calórico</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+sleep+'h</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">sono</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px;grid-column:span 2">'+
+          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+mealsDone+'/'+mealsTotal+' refeições registradas</div>'+
+        '</div>'+
+      '</div>'+
+      '<button id="day-summary-ok" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer">Começar novo dia ✓</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  document.getElementById('day-summary-ok').addEventListener('click', function(){
+    overlay.remove();
+    resetDailyState();
+    save();
+  });
+}
+
 var saveCloudTimer = null;
 function save(){
   try{

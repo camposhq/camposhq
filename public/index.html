@@ -1903,6 +1903,7 @@ function renderDietaContent(){
           '<div style="flex:1;min-width:0"><div class="food-name" style="'+(fskipped?'text-decoration:line-through':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
           '<div class="food-kcal" style="'+(fskipped?'text-decoration:line-through;opacity:.4':'')+'">'+f.k+' kcal</div>'+
           '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
+          '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>'+
         '</div>';
       }).join('')+'</div></div>';
     });
@@ -1955,6 +1956,12 @@ function renderDietaContent(){
       substituirAlimento(parseInt(this.dataset.mealidx), parseInt(this.dataset.fidx));
     });
   });
+  document.querySelectorAll('.food-swap[data-foodrem-mi]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      removerAlimento(parseInt(this.dataset.foodremMi), parseInt(this.dataset.foodremFi));
+    });
+  });
   document.querySelectorAll('.food-swap[data-suppidx]').forEach(function(el){
     el.addEventListener('click', function(e){
       e.stopPropagation();
@@ -1984,6 +1991,20 @@ function renderDietaContent(){
     sysCtx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ')+'.';
     openChatWithContext('dieta-analise', sysCtx, 'Plano nutricional analisado. Me pergunte sobre deficiencias, qualidade das escolhas, timing, micronutrientes ou o que melhorar.');
   });
+}
+
+function removerAlimento(mealIdx, foodIdx){
+  var p = PD[curP];
+  var meal = p.meals[mealIdx];
+  if(!meal || !meal.foods[foodIdx]) return;
+  var nome = meal.foods[foodIdx].n;
+  meal.foods.splice(foodIdx, 1);
+  meal.kcal = meal.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  pdOverride[curP].meals = p.meals;
+  save();
+  showToast('"'+nome+'" removido ✓');
+  renderDietaContent();
 }
 
 function substituirAlimento(mealIdx, foodIdx){

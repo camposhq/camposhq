@@ -923,9 +923,9 @@ function handleDayChange(oldDate){
       historyData[pi].push({date:oldDate,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:entry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories});
     }
   });
-  // reset daily state
+  // reset daily state (keep exWeights, walkParams, cardioSel — they are permanent preferences)
   mealDone={}; suppDone={}; habitDone={};
-  exChecked={}; exSets={}; cardioSel={}; cardioChecked={}; walkParams={};
+  exChecked={}; exSets={}; cardioChecked={};
   waterGlasses={}; sleepData={};
   // persist reset immediately
   save();
@@ -3727,7 +3727,11 @@ function loadUserData(uid, callback){
                 if(o.gender) PD[i].gender = o.gender;
               });
             }
-            if(s.historyData){ if(!historyData[curP]) historyData[curP]=[]; historyData[curP]=s.historyData; }
+            if(s.historyData){
+              // Support old format (array for curP only) and new format (object keyed by profile index)
+              if(Array.isArray(s.historyData)){ historyData[curP]=s.historyData; }
+              else { historyData=s.historyData; }
+            }
             // day-change detection for Firestore data
             if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
           }catch(e){}
@@ -3763,7 +3767,7 @@ function saveToCloud(){
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
-    historyData:historyData[curP]||[],
+    historyData:historyData,
     lastSavedDate:todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };

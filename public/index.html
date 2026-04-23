@@ -1951,9 +1951,25 @@ function renderDietaContent(){
   var bmph = document.getElementById('btn-meal-photo');
   if(bmph) bmph.addEventListener('click', function(){ mealPhotoCtx='geral'; document.getElementById('file-meal-photo').click(); });
   var da=document.getElementById('d-ajustar'); var ds=document.getElementById('d-sub'); var dan=document.getElementById('d-analise');
-  if(da) da.addEventListener('click', function(){ openChat('dieta','Quero ajustar meu plano alimentar. Sou '+p.name+', '+p.age+' anos, objetivo: '+p.goal); });
-  if(ds) ds.addEventListener('click', function(){ openChat('dieta','Sugestoes de substituicoes para meu plano alimentar atual'); });
-  if(dan) dan.addEventListener('click', function(){ openChat('dieta','Analise nutricional completa para '+p.name+', '+p.age+' anos, '+p.weight+'kg, objetivo '+p.goal); });
+  if(da) da.addEventListener('click', function(){
+    var ctx = 'Plano alimentar atual:\n'+p.meals.map(function(m){ return m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p; }).join(', '); }).join('\n');
+    ctx += '\nMeta: '+p.calories+' kcal/dia. Objetivo: '+p.goal+'. Peso: '+p.weight+'kg, '+p.age+' anos.';
+    openChatWithContext('dieta', ctx, 'Careguei seu plano alimentar completo. Pode me perguntar sobre ajustes de calorias, distribuicao de macros, mudanca de objetivo ou qualquer alteracao no plano.');
+  });
+  if(ds) ds.addEventListener('click', function(){
+    var ctx = 'Refeicoes atuais:\n'+p.meals.map(function(m){ return m.name+': '+m.foods.map(function(f){ return f.n+' ('+f.k+' kcal)'; }).join(', '); }).join('\n');
+    ctx += '\nObjetivo: '+p.goal+'. Restricoes/preferencias do perfil.';
+    openChatWithContext('dieta', ctx, 'Tenho seu cardapio completo carregado. Me diga qual alimento ou refeicao quer substituir e sugiro alternativas mantendo as calorias.');
+  });
+  if(dan) dan.addEventListener('click', function(){
+    var kcalConsumed = kcalConsumedToday(); var kcalGoal = p.calories;
+    var ctx = 'Plano nutricional de '+p.name+':\n';
+    ctx += 'Meta diaria: '+kcalGoal+' kcal. Consumido hoje: '+kcalConsumed+' kcal.\n';
+    ctx += 'Refeicoes:\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p+' '+f.k+'kcal'; }).join(', '); }).join('\n');
+    ctx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ');
+    ctx += '\nPerfil: '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, objetivo: '+p.goal+'.';
+    openChatWithContext('dieta', ctx, 'Careguei seu plano nutricional completo com macros, refeicoes e suplementos. O que quer analisar?');
+  });
 }
 
 function substituirAlimento(mealId, foodIdx){

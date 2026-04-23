@@ -2708,9 +2708,16 @@ function renderExamesContent(){
   var es=document.getElementById('e-supp');
   var em=document.getElementById('e-medico');
   var ehist=document.getElementById('e-hist');
-  if(ea) ea.addEventListener('click', function(){ openChat('exames','Analise os exames de '+p.name+'. '+exStr+'. O que esta fora do ideal, prioridades e impacto em treino e suplementacao.'); });
-  if(es) es.addEventListener('click', function(){ openChat('exames','Com base nos exames de '+p.name+': '+exStr+'. Indique os top 5 suplementos com doses para corrigir deficiencias.'); });
-  if(em) em.addEventListener('click', function(){ openChat('exames','Prepare as perguntas mais importantes para levar ao medico com base nos exames de '+p.name+': '+exStr); });
+  var exCtx = 'Exames de '+p.name+' ('+p.age+' anos, '+p.weight+'kg, objetivo: '+p.goal+'):\n'+exStr;
+  if(ea) ea.addEventListener('click', function(){
+    openChatWithContext('exames', exCtx+'\nFoco: interpretacao dos valores fora do ideal e impacto em saude e treino.', 'Exames carregados. Me pergunte sobre qualquer marcador, o que esta fora do ideal ou o impacto na sua saude.');
+  });
+  if(es) es.addEventListener('click', function(){
+    openChatWithContext('exames', exCtx+'\nFoco: suplementacao baseada nos resultados dos exames.', 'Exames carregados. Me pergunte sobre suplementos, doses ou deficiencias especificas que quer corrigir.');
+  });
+  if(em) em.addEventListener('click', function(){
+    openChatWithContext('exames', exCtx+'\nFoco: preparar consulta medica com base nos exames.', 'Exames carregados. Me pergunte sobre quais exames repetir, perguntas para o medico ou o que merece atencao na proxima consulta.');
+  });
   if(ehist) ehist.addEventListener('click', showExamHistory);
 }
 

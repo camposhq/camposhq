@@ -503,6 +503,9 @@ input[type=file]{display:none}
       <button class="btn-back-sp" id="sp-back" onclick="spPrev()">← Voltar</button>
       <button class="btn-nxt-sp" id="sp-next">Continuar →</button>
     </div>
+    <div style="text-align:center;padding:8px 0 4px" id="sp-save-exit-wrap">
+      <button id="sp-save-exit" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;font-family:DM Sans,sans-serif">Salvar e sair</button>
+    </div>
   </div>
 </div>
 
@@ -2978,6 +2981,16 @@ function spRender(){
   var nxt = document.getElementById('sp-next');
   nxt.textContent = spStep===SP_TOTAL ? 'Gerar meu plano ✨' : 'Continuar →';
   nxt.onclick = spStep===SP_TOTAL ? spGenerate : spNext;
+
+  // Show "Salvar e sair" from step 2 onwards
+  var seWrap = document.getElementById('sp-save-exit-wrap');
+  var seBtn = document.getElementById('sp-save-exit');
+  if(seWrap) seWrap.style.display = spStep > 1 ? 'block' : 'none';
+  if(seBtn) seBtn.onclick = function(){
+    spSave();
+    showScreen('home');
+    document.getElementById('bottom-nav').style.display = 'flex';
+  };
 
   var fns = [spS1,spS2,spS3,spS4,spS5,spS6,spS7,spS8];
   document.getElementById('sp-content').innerHTML = '<div class="sp-hdr"><div class="sp-num">'+spStep+' / '+SP_TOTAL+'</div><div class="sp-ttl">'+m.ttl+'</div><div class="sp-sub">'+m.sub+'</div></div>'+fns[spStep-1]();

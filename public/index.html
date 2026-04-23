@@ -2768,6 +2768,60 @@ function openAddExam(){
   });
 }
 
+function openEditExam(idx, entry, onSave){
+  var EXAM_GROUPS_ADD = [
+    {title:'Energia e Performance', icon:'⚡', markers:[
+      {key:'vitd',n:'Vitamina D',u:'ng/mL'},{key:'ferro',n:'Ferritina',u:'ng/mL'},{key:'vitb12',n:'Vitamina B12',u:'pg/mL'}]},
+    {title:'Metabolismo', icon:'🔥', markers:[
+      {key:'testo',n:'Testosterona',u:'ng/dL'},{key:'tsh',n:'TSH',u:'mUI/L'},{key:'gli',n:'Glicemia jejum',u:'mg/dL'}]},
+    {title:'Cardiovascular', icon:'❤️', markers:[
+      {key:'pce',n:'PCR ultrassens.',u:'mg/L'},{key:'trig',n:'Triglicerideos',u:'mg/dL'},{key:'hdl',n:'HDL',u:'mg/dL'}]},
+  ];
+  var vals = entry.values || {};
+  var h = '<div style="padding:20px 20px 0">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px">Editar <em>medicao</em></div>';
+  h += '<button id="edit-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+entry.dateLabel+'</div>';
+  EXAM_GROUPS_ADD.forEach(function(g){
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    g.markers.forEach(function(m){
+      var cur = vals[m.key]!=null ? vals[m.key] : '';
+      h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      h += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+m.n+'</div></div>';
+      h += '<input type="text" inputmode="decimal" placeholder="—" data-ekey="'+m.key+'" value="'+cur+'" style="width:72px;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;text-align:center;background:#fff">';
+      h += '<div style="width:36px;font-size:10px;color:var(--muted)">'+m.u+'</div></div>';
+    });
+    h += '</div>';
+  });
+  h += '<button id="edit-exam-save" style="width:100%;padding:14px;background:var(--coral);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:20px">Salvar alteracoes</button>';
+  h += '</div>';
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding-bottom:var(--safe-bottom)';
+  panel.innerHTML = h;
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('edit-exam-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('edit-exam-save').addEventListener('click', function(){
+    var newVals = {};
+    panel.querySelectorAll('[data-ekey]').forEach(function(inp){
+      var v = inp.value.trim().replace(',','.');
+      if(v) newVals[inp.dataset.ekey] = parseFloat(v);
+    });
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
+    pdOverride[curP].examHistory[idx].values = newVals;
+    save();
+    overlay.remove();
+    showToast('Medicao atualizada ✓');
+    if(onSave) onSave();
+  });
+}
+
 function showExamHistory(){
   var history = getExamHistory();
   if(history.length<1){ showToast('Sem historico de exames'); return; }
@@ -2791,7 +2845,10 @@ function showExamHistory(){
       h += '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:10px">';
       h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
       h += '<div style="font-size:14px;font-weight:600">'+e.dateLabel+'</div>';
+      h += '<div style="display:flex;gap:6px">';
+      h += '<button data-editidx="'+realIdx+'" style="background:none;border:1px solid var(--green);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--green);cursor:pointer">Editar</button>';
       h += '<button data-delidx="'+realIdx+'" style="background:none;border:1px solid var(--coral);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--coral);cursor:pointer">Excluir</button>';
+      h += '</div>';
       h += '</div>';
       h += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
       keys.forEach(function(k){
@@ -2819,6 +2876,13 @@ function showExamHistory(){
         if(pdOverride[curP].examHistory.length === 0){ overlay.remove(); renderExames(); return; }
         renderHistContent();
         renderExames();
+      });
+    });
+    panel.querySelectorAll('[data-editidx]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(this.dataset.editidx);
+        var hist = getExamHistory();
+        openEditExam(idx, hist[idx], function(){ renderHistContent(); renderExames(); });
       });
     });
   }

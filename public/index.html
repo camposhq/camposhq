@@ -936,19 +936,33 @@ function totalSetsDoneToday(pi){
   return tot;
 }
 function handleDayChange(oldDate){
-  // snapshot yesterday into historyData for all profiles
+  // backfill all missed days between oldDate and yesterday
+  var today = new Date(); today.setHours(0,0,0,0);
+  var cursor = new Date(oldDate+'T12:00:00');
+  var datesToFill = [];
+  while(cursor < today){
+    datesToFill.push(cursor.toISOString().slice(0,10));
+    cursor.setDate(cursor.getDate()+1);
+  }
+  if(datesToFill.length===0) datesToFill=[oldDate];
+
   PD.forEach(function(p,pi){
     if(!historyData[pi]) historyData[pi]=[];
-    var d=new Date(oldDate+'T12:00:00'); var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
     var imc=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-    var entry=sleepData[pi]||{hours:p.sleep};
+    var sleepEntry=sleepData[pi]||{hours:p.sleep};
     var kcal=kcalConsumedToday(pi);
     var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
     var deficit=kcal>0?kcal-gasto:null;
-    var existing=historyData[pi].find(function(e){return e.date===oldDate;});
-    if(!existing){
-      historyData[pi].push({date:oldDate,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:entry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit});
-    }
+    datesToFill.forEach(function(dateStr){
+      var existing=historyData[pi].find(function(e){return e.date===dateStr;});
+      if(!existing){
+        var d=new Date(dateStr+'T12:00:00');
+        var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+        historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit});
+      }
+    });
+    // keep sorted by date
+    historyData[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
   });
   // reset daily state (keep exWeights, walkParams, cardioSel — they are permanent preferences)
   mealDone={}; suppDone={}; habitDone={}; foodDone={};

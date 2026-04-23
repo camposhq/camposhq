@@ -2237,9 +2237,8 @@ function renderSonoContent(){
   h += '<div class="ai-txt indigo">'+p.insight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
   h += '<button class="act-btn" id="s-prot"><span class="act-icon">🌙</span><span class="act-lbl">Protocolo</span><span class="act-sub">Rotina noturna</span></button>';
-  h += '<button class="act-btn" id="s-supp"><span class="act-icon">💊</span><span class="act-lbl">Suplementos</span><span class="act-sub">Para dormir melhor</span></button>';
+  h += '<button class="act-btn" id="s-analise"><span class="act-icon">📊</span><span class="act-lbl">Analisar sono</span><span class="act-sub">Qualidade e melhorias</span></button>';
   h += '</div></div>';
-  h += '<div class="section"><button class="btn-full" id="s-analise" style="background:var(--indigo)">Analise completa de sono ↗</button></div>';
 
   document.getElementById('sono-content').innerHTML = h;
 
@@ -2268,10 +2267,23 @@ function renderSonoContent(){
   document.querySelectorAll('.habit-item[data-hkey]').forEach(function(el){
     el.addEventListener('click', function(){ habitDone[this.dataset.hkey]=!habitDone[this.dataset.hkey]; save(); renderSonoContent(); });
   });
-  var sp2=document.getElementById('s-prot'); var ss=document.getElementById('s-supp'); var sa=document.getElementById('s-analise');
-  if(sp2) sp2.addEventListener('click', function(){ openChat('sono','Crie um protocolo de rotina noturna para '+p.name+', '+p.age+' anos, que dorme em media '+entry.hours+'h. Meta: '+p.sleepTarget+'h.'); });
-  if(ss) ss.addEventListener('click', function(){ openChat('sono','Quais suplementos naturais recomenda para melhorar o sono de '+p.name+', '+p.age+' anos?'); });
-  if(sa) sa.addEventListener('click', function(){ openChat('sono','Analise o padrao de sono de '+p.name+': '+entry.hours+'h, qualidade '+entry.quality+'/5, meta '+p.sleepTarget+'h. Score: '+score+'.'); });
+  var sp2=document.getElementById('s-prot'); var sa=document.getElementById('s-analise');
+  if(sp2) sp2.addEventListener('click', function(){
+    var hist = (historyData[curP]||[]).slice(-7);
+    var avgH = hist.length ? (hist.reduce(function(s,e){ return s+(e.sleep||0); },0)/hist.length).toFixed(1) : entry.hours;
+    var sysCtx = 'Voce e um especialista em sono e recuperacao. Perfil de '+p.name+' ('+p.age+' anos):\n';
+    sysCtx += 'Media de sono: '+avgH+'h/noite. Meta: '+p.sleepTarget+'h. Qualidade atual: '+entry.quality+'/5. Score de sono: '+score+'.\n';
+    sysCtx += 'Habitos noturnos: '+p.habits.map(function(h,i){ return h.n+(habitDone[curP+'-'+i]?' (feito)':' (nao feito)'); }).join(', ')+'.';
+    openChatWithContext('sono-prot', sysCtx, 'Dados de sono carregados. Me pergunte sobre protocolo noturno, horarios, suplementos, ambiente ou habitos para melhorar seu sono.');
+  });
+  if(sa) sa.addEventListener('click', function(){
+    var hist = (historyData[curP]||[]).slice(-14);
+    var sysCtx = 'Voce e um especialista em analise de sono. Perfil de '+p.name+' ('+p.age+' anos):\n';
+    sysCtx += 'Sono hoje: '+entry.hours+'h, qualidade '+entry.quality+'/5. Meta: '+p.sleepTarget+'h. Score: '+score+'.\n';
+    if(hist.length>1) sysCtx += 'Historico ('+hist.length+' dias): '+hist.map(function(e){ return e.label+': '+e.sleep+'h'; }).join(', ')+'.\n';
+    sysCtx += 'Habitos noturnos feitos hoje: '+p.habits.filter(function(_,i){ return habitDone[curP+'-'+i]; }).map(function(h){ return h.n; }).join(', ')||'nenhum';
+    openChatWithContext('sono-analise', sysCtx, 'Historico de sono carregado. Me pergunte sobre qualidade, deficits, impacto na recuperacao, tendencias ou o que melhorar.');
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2959,6 +2971,8 @@ var CHAT_QPS = {
   dieta:['Ajustar plano alimentar','Pre-treino ideal','Analise de macros','Suplementos para dieta'],
   'dieta-ajustar':['Aumentar calorias','Reduzir carboidratos','Mudar objetivo para massa','Redistribuir macros'],
   'dieta-analise':['O que esta faltando na minha dieta?','Qualidade nutricional do plano','Timing das refeicoes','Onde posso melhorar?'],
+  'sono-prot':['Protocolo para dormir mais rapido','Suplementos naturais para sono','Hora ideal de dormir e acordar','Ambiente ideal para dormir'],
+  'sono-analise':['Como esta minha qualidade de sono?','Impacto do sono na recuperacao','Tendencia dos ultimos dias','O que melhorar primeiro?'],
   sono:['Protocolo noturno ideal','Suplementos para dormir','Horario ideal de treino','Recuperacao ativa'],
   exames:['Interpretar resultados','Suplementos pelos exames','Perguntas ao medico','Ver tendencias'],
   saude:['Analise geral de saude','Prioridades desta semana','Longevidade','Meu score de saude'],
@@ -3036,7 +3050,7 @@ function openChat(ctx, initialMsg, customGreeting){
   chatSystemExtra = chatSystemExtra||''; // preserve if set by openChatWithContext
   chatCtx = ctx;
   var p = PD[curP];
-  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA','dieta-ajustar':'Ajustar Plano Alimentar','dieta-analise':'Analise Nutricional',sono:'Especialista em Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
+  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA','dieta-ajustar':'Ajustar Plano Alimentar','dieta-analise':'Analise Nutricional',sono:'Especialista em Sono','sono-prot':'Protocolo de Sono','sono-analise':'Analise de Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
   document.getElementById('chat-ttl').textContent = titles[ctx]||'MyHealth IA';
   document.getElementById('chat-sub').textContent = p.name+' · '+p.age+' anos · '+p.goal;
   document.getElementById('chat-msgs').innerHTML = '';
@@ -3048,9 +3062,10 @@ function openChat(ctx, initialMsg, customGreeting){
   document.getElementById('chat-back').classList.add('open');
   // show/hide clear button for persistent contexts
   var clearBtn = document.getElementById('chat-clear');
-  clearBtn.style.display = (ctx==='treino'||ctx==='dieta'||ctx==='dieta-ajustar'||ctx==='dieta-analise') ? '' : 'none';
+  var persistCtx = ['treino','dieta','dieta-ajustar','dieta-analise','sono-prot','sono-analise'];
+  clearBtn.style.display = persistCtx.indexOf(ctx)>=0 ? '' : 'none';
 
-  var saved = (ctx==='treino'||ctx==='dieta'||ctx==='dieta-ajustar'||ctx==='dieta-analise') ? (chatHistories[curP+'_'+ctx]||[]) : [];
+  var saved = persistCtx.indexOf(ctx)>=0 ? (chatHistories[curP+'_'+ctx]||[]) : [];
   if(saved.length>0){
     // restore previous conversation
     chatHistory = saved.slice();

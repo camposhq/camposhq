@@ -1919,19 +1919,18 @@ function renderDietaContent(){
       return id.startsWith(dietaTab)||nm.startsWith(dietaTab);
     }
     h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
-    h += '<div class="section"><div class="sec-label">Refeicoes</div></div>';
+    h += '<div class="section"><div class="sec-label">Refeicoes</div>';
     p.meals.map(function(m,mi){ return {meal:m, mi:mi}; }).forEach(function(x){
       var meal=x.meal; var mi=x.mi;
       var highlight = mealMatchesTab(meal);
       var mkey = curP+'-'+(meal.id||'m'+mi);
-      // foodDone[key]===true means eaten; default is not eaten
       var totalItems = meal.foods.length;
       var checkedItems = meal.foods.filter(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }).length;
       var allDone = checkedItems === totalItems;
       var partDone = checkedItems > 0 && checkedItems < totalItems;
       var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]===true?(f.k||0):0); },0);
       var kcalShow = checkedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
-      h += '<div class="section" id="meal-anchor-'+mi+'" style="padding-top:0;margin-top:-8px"><div class="meal-card" style="'+(highlight?'border:1.5px solid var(--green)':'')+'">';
+      h += '<div class="meal-card" id="meal-anchor-'+mi+'" style="'+(highlight?'border:1.5px solid var(--green)':'')+'">';
       h += '<div class="meal-hdr">';
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
       h += '<div><div class="meal-name">'+meal.name+'</div>';
@@ -1953,8 +1952,9 @@ function renderDietaContent(){
       }).join('')+
       '<div style="padding:8px 14px;border-top:1px solid var(--border)">'+
         '<button class="food-swap" data-additem-mi="'+mi+'" onclick="event.stopPropagation()" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar alimento</button>'+
-      '</div></div></div></div>';  // add-btn-wrapper / foods-div / meal-card / section
+      '</div></div></div>';  // closes: add-btn-wrapper / foods-div / meal-card
     });
+    h += '</div>';  // closes section
   }
 
   if(dietaTab==='all'||dietaTab==='supp'){

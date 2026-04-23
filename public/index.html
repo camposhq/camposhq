@@ -3089,7 +3089,7 @@ function openChat(ctx, initialMsg, customGreeting){
   if(saved.length>0){
     // restore previous conversation
     chatHistory = saved.slice();
-    var showApply = (ctx==='treino'||ctx==='dieta');
+    var showApply = (ctx==='treino'||ctx==='dieta'||ctx==='dieta-ajustar'||ctx==='dieta-analise');
     for(var i=0;i<saved.length;i++){
       var isLast = (i===saved.length-1);
       addChatMsg(saved[i].role, saved[i].content, showApply && isLast && saved[i].role==='assistant');
@@ -3136,7 +3136,7 @@ function addChatMsg(role, text, showApply){
   if(showApply && role==='assistant'){
     var btn = document.createElement('button');
     btn.className = 'apply-plan-btn';
-    btn.textContent = (chatCtx==='treino' ? '✓ Aplicar treino ao app' : '✓ Aplicar dieta ao app');
+    btn.textContent = (chatCtx==='treino' ? '✓ Aplicar treino ao app' : '✓ Aplicar plano ao app');
     btn.onclick = applyChatPlan;
     div.appendChild(btn);
   }
@@ -3165,7 +3165,7 @@ function sendMsg(){
     hideTyping();
     if(data.content&&data.content[0]&&data.content[0].text){
       var reply=data.content[0].text;
-      var showApply = (chatCtx==='treino'||chatCtx==='dieta');
+      var showApply = (chatCtx==='treino'||chatCtx==='dieta'||chatCtx==='dieta-ajustar'||chatCtx==='dieta-analise');
       addChatMsg('assistant',reply,showApply); chatHistory.push({role:'assistant',content:reply});
       saveChatHistory();
     } else { addChatMsg('assistant','Desculpe, tive um problema. Tente novamente.'); }
@@ -3177,7 +3177,8 @@ function sendMsg(){
 }
 
 function applyChatPlan(){
-  var isT = chatCtx==='treino'; var isD = chatCtx==='dieta';
+  var isT = chatCtx==='treino';
+  var isD = chatCtx==='dieta'||chatCtx==='dieta-ajustar'||chatCtx==='dieta-analise';
   if(!isT&&!isD) return;
   var btn = event.currentTarget; btn.disabled=true; btn.textContent='Aplicando...';
 
@@ -3213,7 +3214,7 @@ function applyChatPlan(){
       throw new Error('formato invalido');
     }
   }).catch(function(e){
-    btn.disabled=false; btn.textContent=(isT?'✓ Aplicar treino ao app':'✓ Aplicar dieta ao app');
+    btn.disabled=false; btn.textContent=(isT?'✓ Aplicar treino ao app':'✓ Aplicar plano ao app');
     showToast('Nao foi possivel aplicar. Tente novamente.');
   });
 }

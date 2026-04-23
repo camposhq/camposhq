@@ -1930,7 +1930,8 @@ function renderDietaContent(){
     h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
     h += '<div class="section"><div class="sec-label">Refeicoes</div></div>';
     p.meals.forEach(function(meal, mi){
-      var highlight = mealMatchesTab(meal);
+      var highlight = false;
+      if(dietaTab !== 'all' && !mealMatchesTab(meal)) return; // filter by tab
       var mkey = curP+'-'+(meal.id||'m'+mi);
       var totalItems = meal.foods.length;
       var checkedItems = meal.foods.filter(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }).length;

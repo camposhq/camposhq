@@ -892,6 +892,7 @@ let curP = 0;
 let curDay = (new Date().getDay()+6)%7;
 let dietaTab = 'all';
 let examesTab = 'todos';
+let evoPeriod = 30; // days
 let expandedExam = {};
 let mealDone = {}, suppDone = {}, habitDone = {}, foodDone = {};
 let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {}, walkParams = {};
@@ -3012,15 +3013,28 @@ function renderEvolucao(){
   renderProfiles('evolucao-profiles');
   document.getElementById('evolucao-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var p = PD[curP];
-  var hist = (historyData[curP]||[]).slice(-8);
+  var allHist = historyData[curP]||[];
+  // filter by selected period
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-evoPeriod);
+  var cutStr = cutoff.toISOString().slice(0,10);
+  var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
+  if(hist.length===0) hist = allHist.slice(-2); // always show at least last 2
   var labels = hist.map(function(e){ return e.label; });
   var bench = getPopBench(p.age);
-  // target values (top 20%)
   var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
-  var tgtPeso = Math.round(22 * Math.pow(p.height/100,2)); // IMC 22 target weight
-  var tgtFat = 15; // ~15% body fat top 20% general target
+  var tgtPeso = Math.round(22 * Math.pow(p.height/100,2));
+  var tgtFat = 15;
   var h='';
   h+='<div class="section"><button class="btn-full" id="evo-add-btn" style="background:var(--green)">+ Registrar medicao agora</button></div>';
+  // period selector
+  var periods=[{v:7,l:'7d'},{v:30,l:'30d'},{v:90,l:'3m'},{v:180,l:'6m'},{v:365,l:'1a'},{v:9999,l:'Tudo'}];
+  h+='<div class="section" style="padding-bottom:0"><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  periods.forEach(function(per){
+    var sel=evoPeriod===per.v;
+    h+='<button data-eperiod="'+per.v+'" style="padding:5px 12px;border-radius:99px;border:1.5px solid '+(sel?'var(--green)':'var(--border)')+';background:'+(sel?'var(--green)':'var(--surface)')+';color:'+(sel?'#fff':'var(--muted)')+';font-size:12px;font-weight:600;cursor:pointer">'+per.l+'</button>';
+  });
+  h+='</div></div>';
+  h+='<div style="padding:6px 16px;font-size:11px;color:var(--muted)">'+allHist.length+' registros salvos · mostrando '+hist.length+'</div>';
   if(hist.length===0){
     h+='<div class="section"><div class="card" style="padding:32px 20px;text-align:center"><div style="font-size:40px;margin-bottom:12px">📊</div><div style="font-size:15px;font-weight:500;margin-bottom:8px">Sem historico ainda</div><div style="font-size:13px;color:var(--muted)">Salve seu perfil ou adicione uma medicao para comecar a acompanhar sua evolucao.</div></div></div>';
   } else {
@@ -3062,6 +3076,9 @@ function renderEvolucao(){
 
   document.getElementById('evolucao-content').innerHTML = h;
 
+  document.querySelectorAll('[data-eperiod]').forEach(function(btn){
+    btn.addEventListener('click', function(){ evoPeriod=parseInt(this.dataset.eperiod); renderEvolucao(); });
+  });
   var addBtn = document.getElementById('evo-add-btn');
   if(addBtn) addBtn.addEventListener('click', openAddHistory);
   var aiBtn = document.getElementById('evo-ai-btn');

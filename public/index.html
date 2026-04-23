@@ -1897,6 +1897,8 @@ function renderDietaContent(){
       h += '<div class="supp-icon-wrap" style="background:'+s.tBg+'">'+s.icon+'</div>';
       h += '<div class="supp-info"><div class="supp-name" style="'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+s.n+'</div><div class="supp-detail">'+s.dose+'</div></div>';
       h += '<div class="supp-time" style="background:'+s.tBg+';color:'+s.tCl+'">'+s.time+'</div>';
+      h += '<button class="food-swap" data-suppidx="'+i+'" title="Trocar" onclick="event.stopPropagation()">🔄</button>';
+      h += '<button class="food-swap" data-supprem="'+i+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>';
       h += '<div class="scheck'+(done?' done':'')+'"></div></div>';
     });
     h += '</div></div>';
@@ -1928,10 +1930,22 @@ function renderDietaContent(){
       waterGlasses[curP+'-water'] = (i<cur?i:i+1); save(); renderDietaContent();
     });
   });
-  document.querySelectorAll('.food-swap').forEach(function(el){
+  document.querySelectorAll('.food-swap[data-fidx]').forEach(function(el){
     el.addEventListener('click', function(e){
       e.stopPropagation();
       substituirAlimento(this.dataset.mealid, parseInt(this.dataset.fidx));
+    });
+  });
+  document.querySelectorAll('.food-swap[data-suppidx]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      substituirSuplemento(parseInt(this.dataset.suppidx));
+    });
+  });
+  document.querySelectorAll('.food-swap[data-supprem]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      removerSuplemento(parseInt(this.dataset.supprem));
     });
   });
   var bmph = document.getElementById('btn-meal-photo');
@@ -2002,6 +2016,90 @@ function substituirAlimento(mealId, foodIdx){
       save();
       overlay.remove();
       showToast('"'+food.n+'" substituido por "'+parsed.n+'" ✓');
+      renderDietaContent();
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Substituir com IA';
+      showToast('Nao foi possivel substituir. Tente novamente.');
+    });
+  });
+}
+
+function removerSuplemento(idx){
+  var p = PD[curP];
+  if(!p.supps || !p.supps[idx]) return;
+  var nome = p.supps[idx].n;
+  p.supps.splice(idx, 1);
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  pdOverride[curP].supps = p.supps;
+  save();
+  showToast('"'+nome+'" removido ✓');
+  renderDietaContent();
+}
+
+function substituirSuplemento(idx){
+  var p = PD[curP];
+  if(!p.supps || !p.supps[idx]) return;
+  var supp = p.supps[idx];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML =
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'+
+      '<div>'+
+        '<div style="font-family:Fraunces,serif;font-size:18px">Substituir <em>suplemento</em></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">IA vai sugerir uma alternativa compativel</div>'+
+      '</div>'+
+      '<button id="ssub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+    '</div>'+
+    '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">'+
+      '<div style="background:'+supp.tBg+';width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+supp.icon+'</div>'+
+      '<div><div style="font-size:14px;font-weight:500">'+supp.n+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+supp.dose+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Substituir por (deixe em branco para IA sugerir):</div>'+
+    '<input id="ssub-inp" type="text" placeholder="Ex: magnesio, vitamina C, creatina..." style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:12px">'+
+    '<button id="ssub-btn" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Substituir com IA</button>';
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  document.getElementById('ssub-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  setTimeout(function(){ document.getElementById('ssub-inp').focus(); }, 200);
+
+  document.getElementById('ssub-btn').addEventListener('click', function(){
+    var btn = this; btn.disabled = true; btn.textContent = 'Buscando substituto...';
+    var desejo = document.getElementById('ssub-inp').value.trim();
+    var instrucao = desejo
+      ? 'Substitua o suplemento "'+supp.n+'" ('+supp.dose+') por "'+desejo+'". Objetivo do usuario: '+p.goal+'.'
+      : 'Sugira um substituto para o suplemento "'+supp.n+'" ('+supp.dose+') que cumpra funcao similar. Objetivo: '+p.goal+'. Perfil: '+p.age+' anos, '+p.weight+'kg.';
+    instrucao += ' Retorne SOMENTE JSON valido sem texto nem markdown: {"n":"nome completo","dose":"dosagem","time":"Manha|Almoco|Pre-treino|Pos-treino|Noite","icon":"emoji"}';
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-haiku-4-5-20251001', max_tokens:200,
+        system:'Voce e um especialista em suplementacao esportiva e saude. Retorne apenas JSON valido conforme solicitado.',
+        messages:[{role:'user', content:instrucao}]
+      })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error();
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      if(!parsed.n) throw new Error();
+      var newSupp = {
+        n: parsed.n,
+        dose: parsed.dose||supp.dose,
+        time: parsed.time||supp.time,
+        icon: parsed.icon||supp.icon,
+        tBg: supp.tBg, tCl: supp.tCl
+      };
+      p.supps[idx] = newSupp;
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].supps = p.supps;
+      save();
+      overlay.remove();
+      showToast('"'+supp.n+'" substituido por "'+parsed.n+'" ✓');
       renderDietaContent();
     }).catch(function(){
       btn.disabled = false; btn.textContent = 'Substituir com IA';

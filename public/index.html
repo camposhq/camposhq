@@ -881,6 +881,8 @@ const PD = [
      markers:[{n:'Vitamina D',v:42,u:'ng/mL',ref:'30-100',pct:80,c:'#1a7a4a'},{n:'Calcio',v:9.8,u:'mg/dL',ref:'8.5-10.5',pct:88,c:'#1a7a4a'},{n:'IGF-1',v:380,u:'ng/mL',ref:'220-996',pct:56,c:'#1a7a4a'}]},
    ]},
 ];
+// deep copy of default meals/supps before any override is applied
+var PD_DEFAULT_MEALS = PD.map(function(p){ return {meals: JSON.parse(JSON.stringify(p.meals)), supps: JSON.parse(JSON.stringify(p.supps))}; });
 
 // ══════════════════════════════════════════════════════════════
 // STATE
@@ -2060,10 +2062,13 @@ function renderDietaContent(){
   var dReset = document.getElementById('d-reset-meals');
   if(dReset) dReset.addEventListener('click', function(){
     if(!confirm('Restaurar o plano alimentar original? As alteracoes feitas serao perdidas.')) return;
-    if(pdOverride[curP]) delete pdOverride[curP].meals;
-    if(pdOverride[curP]) delete pdOverride[curP].calories;
+    // restore from pre-override backup
+    PD[curP].meals = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].meals));
+    if(pdOverride[curP]){ delete pdOverride[curP].meals; delete pdOverride[curP].calories; }
+    foodDone = {};
     save();
-    location.reload();
+    showToast('Plano original restaurado ✓');
+    renderDieta(false);
   });
 }
 

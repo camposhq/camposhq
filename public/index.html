@@ -3054,12 +3054,9 @@ function getSysProm(){
 
 function chatHistKey(){ return curP+'_'+chatCtx; }
 function saveChatHistory(){
-  var key = chatHistKey();
-  if(chatCtx==='treino'||chatCtx==='dieta'){
-    // cap at last 60 messages to avoid storage bloat
-    chatHistories[key] = chatHistory.slice(-60);
-    save();
-  }
+  if(!chatCtx) return;
+  chatHistories[chatHistKey()] = chatHistory.slice(-60);
+  save();
 }
 
 function openChatWithContext(ctx, systemContext, greeting){
@@ -3082,10 +3079,9 @@ function openChat(ctx, initialMsg, customGreeting){
   document.getElementById('chat-back').classList.add('open');
   // show/hide clear button for persistent contexts
   var clearBtn = document.getElementById('chat-clear');
-  var persistCtx = ['treino','dieta','dieta-ajustar','dieta-analise','sono-prot','sono-analise'];
-  clearBtn.style.display = persistCtx.indexOf(ctx)>=0 ? '' : 'none';
+  clearBtn.style.display = '';
 
-  var saved = persistCtx.indexOf(ctx)>=0 ? (chatHistories[curP+'_'+ctx]||[]) : [];
+  var saved = chatHistories[curP+'_'+ctx]||[];
   if(saved.length>0){
     // restore previous conversation
     chatHistory = saved.slice();

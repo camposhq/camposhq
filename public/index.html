@@ -1332,7 +1332,7 @@ function renderHome(){
 
   var sb = document.getElementById('setup-banner');
   if(sb) sb.addEventListener('click', function(){
-    spStep=1; showScreen('setup');
+    spStep=1; spLoadFromProfile(); showScreen('setup');
     document.getElementById('bottom-nav').style.display='none';
     spRender();
   });
@@ -3032,6 +3032,34 @@ function spRender(){
 
 function spNext(){ if(spStep<SP_TOTAL){ spStep++; spRender(); } }
 function spPrev(){ if(spStep>1){ spStep--; spRender(); } }
+function spLoadFromProfile(){
+  var p = PD[curP]; var o = pdOverride[curP]||{};
+  if(p.name) P.name = p.name;
+  if(p.initials) P.initials = p.initials;
+  if(p.avatarBg) P.avatarBg = p.avatarBg;
+  if(p.avatarCl) P.avatarCl = p.avatarCl;
+  if(p.avatarImg) P.avatarImg = p.avatarImg;
+  if(p.age) P.age = String(p.age);
+  if(p.weight) P.weight = String(p.weight);
+  if(p.height) P.height = String(p.height);
+  if(o.gender) P.gender = o.gender; else if(p.gender) P.gender = p.gender;
+  if(p.bmr) P.bmr = String(p.bmr); else P.bmr = '';
+  if(p.sleep) P.sleepHours = String(p.sleep);
+  if(p.sleepTarget) P.sleepTarget = String(p.sleepTarget);
+  // Conditions, medications, allergies
+  if(o.conditions) P.conditions = o.conditions;
+  if(o.medications) P.medications = o.medications||'';
+  if(o.allergies) P.allergies = o.allergies||'';
+  // Goals — reverse-map from goal string back to values
+  if(p.goal){
+    var mapped = [];
+    GOALS.forEach(function(g){ if(p.goal.indexOf(g.l)>=0) mapped.push(g.v); });
+    if(mapped.length) P.goals = mapped;
+  }
+  // Training level/days from weekly plan length
+  if(o.trainingLevel) P.trainingLevel = o.trainingLevel;
+  if(o.trainingDays) P.trainingDays = String(o.trainingDays);
+}
 function setSF(field,val,el){ P[field]=val; el.closest('.chips').querySelectorAll('.chip').forEach(function(c){c.classList.remove('sel');}); el.classList.add('sel'); }
 function toggleMA(field,val,el){ var arr=P[field]; var i=arr.indexOf(val); if(i>=0)arr.splice(i,1); else arr.push(val); el.classList.toggle('sel'); }
 function spSetColor(i){ P.avatarBg=COLORS[i].bg; P.avatarCl=COLORS[i].cl; document.querySelectorAll('.cdot').forEach(function(d,j){d.classList.toggle('sel',j===i);}); var av=document.getElementById('sp-av'); if(av){av.style.background=P.avatarBg;av.style.color=P.avatarCl;} }
@@ -3442,6 +3470,11 @@ function spSave(){
     PD[curP].goal=P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
     pdOverride[curP].goal=PD[curP].goal;
   }
+  if(P.trainingLevel) pdOverride[curP].trainingLevel=P.trainingLevel;
+  if(P.trainingDays) pdOverride[curP].trainingDays=P.trainingDays;
+  if(P.medications!=null) pdOverride[curP].medications=P.medications;
+  if(P.conditions) pdOverride[curP].conditions=P.conditions;
+  if(P.allergies!=null) pdOverride[curP].allergies=P.allergies;
   // Save body photos from setup to progressPhotos
   var today = new Date().toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
   var photoMap = [{key:'frente',idx:0,angle:'Frente'},{key:'lado',idx:1,angle:'Lado'},{key:'costas',idx:2,angle:'Costas'}];
@@ -3792,7 +3825,12 @@ function saveToCloud(){
       avatarImg: o.avatarImg||'',
       progressPhotos: o.progressPhotos||[],
       bmr: o.bmr||0,
-      gender: o.gender||'M'
+      gender: o.gender||'M',
+      trainingLevel: o.trainingLevel||'',
+      trainingDays: o.trainingDays||'',
+      medications: o.medications||'',
+      conditions: o.conditions||[],
+      allergies: o.allergies||''
     };
   });
   var appState = {
@@ -3824,7 +3862,7 @@ document.getElementById('logout-btn').onclick = function(){ if(confirm('Deseja s
 document.getElementById('logout-btn').onmouseenter = function(){ this.style.background='var(--coral-light)'; };
 document.getElementById('logout-btn').onmouseleave = function(){ this.style.background='none'; };
 document.getElementById('edit-profile-topbar').onclick = function(){
-  spStep=1; showScreen('setup');
+  spStep=1; spLoadFromProfile(); showScreen('setup');
   document.getElementById('bottom-nav').style.display='none';
   spRender();
 };

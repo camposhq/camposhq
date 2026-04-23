@@ -882,7 +882,7 @@ let mealDone = {}, suppDone = {}, habitDone = {};
 let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {}, walkParams = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
-let chatHistory = [], isTyping = false, chatCtx = '';
+let chatHistory = [], isTyping = false, chatCtx = '', chatSystemExtra = '';
 let chatHistories = {}; // persisted per profile+context: key = 'profileIdx_ctx'
 let historyData = {}; // per profile: {0: [{date,label,weight,imc,fat,sleep,avg,scores:{Saude,Fitness,Sono,Nutricao},calories},...], ...}
 let progressPhotoAngle = 0;
@@ -1716,9 +1716,28 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
   });
   var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar'); var tan=document.getElementById('t-analise');
-  if(ta) ta.addEventListener('click', function(){ openChat('treino','Ajuste o treino de '+w.name+' de hoje para '+p.name+', '+p.age+' anos, objetivo: '+p.goal); });
-  if(tg) tg.addEventListener('click', function(){ openChat('treino','Gere um plano semanal completo para '+p.name+', '+p.age+' anos, objetivo '+p.goal+'. Musculacao todos os dias de treino + opcao de cardio combinado.'); });
-  if(tan) tan.addEventListener('click', function(){ openChat('treino','Analise completa do plano de treinos desta semana para '+p.name); });
+  if(ta) ta.addEventListener('click', function(){
+    var exList = (w.exs||[]).map(function(ex,i){
+      var key=wk(curP,curDay,i); var wval=exWeights[key]||ex.w||0;
+      var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      var done=0; for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) done++; }
+      return (i+1)+'. '+ex.n+' — '+ex.s+(wval>0?' @ '+wval+'kg':'')+' ('+done+'/'+ns+' feitas)';
+    }).join('\n');
+    var ctx = 'Treino de hoje ('+w.name+'):\n'+exList+'\nNivel: '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+'. BMR: '+(getBasalKcal(p))+' kcal.';
+    openChatWithContext('treino', ctx, 'Careguei o treino de hoje com suas cargas e series feitas. Pode me perguntar sobre progressao de carga, volume, tecnica ou qualquer ajuste.');
+  });
+  if(tg) tg.addEventListener('click', function(){
+    var ctx = 'Plano semanal atual:\n'+p.weekly.map(function(d,i){ return DAYS[i]+': '+(d.rest?'Descanso':(d.name+' — '+(d.exs||[]).length+' exercicios')); }).join('\n');
+    ctx += '\nDias de treino: '+((pdOverride[curP]||{}).trainingDays||5)+'/semana. Nivel: '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+'.';
+    openChatWithContext('treino', ctx, 'Tenho seu perfil e plano atual carregados. Posso gerar um novo plano semanal completo ou tirar duvidas sobre seu treino. O que prefere?');
+  });
+  if(tan) tan.addEventListener('click', function(){
+    var hist = (historyData[curP]||[]).slice(-8);
+    var ctx = 'Historico recente (ultimas '+(hist.length)+' entradas):\n'+hist.map(function(e){ return e.label+': peso '+e.weight+'kg, score '+e.avg; }).join('\n');
+    var totalDone=0; (w.exs||[]).forEach(function(ex,i){ var k=wk(curP,curDay,i); var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) totalDone++; } });
+    ctx += '\nHoje: '+totalDone+' series concluidas de '+w.name+'.';
+    openChatWithContext('treino', ctx, 'Careguei seu historico de progresso e treino de hoje. Pode me perguntar sobre evolucao, frequencia, pontos a melhorar ou qualquer analise.');
+  });
 }
 
 function openExVideo(exName){
@@ -2863,6 +2882,7 @@ function getSysProm(){
   var base = 'Voce e um '+(ctxMap[chatCtx]||'especialista em saude')+'. Responda em portugues brasileiro, de forma pratica, objetiva e personalizada. Use emojis com moderacao.\n\nPerfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, objetivo: '+p.goal+'. Sono medio: '+p.sleep+'h (meta: '+p.sleepTarget+'h). Calorias: '+p.calories+'kcal, proteina: '+p.protein+'g.';
   var exTxt = getExamsText(p);
   if(exTxt) base += '\n\n'+exTxt+'\n\nUse os resultados dos exames para personalizar suas recomendacoes de treino, dieta e suplementacao.';
+  if(chatSystemExtra) base += '\n\n'+chatSystemExtra;
   return base;
 }
 
@@ -2876,7 +2896,12 @@ function saveChatHistory(){
   }
 }
 
-function openChat(ctx, initialMsg){
+function openChatWithContext(ctx, systemContext, greeting){
+  chatSystemExtra = systemContext||'';
+  openChat(ctx, null, greeting);
+}
+function openChat(ctx, initialMsg, customGreeting){
+  chatSystemExtra = chatSystemExtra||''; // preserve if set by openChatWithContext
   chatCtx = ctx;
   var p = PD[curP];
   var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA',sono:'Especialista em Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
@@ -2914,11 +2939,24 @@ function openChat(ctx, initialMsg){
     }
   } else {
     chatHistory = [];
-    addChatMsg('assistant','Ola! Pronto para ajudar '+(p.name.split(' ')[0])+'. Como posso ajudar? 💪');
+    var greeting = customGreeting || ('Olá '+p.name.split(' ')[0]+'! Como posso ajudar? 💪');
+    addChatMsg('assistant', greeting);
     if(initialMsg){
       setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
     }
+  } else {
+    // existing conversation — if there's a custom greeting, add it as separator context
+    if(customGreeting){
+      var msgs = document.getElementById('chat-msgs');
+      var sep = document.createElement('div');
+      sep.style.cssText='text-align:center;font-size:11px;color:var(--muted);padding:6px 0 2px';
+      sep.textContent='— '+customGreeting.split('.')[0]+' —';
+      msgs.appendChild(sep);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
   }
+  // reset chatSystemExtra after use so it doesn't bleed into other chats
+  if(!customGreeting) chatSystemExtra = '';
 }
 
 function closeChat(){ document.getElementById('chat-back').classList.remove('open'); }

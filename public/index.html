@@ -2623,7 +2623,10 @@ function renderExamesContent(){
   var GROUPS_MAP = {energia:['vitd','ferro','vitb12'], metabolismo:['testo','tsh','gli'], cardiovascular:['pce','trig','hdl']};
   var visMarkers = examesTab==='todos' ? EXAM_MARKER_DEFS : EXAM_MARKER_DEFS.filter(function(m){ return (GROUPS_MAP[examesTab]||[]).indexOf(m.key)>=0; });
 
-  h += '<div class="section"><button id="e-add-new" style="width:100%;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button></div>';
+  h += '<div class="section" style="display:flex;gap:10px">';
+  h += '<button id="e-add-new" style="flex:1;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button>';
+  h += '<button id="e-upload-exam" style="flex:1;padding:13px;border:2px dashed var(--blue);border-radius:var(--radius-sm);background:none;color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">📎 Enviar exame</button>';
+  h += '</div>';
 
   var allVals = EXAM_MARKER_DEFS.map(function(m){ return {m:m,v:parseFloat(current[m.key])}; }).filter(function(x){ return !isNaN(x.v); });
   var normais = allVals.filter(function(x){ return x.v>=x.m.refLow && x.v<=x.m.refHigh; }).length;
@@ -2702,6 +2705,8 @@ function renderExamesContent(){
 
   var eAdd = document.getElementById('e-add-first')||document.getElementById('e-add-new');
   if(eAdd) eAdd.addEventListener('click', openAddExam);
+  var eUpload = document.getElementById('e-upload-exam');
+  if(eUpload) eUpload.addEventListener('click', function(){ document.getElementById('file-exam').click(); });
 
   var exStr = getExamInputsText()||getExamsText(p);
   var ea=document.getElementById('e-analise');
@@ -3350,11 +3355,92 @@ document.getElementById('file-meal-photo').addEventListener('change', function(e
 
 document.getElementById('file-exam').addEventListener('change', function(e){
   var file = e.target.files[0]; if(!file) return;
-  showToast('Analisando exame com IA...');
-  setTimeout(function(){
-    openChat('exames','Acabei de enviar o exame "'+file.name+'". Analise os resultados para '+PD[curP].name+', '+PD[curP].age+' anos.');
-  }, 1500);
+  e.target.value = '';
+  var isImage = file.type.startsWith('image/');
+  if(!isImage && file.type !== 'application/pdf'){
+    showToast('Envie uma imagem (JPG, PNG) ou PDF do exame.'); return;
+  }
+  showToast('Lendo exame com IA... aguarde');
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var b64 = ev.target.result.split(',')[1];
+    var mediaType = isImage ? file.type : 'image/jpeg';
+    var p = PD[curP];
+    var keys = ['vitd','ferro','vitb12','testo','tsh','gli','pce','trig','hdl'];
+    var keyNames = {vitd:'Vitamina D (ng/mL)',ferro:'Ferritina (ng/mL)',vitb12:'Vitamina B12 (pg/mL)',testo:'Testosterona (ng/dL)',tsh:'TSH (mUI/L)',gli:'Glicemia jejum (mg/dL)',pce:'PCR ultrassens. (mg/L)',trig:'Triglicerideos (mg/dL)',hdl:'HDL (mg/dL)'};
+    var instr = 'Este e um exame laboratorial de '+p.name+'. Extraia apenas os valores numericos dos seguintes marcadores se encontrados no exame:\n'+keys.map(function(k){ return k+': '+keyNames[k]; }).join('\n')+'\nRetorne SOMENTE JSON valido sem texto: {"vitd":null,"ferro":null,"vitb12":null,"testo":null,"tsh":null,"gli":null,"pce":null,"trig":null,"hdl":null}\nUse null para marcadores nao encontrados. Use apenas o numero, sem unidade.';
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6', max_tokens:300,
+        messages:[{role:'user', content:[
+          {type:'image', source:{type:'base64', media_type:mediaType, data:b64}},
+          {type:'text', text:instr}
+        ]}]
+      })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      var found = keys.filter(function(k){ return parsed[k]!=null; });
+      if(found.length===0){ showToast('Nao encontrei marcadores conhecidos no exame. Insira manualmente.'); return; }
+      showToast(found.length+' marcadores encontrados! Confirmando...');
+      openConfirmExamUpload(parsed, file.name);
+    }).catch(function(){
+      showToast('Nao foi possivel ler o exame. Tente uma foto mais nitida.');
+    });
+  };
+  reader.readAsDataURL(file);
 });
+
+function openConfirmExamUpload(parsed, filename){
+  var EXAM_GROUPS_ADD = [
+    {title:'Energia e Performance', icon:'⚡', markers:[{key:'vitd',n:'Vitamina D',u:'ng/mL'},{key:'ferro',n:'Ferritina',u:'ng/mL'},{key:'vitb12',n:'Vitamina B12',u:'pg/mL'}]},
+    {title:'Metabolismo', icon:'🔥', markers:[{key:'testo',n:'Testosterona',u:'ng/dL'},{key:'tsh',n:'TSH',u:'mUI/L'},{key:'gli',n:'Glicemia',u:'mg/dL'}]},
+    {title:'Cardiovascular', icon:'❤️', markers:[{key:'pce',n:'PCR ultrassens.',u:'mg/L'},{key:'trig',n:'Triglicerideos',u:'mg/dL'},{key:'hdl',n:'HDL',u:'mg/dL'}]},
+  ];
+  var h = '<div style="padding:20px 20px 0">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px">Confirmar <em>exame</em></div>';
+  h += '<button id="conf-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">📎 '+filename+' — edite se necessario</div>';
+  EXAM_GROUPS_ADD.forEach(function(g){
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    g.markers.forEach(function(m){
+      var val = parsed[m.key]!=null ? parsed[m.key] : '';
+      var found = parsed[m.key]!=null;
+      h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      h += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+m.n+'</div></div>';
+      h += '<input type="text" inputmode="decimal" placeholder="—" data-ekey="'+m.key+'" value="'+val+'" style="width:72px;padding:8px;border:1.5px solid '+(found?'var(--green)':'#ddd')+';border-radius:8px;font-size:14px;text-align:center;background:#fff">';
+      h += '<div style="width:36px;font-size:10px;color:var(--muted)">'+m.u+'</div></div>';
+    });
+    h += '</div>';
+  });
+  h += '<button id="conf-exam-save" style="width:100%;padding:14px;background:var(--coral);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:20px">Salvar medicao</button>';
+  h += '</div>';
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding-bottom:var(--safe-bottom)';
+  panel.innerHTML = h;
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('conf-exam-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('conf-exam-save').addEventListener('click', function(){
+    var vals = {};
+    panel.querySelectorAll('[data-ekey]').forEach(function(inp){
+      var v = inp.value.trim().replace(',','.');
+      if(v) vals[inp.dataset.ekey] = parseFloat(v);
+    });
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
+    var today = new Date();
+    pdOverride[curP].examHistory.push({date:today.toISOString().slice(0,10), dateLabel:today.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}), values:vals});
+    save(); overlay.remove();
+    showToast('Exame salvo com '+Object.keys(vals).length+' marcadores ✓');
+    renderExames();
+  });
+}
 
 // ══════════════════════════════════════════════════════════════
 // AI CHAT

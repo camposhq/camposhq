@@ -1837,8 +1837,24 @@ function renderDieta(resetTab){
   renderDietaContent();
 }
 
+function resetDietaPlan(){
+  PD[curP].meals = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].meals));
+  PD[curP].supps = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].supps));
+  if(pdOverride[curP]){ delete pdOverride[curP].meals; delete pdOverride[curP].supps; delete pdOverride[curP].calories; }
+  foodDone = {};
+  save();
+  showToast('Plano original restaurado ✓');
+  renderDieta(false);
+}
+
 function renderDietaContent(){
   var p = PD[curP]; var h = '';
+  if(pdOverride[curP]&&pdOverride[curP].meals){
+    h += '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;margin:12px 16px 0;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">';
+    h += '<span style="font-size:12px;color:#856404">Plano personalizado ativo</span>';
+    h += '<button id="d-reset-meals" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">↩ Restaurar original</button>';
+    h += '</div>';
+  }
   var mDone = p.meals.filter(function(m,mi){ var mkey=curP+'-'+(m.id||'m'+mi); return m.foods.length>0&&m.foods.every(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }); }).length;
   var sDone = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var wk2 = curP+'-water'; var glasses = waterGlasses[wk2]||0; var totalG = Math.round(p.water/250);
@@ -1963,9 +1979,6 @@ function renderDietaContent(){
   h += '<button class="act-btn" id="d-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar plano</span><span class="act-sub">Calorias e macros</span></button>';
   h += '<button class="act-btn" id="d-analise"><span class="act-icon">🔬</span><span class="act-lbl">Analisar dieta</span><span class="act-sub">Deficiencias e melhoras</span></button>';
   h += '</div></div>';
-  if(pdOverride[curP]&&pdOverride[curP].meals){
-    h += '<div class="section"><button class="btn-outline" id="d-reset-meals" style="font-size:12px;color:var(--muted)">↩ Restaurar plano original</button></div>';
-  }
 
   document.getElementById('dieta-content').innerHTML = h;
 
@@ -2062,13 +2075,7 @@ function renderDietaContent(){
   var dReset = document.getElementById('d-reset-meals');
   if(dReset) dReset.addEventListener('click', function(){
     if(!confirm('Restaurar o plano alimentar original? As alteracoes feitas serao perdidas.')) return;
-    // restore from pre-override backup
-    PD[curP].meals = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].meals));
-    if(pdOverride[curP]){ delete pdOverride[curP].meals; delete pdOverride[curP].calories; }
-    foodDone = {};
-    save();
-    showToast('Plano original restaurado ✓');
-    renderDieta(false);
+    resetDietaPlan();
   });
 }
 

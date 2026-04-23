@@ -906,10 +906,10 @@ function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
 function kcalConsumedToday(pi){
   var idx=pi!=null?pi:curP;
   return (PD[idx]||{meals:[]}).meals.reduce(function(s,m,mi){
-    // items are pre-selected by default; foodDone[key]===false means skipped
+    // foodDone[key]===true means eaten; default is not eaten
     var mkey = idx+'-'+(m.id||'m'+mi);
     return s + m.foods.reduce(function(fs,f,fi){
-      return fs+(foodDone[mkey+'-'+fi]===false ? 0 : (f.k||0));
+      return fs+(foodDone[mkey+'-'+fi]===true ? (f.k||0) : 0);
     },0);
   },0);
 }
@@ -1813,7 +1813,7 @@ function renderDieta(resetTab){
 
 function renderDietaContent(){
   var p = PD[curP]; var h = '';
-  var mDone = p.meals.filter(function(m,mi){ return mealDone[curP+'-'+(m.id||'m'+mi)]; }).length;
+  var mDone = p.meals.filter(function(m,mi){ var mkey=curP+'-'+(m.id||'m'+mi); return m.foods.length>0&&m.foods.every(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }); }).length;
   var sDone = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var wk2 = curP+'-water'; var glasses = waterGlasses[wk2]||0; var totalG = Math.round(p.water/250);
   var kcalConsumed = kcalConsumedToday(); var kcalPct = Math.min(100, Math.round(kcalConsumed/p.calories*100));
@@ -1881,27 +1881,29 @@ function renderDietaContent(){
     filtMeals.forEach(function(x){
       var meal=x.meal; var mi=x.mi;
       var mkey = curP+'-'+(meal.id||'m'+mi);
-      // default = eaten; foodDone[key]===false means skipped
-      var skippedItems = meal.foods.filter(function(_,fi){ return foodDone[mkey+'-'+fi]===false; }).length;
+      // foodDone[key]===true means eaten; default is not eaten
       var totalItems = meal.foods.length;
-      var checkedItems = totalItems - skippedItems;
-      var allDone = skippedItems === 0;
-      var partDone = skippedItems > 0 && checkedItems > 0;
-      var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]===false?0:(f.k||0)); },0);
-      var kcalShow = skippedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
+      var checkedItems = meal.foods.filter(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }).length;
+      var allDone = checkedItems === totalItems;
+      var partDone = checkedItems > 0 && checkedItems < totalItems;
+      var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]===true?(f.k||0):0); },0);
+      var kcalShow = checkedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
       h += '<div class="meal-card">';
       h += '<div class="meal-hdr">';
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
       h += '<div><div class="meal-name">'+meal.name+'</div>';
       h += '<div class="meal-kcal" style="color:'+(allDone?'var(--green)':partDone?'var(--amber)':'var(--muted)')+'">'+kcalShow+'</div></div></div>';
-      h += '<div style="font-size:11px;color:var(--muted);text-align:right">'+checkedItems+'/'+totalItems+'<br><span style="font-size:9px">itens</span></div>';
+      h += '<div style="display:flex;align-items:center;gap:8px">';
+      h += '<span style="font-size:11px;color:var(--muted)">'+checkedItems+'/'+totalItems+' itens</span>';
+      h += '<button class="food-swap" data-selall-mi="'+mi+'" data-selall-mkey="'+mkey+'" data-selall-total="'+totalItems+'" onclick="event.stopPropagation()" style="font-size:11px;padding:2px 8px;'+(allDone?'background:var(--green);color:#fff;border-color:var(--green)':'')+'">'+( allDone?'✓ Todos':'Sel. tudo')+'</button>';
+      h += '</div>';
       h += '</div>';
       h += '<div>'+meal.foods.map(function(f,fi){
-        var fkey = mkey+'-'+fi; var fskipped = foodDone[fkey]===false;
-        return '<div class="food-item" data-fkey="'+fkey+'" style="cursor:pointer;'+(fskipped?'opacity:.4':'')+'">'+
-          '<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(fskipped?'var(--border)':'var(--green)')+';background:'+(fskipped?'transparent':'var(--green)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px">'+(fskipped?'':'<span style="color:#fff;font-size:10px">✓</span>')+'</div>'+
-          '<div style="flex:1;min-width:0"><div class="food-name" style="'+(fskipped?'text-decoration:line-through':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
-          '<div class="food-kcal" style="'+(fskipped?'text-decoration:line-through;opacity:.4':'')+'">'+f.k+' kcal</div>'+
+        var fkey = mkey+'-'+fi; var featen = foodDone[fkey]===true;
+        return '<div class="food-item" data-fkey="'+fkey+'" style="cursor:pointer">'+
+          '<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(featen?'var(--green)':'var(--border)')+';background:'+(featen?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px">'+(featen?'<span style="color:#fff;font-size:10px">✓</span>':'')+'</div>'+
+          '<div style="flex:1;min-width:0"><div class="food-name" style="'+(featen?'color:var(--green)':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
+          '<div class="food-kcal" style="'+(featen?'color:var(--green);font-weight:600':'')+'">'+f.k+' kcal</div>'+
           '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
           '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>'+
         '</div>';
@@ -1937,7 +1939,20 @@ function renderDietaContent(){
   document.querySelectorAll('.food-item[data-fkey]').forEach(function(el){
     el.addEventListener('click', function(){
       var k = this.dataset.fkey;
-      if(foodDone[k]===false){ delete foodDone[k]; } else { foodDone[k]=false; }
+      if(foodDone[k]===true){ delete foodDone[k]; } else { foodDone[k]=true; }
+      save(); renderDietaContent();
+    });
+  });
+  document.querySelectorAll('.food-swap[data-selall-mi]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      var mkey = this.dataset.selallMkey;
+      var total = parseInt(this.dataset.selallTotal);
+      var allDone = true;
+      for(var fi=0; fi<total; fi++){ if(foodDone[mkey+'-'+fi]!==true){ allDone=false; break; } }
+      for(var fi=0; fi<total; fi++){
+        if(allDone){ delete foodDone[mkey+'-'+fi]; } else { foodDone[mkey+'-'+fi]=true; }
+      }
       save(); renderDietaContent();
     });
   });

@@ -707,11 +707,15 @@ function calcWorkoutKcalToday(pi){
   });
   var musK = calcMusKcal(p.weight, sets);
   var cardK = 0;
-  var selId = cardioSel[idx+'-'+day]||'walk';
-  var cselKey = idx+'-'+day+'-'+selId;
-  var wp = walkParams[cselKey]||{inc:5,spd:5.5,mins:30};
-  var ckey = 'c'+idx+'-'+day+'-'+selId+'-0';
-  if(cardioChecked[ckey]) cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+  var cselKey = idx+'-'+day;
+  var selId = cardioSel[cselKey] || null;
+  if(selId === 'walk'){
+    var wp = walkParams[cselKey]||{inc:5, spd:5.5, mins:30};
+    cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+  } else if(selId){
+    var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
+    if(co){ var pm = co.params.find(function(x){ return x.l==='Kcal'; }); if(pm) cardK = parseInt((pm.v||'0').replace('~',''))||0; }
+  }
   return musK + cardK;
 }
 

@@ -1890,18 +1890,19 @@ function renderDietaContent(){
     h += '</div></div></div>';
   }
 
-  if(dietaTab==='all'||dietaTab==='cafe'||dietaTab==='almoco'||dietaTab==='jantar'||dietaTab==='lanche'){
-    var filtMeals = p.meals.map(function(m,mi){ return {meal:m, mi:mi}; }).filter(function(x){
-      if(dietaTab==='all') return true;
-      var id = (x.meal.id||'').toLowerCase();
-      var nm = (x.meal.name||'').toLowerCase();
+  if(dietaTab!=='supp'){
+    // always show ALL meals — tabs just highlight the relevant one
+    function mealMatchesTab(meal){
+      if(dietaTab==='all') return false;
+      var id=(meal.id||'').toLowerCase(), nm=(meal.name||'').toLowerCase();
       if(dietaTab==='lanche') return id.indexOf('lanche')>=0||nm.indexOf('lanche')>=0||nm.indexOf('snack')>=0;
       return id.startsWith(dietaTab)||nm.startsWith(dietaTab);
-    });
+    }
     h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
     h += '<div class="section"><div class="sec-label">Refeicoes</div>';
-    filtMeals.forEach(function(x){
+    p.meals.map(function(m,mi){ return {meal:m, mi:mi}; }).forEach(function(x){
       var meal=x.meal; var mi=x.mi;
+      var highlight = mealMatchesTab(meal);
       var mkey = curP+'-'+(meal.id||'m'+mi);
       // foodDone[key]===true means eaten; default is not eaten
       var totalItems = meal.foods.length;
@@ -1910,7 +1911,7 @@ function renderDietaContent(){
       var partDone = checkedItems > 0 && checkedItems < totalItems;
       var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]===true?(f.k||0):0); },0);
       var kcalShow = checkedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
-      h += '<div class="meal-card">';
+      h += '<div class="meal-card" id="meal-anchor-'+mi+'" style="'+(highlight?'border:1.5px solid var(--green)':'')+'">';
       h += '<div class="meal-hdr">';
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
       h += '<div><div class="meal-name">'+meal.name+'</div>';
@@ -2037,6 +2038,20 @@ function renderDietaContent(){
     sysCtx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ')+'.';
     openChatWithContext('dieta-analise', sysCtx, 'Plano nutricional analisado. Me pergunte sobre deficiencias, qualidade das escolhas, timing, micronutrientes ou o que melhorar.');
   });
+  // scroll to highlighted meal after render
+  if(dietaTab!=='all'&&dietaTab!=='supp'){
+    setTimeout(function(){
+      var p2 = PD[curP];
+      p2.meals.forEach(function(m,mi){
+        var id=(m.id||'').toLowerCase(), nm=(m.name||'').toLowerCase();
+        var match = dietaTab==='lanche'?(id.indexOf('lanche')>=0||nm.indexOf('lanche')>=0):(id.startsWith(dietaTab)||nm.startsWith(dietaTab));
+        if(match){
+          var el=document.getElementById('meal-anchor-'+mi);
+          if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+      });
+    }, 80);
+  }
 }
 
 function adicionarAlimento(mealIdx){

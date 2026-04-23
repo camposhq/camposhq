@@ -1555,11 +1555,14 @@ function renderTreinosContent(){
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
     h += '<button class="food-swap" data-day="'+curDay+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:4px">🔄</button>';
+    h += '<button class="food-swap" data-exrem-day="'+curDay+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
     h += '<div style="display:flex;gap:6px;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+'</div>';
   });
-  h += '</div>';
+  h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
+  h += '<button class="food-swap" data-exadd-day="'+curDay+'" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar exercicio</button>';
+  h += '</div></div>';
   h += '<div class="prog-card" style="border-radius:0 0 var(--radius) var(--radius);border-top:none">';
   h += '<div class="prog-top"><span class="prog-lbl">Musculacao</span><span class="prog-val">'+doneMus+'/'+exs.length+' · '+pctMus+'%</span></div>';
   h += '<div class="prog-bar"><div class="prog-fill" style="width:'+pctMus+'%;background:var(--green)"></div></div>';
@@ -1707,6 +1710,12 @@ function renderTreinosContent(){
   });
   document.querySelectorAll('.food-swap[data-exidx]').forEach(function(el){
     el.addEventListener('click', function(){ substituirExercicio(parseInt(this.dataset.day), parseInt(this.dataset.exidx)); });
+  });
+  document.querySelectorAll('.food-swap[data-exrem-day]').forEach(function(el){
+    el.addEventListener('click', function(){ removerExercicio(parseInt(this.dataset.exremDay), parseInt(this.dataset.exremIdx)); });
+  });
+  document.querySelectorAll('.food-swap[data-exadd-day]').forEach(function(el){
+    el.addEventListener('click', function(){ adicionarExercicio(parseInt(this.dataset.exaddDay)); });
   });
   document.querySelectorAll('.ex-vid').forEach(function(el){
     el.addEventListener('click', function(){ openExVideo(this.dataset.vid); });
@@ -2306,6 +2315,87 @@ function substituirExercicio(dayIdx, exIdx){
     }).catch(function(){
       btn.disabled = false; btn.textContent = 'Trocar com IA';
       showToast('Nao foi possivel trocar. Tente novamente.');
+    });
+  });
+}
+
+function removerExercicio(dayIdx, exIdx){
+  var p = PD[curP];
+  var day = p.weekly[dayIdx];
+  if(!day || !day.exs || !day.exs[exIdx]) return;
+  var nome = day.exs[exIdx].n;
+  day.exs.splice(exIdx, 1);
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  pdOverride[curP].weekly = p.weekly;
+  save();
+  showToast('"'+nome+'" removido ✓');
+  renderTreinosContent();
+}
+
+function adicionarExercicio(dayIdx){
+  var p = PD[curP];
+  var day = p.weekly[dayIdx];
+  if(!day || day.rest) return;
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML =
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'+
+      '<div>'+
+        '<div style="font-family:Fraunces,serif;font-size:18px">Adicionar <em>exercicio</em></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+day.name+'</div>'+
+      '</div>'+
+      '<button id="exadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+    '</div>'+
+    '<input id="exadd-name" type="text" placeholder="Nome do exercicio (ex: agachamento bulgaro)" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:10px">'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px">'+
+      '<input id="exadd-series" type="text" placeholder="Series (ex: 3x12)" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box">'+
+      '<input id="exadd-peso" type="number" placeholder="kg" style="width:80px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box">'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Deixe series em branco para a IA sugerir o volume adequado.</div>'+
+    '<button id="exadd-btn" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Adicionar</button>';
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('exadd-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  setTimeout(function(){ document.getElementById('exadd-name').focus(); }, 200);
+
+  document.getElementById('exadd-btn').addEventListener('click', function(){
+    var btn = this;
+    var nome = document.getElementById('exadd-name').value.trim();
+    if(!nome){ showToast('Informe o nome do exercicio'); return; }
+    var series = document.getElementById('exadd-series').value.trim();
+    var peso = parseFloat(document.getElementById('exadd-peso').value) || 0;
+
+    function aplicar(n, s, w){
+      day.exs.push({n:n, s:s||'3x12', w:w||0});
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].weekly = p.weekly;
+      save(); overlay.remove();
+      showToast('"'+n+'" adicionado ✓');
+      renderTreinosContent();
+    }
+
+    if(series){ aplicar(nome, series, peso); return; }
+
+    btn.disabled = true; btn.textContent = 'Calculando...';
+    var prompt = 'Sugira o volume ideal (series x reps) para o exercicio "'+nome+'" para '+p.name+
+      ', '+p.age+' anos, '+p.weight+'kg, nivel '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+
+      ', objetivo: '+p.goal+'. Retorne APENAS JSON: {"n":"'+nome+'","s":"3x12","w":0}';
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-haiku-4-5-20251001', max_tokens:100,
+        system:'Voce e um personal trainer. Retorne apenas JSON valido sem texto.',
+        messages:[{role:'user', content:prompt}]})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      aplicar(parsed.n||nome, parsed.s||'3x12', peso||parsed.w||0);
+    }).catch(function(){
+      aplicar(nome, '3x12', peso);
     });
   });
 }

@@ -930,6 +930,9 @@ function handleDayChange(oldDate){
   mealDone={}; suppDone={}; habitDone={};
   exChecked={}; exSets={}; cardioChecked={};
   waterGlasses={}; sleepData={};
+  // reset to today's day of week
+  curDay = (new Date().getDay()+6)%7;
+  curDayManualOverride = false;
   // persist reset immediately
   save();
 }
@@ -1348,25 +1351,39 @@ function renderHome(){
 function wk(p,d,i){ return p+'-'+d+'-'+i; }
 
 function renderTreinos(){
+  // Always default to today's day of week when opening the tab
+  var todayDow = (new Date().getDay()+6)%7;
+  if(curDay !== todayDow){
+    // Only reset to today if user hasn't explicitly changed it this session
+    if(!curDayManualOverride) curDay = todayDow;
+  }
   renderProfiles('treinos-profiles');
   document.getElementById('treinos-date').textContent = 'Semana de '+new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
   renderTreinosStrip();
   renderTreinosContent();
 }
+var curDayManualOverride = false;
 
 function renderTreinosStrip(){
   var p = PD[curP];
+  var todayDow = (new Date().getDay()+6)%7;
   var h = '';
   DAYS.forEach(function(d,i){
-    var w = p.weekly[i]; var isA = i===curDay; var isR = w.rest;
-    h += '<button class="day-btn'+(isA?' active':isR?' rest':'')+'" data-day="'+i+'">';
-    h += '<span class="dlabel">'+d+'</span><span class="dnum">'+(i+1)+'</span><div class="ddot"></div></button>';
+    var w = p.weekly[i]; var isA = i===curDay; var isR = w.rest; var isToday = i===todayDow;
+    h += '<button class="day-btn'+(isA?' active':isR?' rest':'')+'" data-day="'+i+'" style="position:relative">';
+    h += '<span class="dlabel">'+d+'</span><span class="dnum">'+(i+1)+'</span>';
+    if(isToday) h += '<div style="width:5px;height:5px;border-radius:50%;background:'+(isA?'rgba(255,255,255,.8)':'var(--green)')+';margin:0 auto"></div>';
+    else h += '<div class="ddot"></div>';
+    h += '</button>';
   });
   var strip = document.getElementById('treinos-strip');
   strip.innerHTML = h;
   strip.querySelectorAll('.day-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){ curDay = parseInt(this.dataset.day); renderTreinosStrip(); renderTreinosContent(); });
+    btn.addEventListener('click', function(){ curDay = parseInt(this.dataset.day); curDayManualOverride = (curDay !== (new Date().getDay()+6)%7); save(); renderTreinosStrip(); renderTreinosContent(); });
   });
+  // scroll active day into view
+  var activeBtn = strip.querySelector('.day-btn.active');
+  if(activeBtn) activeBtn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
 }
 
 // ── Rest timer ────────────────────────────────────────────────

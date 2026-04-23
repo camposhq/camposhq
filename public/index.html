@@ -688,6 +688,29 @@ function calcMusKcal(weight, totalSets){
   // MET=5 for weight training, ~2.2 min per set (work + rest)
   return Math.round(totalSets * weight * 0.18);
 }
+function getBasalKcal(p){
+  if(p.bmr && p.bmr>0) return p.bmr;
+  var g = p.gender || (pdOverride[curP]||{}).gender||'M';
+  return Math.round(g==='M' ? 10*p.weight+6.25*p.height-5*p.age+5 : 10*p.weight+6.25*p.height-5*p.age-161);
+}
+function calcWorkoutKcalToday(pi){
+  var idx = pi!=null?pi:curP; var p = PD[idx]; var day = curDay;
+  var dw = p.weekly[day]||{};
+  if(dw.rest||!dw.exs) return 0;
+  var sets=0;
+  dw.exs.forEach(function(ex,i){
+    var k=idx+'-'+day+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sets++; }
+  });
+  var musK = calcMusKcal(p.weight, sets);
+  var cardK = 0;
+  var selId = cardioSel[idx+'-'+day]||'walk';
+  var cselKey = idx+'-'+day+'-'+selId;
+  var wp = walkParams[cselKey]||{inc:5,spd:5.5,mins:30};
+  var ckey = 'c'+idx+'-'+day+'-'+selId+'-0';
+  if(cardioChecked[ckey]) cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+  return musK + cardK;
+}
 
 // ══════════════════════════════════════════════════════════════
 // PROFILES DATA
@@ -868,7 +891,7 @@ let spStep = 1;
 const SP_TOTAL = 8;
 const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg:'',
   bodyPhotos:{frente:'',lado:'',costas:''},
-  age:'45',gender:'M',height:'178',weight:'82',
+  age:'45',gender:'M',height:'178',weight:'82',bmr:'',
   goals:['longevidade','hipertrofia','perda_gordura','recomposicao','performance','sono','cognitivo','hormonal','saude_geral','digestao'],trainingDays:'5',trainingLevel:'intermediario',
   sleepHours:'7',stressLevel:'3',medications:'',conditions:[],allergies:[],
   examInputs:{}};
@@ -1215,6 +1238,35 @@ function renderHome(){
   h += '<div style="font-size:13px;font-weight:600;color:'+(sleepDone?'var(--text)':'var(--muted)')+'">'+sonoVal2+'</div>';
   h += '<div style="font-size:11px;color:var(--muted)">Sono de hoje</div>';
   h += dayBar(sonoPct2,sonoColor3);
+  h += '</div>';
+  h += '</div></div>';
+
+  // ── Balanço Energético ─────────────────────────────────────
+  var basalK = getBasalKcal(p);
+  var workoutK = calcWorkoutKcalToday(curP);
+  var gastoTotal = basalK + workoutK;
+  var consumidoK = kcalConsumedToday();
+  var balance = consumidoK - gastoTotal;
+  var balanceColor = balance<-100?'var(--green)':balance>100?'var(--coral)':'var(--amber)';
+  var balanceLbl = balance<-100?'Déficit':balance>100?'Superávit':'Equilibrio';
+  var balanceSign = balance>0?'+':'';
+  h += '<div class="section"><div class="card" style="padding:14px 16px">';
+  h += '<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Balanço Energético</div>';
+  h += '<div style="display:flex;gap:0;margin-bottom:10px">';
+  h += '<div style="flex:1;padding:10px 12px;background:var(--surface);border-radius:10px 0 0 10px;border:1px solid var(--border)">';
+  h += '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">Gasto total</div>';
+  h += '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace">'+gastoTotal+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">basal '+basalK+(workoutK>0?' + treino '+workoutK:'')+'</div>';
+  h += '</div>';
+  h += '<div style="flex:1;padding:10px 12px;background:var(--surface);border-radius:0 10px 10px 0;border:1px solid var(--border);border-left:none">';
+  h += '<div style="font-size:10px;color:var(--muted);margin-bottom:3px">Consumido</div>';
+  h += '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace">'+consumidoK+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:3px">meta '+p.calories+' kcal</div>';
+  h += '</div>';
+  h += '</div>';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border-radius:10px;border:1px solid var(--border)">';
+  h += '<span style="font-size:13px;font-weight:500">'+balanceLbl+' do dia</span>';
+  h += '<span style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+balanceColor+'">'+balanceSign+balance+' kcal</span>';
   h += '</div>';
   h += '</div></div>';
 
@@ -3018,6 +3070,10 @@ function spS5(){
     '<div class="sldr-wrap"><div class="sldr-lbls"><span>4h</span><span>10h</span></div>' +
     '<input type="range" min="4" max="10" step="0.5" value="'+P.sleepHours+'" oninput="P.sleepHours=this.value;document.getElementById(\'sl-val\').textContent=parseFloat(this.value).toFixed(1)+\'h\'">' +
     '<div class="sldr-val" id="sl-val">'+parseFloat(P.sleepHours).toFixed(1)+'h</div></div></div>' +
+    '<div class="field"><label class="field-lbl">Metabolismo basal (opcional)</label>' +
+    '<div class="funit"><input type="number" placeholder="Calculado automaticamente" value="'+(P.bmr||'')+'" oninput="P.bmr=this.value" style="font-size:15px"><span class="funit-lbl">kcal</span></div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-top:4px">Deixe em branco para calcular pela formula. Se fez um exame de metabolismo basal, insira o valor medido.</div>' +
+    '</div>' +
     '</div>';
 }
 
@@ -3240,10 +3296,12 @@ function applyProfileToPD(idx){
   var goals = P.goals||[];
   var hasGoal = function(v){ return goals.indexOf(v)>=0; };
 
-  // Mifflin-St Jeor BMR
-  var bmr = gender==='M'
+  // Mifflin-St Jeor BMR (use measured value if provided)
+  var bmrMeasured = parseFloat(P.bmr)||0;
+  var bmr = bmrMeasured>0 ? bmrMeasured : (gender==='M'
     ? 10*weight + 6.25*height - 5*age + 5
-    : 10*weight + 6.25*height - 5*age - 161;
+    : 10*weight + 6.25*height - 5*age - 161);
+  p.bmr = bmrMeasured>0 ? bmrMeasured : 0; // store 0 if auto, actual value if measured
 
   // Activity multiplier by training days
   var act = trainDays>=6?1.725:trainDays>=5?1.55:trainDays>=3?1.375:1.2;
@@ -3324,6 +3382,7 @@ function applyProfileToPD(idx){
   pdOverride[idx].meals=p.meals; pdOverride[idx].sleep=p.sleep;
   pdOverride[idx].sleepTarget=p.sleepTarget; pdOverride[idx].scores=p.scores;
   pdOverride[idx].insight=p.insight;
+  if(p.bmr) pdOverride[idx].bmr=p.bmr;
 }
 
 function spSave(){
@@ -3342,6 +3401,9 @@ function spSave(){
   if(P.age){ PD[curP].age=parseInt(P.age); pdOverride[curP].age=PD[curP].age; }
   if(P.weight){ PD[curP].weight=parseFloat(P.weight); pdOverride[curP].weight=PD[curP].weight; }
   if(P.height){ PD[curP].height=parseInt(P.height); pdOverride[curP].height=PD[curP].height; }
+  if(P.gender){ pdOverride[curP].gender=P.gender; }
+  var bmrVal = parseFloat(P.bmr)||0;
+  if(bmrVal>0){ PD[curP].bmr=bmrVal; pdOverride[curP].bmr=bmrVal; } else { PD[curP].bmr=0; pdOverride[curP].bmr=0; }
   if(P.goals.length){
     PD[curP].goal=P.goals.map(function(g){ var f=GOALS.find(function(x){return x.v===g;}); return f?f.l:g; }).join(' + ');
     pdOverride[curP].goal=PD[curP].goal;
@@ -3661,6 +3723,8 @@ function loadUserData(uid, callback){
                 if(o.insight) PD[i].insight = o.insight;
                 if(o.avatarImg) PD[i].avatarImg = o.avatarImg;
                 if(o.progressPhotos && o.progressPhotos.length) PD[i].progressPhotos = o.progressPhotos;
+                if(o.bmr!=null) PD[i].bmr = o.bmr;
+                if(o.gender) PD[i].gender = o.gender;
               });
             }
             if(s.historyData){ if(!historyData[curP]) historyData[curP]=[]; historyData[curP]=s.historyData; }
@@ -3688,7 +3752,9 @@ function saveToCloud(){
       sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
       examHistory:o.examHistory,
       avatarImg: o.avatarImg||'',
-      progressPhotos: o.progressPhotos||[]
+      progressPhotos: o.progressPhotos||[],
+      bmr: o.bmr||0,
+      gender: o.gender||'M'
     };
   });
   var appState = {

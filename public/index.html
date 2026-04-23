@@ -1017,6 +1017,7 @@ function load(){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
       });
     }
+    applyResetMealsFlag();
     return true;
   }catch(e){ return false; }
 }
@@ -1838,13 +1839,22 @@ function renderDieta(resetTab){
 }
 
 function resetDietaPlan(){
-  PD[curP].meals = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].meals));
-  PD[curP].supps = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[curP].supps));
-  if(pdOverride[curP]){ delete pdOverride[curP].meals; delete pdOverride[curP].supps; delete pdOverride[curP].calories; }
+  if(!confirm('Restaurar o plano alimentar original? As alteracoes feitas serao perdidas.')) return;
+  // Store flag in localStorage — applied AFTER Firebase reload to override corrupt Firebase data
+  localStorage.setItem('mh_reset_meals', String(curP));
+  location.reload();
+}
+function applyResetMealsFlag(){
+  var flag = localStorage.getItem('mh_reset_meals');
+  if(flag === null) return;
+  var pi = parseInt(flag);
+  localStorage.removeItem('mh_reset_meals');
+  if(!PD[pi]) return;
+  PD[pi].meals = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[pi].meals));
+  PD[pi].supps = JSON.parse(JSON.stringify(PD_DEFAULT_MEALS[pi].supps));
+  if(pdOverride[pi]){ delete pdOverride[pi].meals; delete pdOverride[pi].supps; delete pdOverride[pi].calories; }
   foodDone = {};
   save();
-  showToast('Plano original restaurado ✓');
-  renderDieta(false);
 }
 
 function renderDietaContent(){
@@ -4367,6 +4377,7 @@ function loadUserData(uid, callback){
           }catch(e){}
         }
       }
+      applyResetMealsFlag(); // apply after Firebase so it overrides corrupt Firebase data
       if(callback) callback();
     })
     .catch(function(){ if(!done){ done=true; clearTimeout(timer); if(callback) callback(); } });

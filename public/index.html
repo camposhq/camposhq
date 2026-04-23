@@ -1951,18 +1951,18 @@ function renderDietaContent(){
   if(bmph) bmph.addEventListener('click', function(){ mealPhotoCtx='geral'; document.getElementById('file-meal-photo').click(); });
   var da=document.getElementById('d-ajustar'); var dan=document.getElementById('d-analise');
   if(da) da.addEventListener('click', function(){
-    var ctx = 'Plano alimentar atual de '+p.name+':\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p; }).join(', '); }).join('\n');
-    ctx += '\nMeta: '+p.calories+' kcal/dia. BMR: '+(p.bmr||getBasalKcal(p))+' kcal. Objetivo: '+p.goal+'. Peso: '+p.weight+'kg, '+p.age+' anos.';
-    openChatWithContext('dieta', ctx, 'Tenho seu plano alimentar carregado. Pode pedir ajuste de calorias, mudanca de objetivo, redistribuicao de macros ou qualquer alteracao no plano.');
+    var sysCtx = 'Voce e um nutricionista especializado em ajuste de planos alimentares. Plano atual de '+p.name+':\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p; }).join(', '); }).join('\n');
+    sysCtx += '\nMeta: '+p.calories+' kcal/dia. BMR: '+(p.bmr||getBasalKcal(p))+' kcal. Objetivo: '+p.goal+'. Peso: '+p.weight+'kg, '+p.age+' anos.';
+    openChatWithContext('dieta-ajustar', sysCtx, 'Plano carregado. Me diga o que quer mudar: calorias, objetivo, macros, horarios ou qualquer ajuste especifico.');
   });
   if(dan) dan.addEventListener('click', function(){
     var kcalConsumed = kcalConsumedToday(); var kcalGoal = p.calories;
-    var ctx = 'Plano nutricional completo de '+p.name+' ('+p.age+' anos, '+p.weight+'kg, '+p.height+'cm):\n';
-    ctx += 'Objetivo: '+p.goal+'. Meta: '+kcalGoal+' kcal/dia. BMR: '+(p.bmr||getBasalKcal(p))+' kcal.\n';
-    ctx += 'Consumido hoje: '+kcalConsumed+' kcal ('+Math.round(kcalConsumed/kcalGoal*100)+'% da meta).\n';
-    ctx += 'Refeicoes:\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p+' '+f.k+'kcal'; }).join(', '); }).join('\n');
-    ctx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ')+'.';
-    openChatWithContext('dieta', ctx, 'Careguei seu plano nutricional completo. Me pergunte sobre deficiencias de nutrientes, qualidade das escolhas, horarios de refeicao, o que melhorar ou qualquer analise.');
+    var sysCtx = 'Voce e um nutricionista especializado em analise nutricional. Perfil de '+p.name+' ('+p.age+' anos, '+p.weight+'kg, '+p.height+'cm):\n';
+    sysCtx += 'Objetivo: '+p.goal+'. Meta: '+kcalGoal+' kcal/dia. BMR: '+(p.bmr||getBasalKcal(p))+' kcal.\n';
+    sysCtx += 'Consumido hoje: '+kcalConsumed+' kcal ('+Math.round(kcalConsumed/kcalGoal*100)+'% da meta).\n';
+    sysCtx += 'Refeicoes:\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p+' '+f.k+'kcal'; }).join(', '); }).join('\n');
+    sysCtx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ')+'.';
+    openChatWithContext('dieta-analise', sysCtx, 'Plano nutricional analisado. Me pergunte sobre deficiencias, qualidade das escolhas, timing, micronutrientes ou o que melhorar.');
   });
 }
 
@@ -2957,6 +2957,8 @@ function getPopBench(age){
 var CHAT_QPS = {
   treino:['Ajustar carga de hoje','Substituir exercicio','Gerar plano semanal','Dicas de execucao'],
   dieta:['Ajustar plano alimentar','Pre-treino ideal','Analise de macros','Suplementos para dieta'],
+  'dieta-ajustar':['Aumentar calorias','Reduzir carboidratos','Mudar objetivo para massa','Redistribuir macros'],
+  'dieta-analise':['O que esta faltando na minha dieta?','Qualidade nutricional do plano','Timing das refeicoes','Onde posso melhorar?'],
   sono:['Protocolo noturno ideal','Suplementos para dormir','Horario ideal de treino','Recuperacao ativa'],
   exames:['Interpretar resultados','Suplementos pelos exames','Perguntas ao medico','Ver tendencias'],
   saude:['Analise geral de saude','Prioridades desta semana','Longevidade','Meu score de saude'],
@@ -3034,7 +3036,7 @@ function openChat(ctx, initialMsg, customGreeting){
   chatSystemExtra = chatSystemExtra||''; // preserve if set by openChatWithContext
   chatCtx = ctx;
   var p = PD[curP];
-  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA',sono:'Especialista em Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
+  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA','dieta-ajustar':'Ajustar Plano Alimentar','dieta-analise':'Analise Nutricional',sono:'Especialista em Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
   document.getElementById('chat-ttl').textContent = titles[ctx]||'MyHealth IA';
   document.getElementById('chat-sub').textContent = p.name+' · '+p.age+' anos · '+p.goal;
   document.getElementById('chat-msgs').innerHTML = '';
@@ -3046,9 +3048,9 @@ function openChat(ctx, initialMsg, customGreeting){
   document.getElementById('chat-back').classList.add('open');
   // show/hide clear button for persistent contexts
   var clearBtn = document.getElementById('chat-clear');
-  clearBtn.style.display = (ctx==='treino'||ctx==='dieta') ? '' : 'none';
+  clearBtn.style.display = (ctx==='treino'||ctx==='dieta'||ctx==='dieta-ajustar'||ctx==='dieta-analise') ? '' : 'none';
 
-  var saved = (ctx==='treino'||ctx==='dieta') ? (chatHistories[curP+'_'+ctx]||[]) : [];
+  var saved = (ctx==='treino'||ctx==='dieta'||ctx==='dieta-ajustar'||ctx==='dieta-analise') ? (chatHistories[curP+'_'+ctx]||[]) : [];
   if(saved.length>0){
     // restore previous conversation
     chatHistory = saved.slice();

@@ -2770,37 +2770,62 @@ function openAddExam(){
 
 function showExamHistory(){
   var history = getExamHistory();
-  if(history.length<2){ showToast('Adicione mais medicoes para ver evolucao'); return; }
-  var h = '<div style="padding:20px 20px 0">';
-  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
-  h += '<div style="font-family:Fraunces,serif;font-size:20px">Historico <em>de exames</em></div>';
-  h += '<button id="hist-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
-  EXAM_MARKER_DEFS.forEach(function(m){
-    var entries = history.filter(function(e){ return e.values[m.key]!=null; });
-    if(entries.length<1) return;
-    h += '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+m.n+' <span style="font-size:11px;color:var(--muted);font-weight:400">'+m.u+'</span></div>';
-    h += '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">';
-    entries.forEach(function(e){
-      var v = parseFloat(e.values[m.key]);
-      var isOk = v>=m.refLow && v<=m.refHigh;
-      var color = isOk?'var(--green)':'var(--coral)';
-      h += '<div style="flex-shrink:0;text-align:center;background:var(--surface);border-radius:10px;padding:8px 12px">';
-      h += '<div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+color+'">'+v+'</div>';
-      h += '<div style="font-size:10px;color:var(--muted);margin-top:2px">'+e.dateLabel+'</div></div>';
-    });
-    h += '</div></div>';
-  });
-  h += '</div>';
+  if(history.length<1){ showToast('Sem historico de exames'); return; }
 
   var overlay = document.createElement('div');
   overlay.id = 'hist-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';
   var panel = document.createElement('div');
   panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding-bottom:calc(var(--safe-bottom)+20px)';
-  panel.innerHTML = h;
+
+  function renderHistContent(){
+    var hist = getExamHistory();
+    var h = '<div style="padding:20px 20px 0">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+    h += '<div><div style="font-family:Fraunces,serif;font-size:20px">Historico <em>de exames</em></div>';
+    h += '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+hist.length+' medicao(oes)</div></div>';
+    h += '<button id="hist-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+    hist.slice().reverse().forEach(function(e, ri){
+      var realIdx = hist.length - 1 - ri;
+      var keys = Object.keys(e.values||{}).filter(function(k){ return e.values[k]!=null; });
+      h += '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:10px">';
+      h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      h += '<div style="font-size:14px;font-weight:600">'+e.dateLabel+'</div>';
+      h += '<button data-delidx="'+realIdx+'" style="background:none;border:1px solid var(--coral);border-radius:6px;padding:3px 10px;font-size:12px;color:var(--coral);cursor:pointer">Excluir</button>';
+      h += '</div>';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      keys.forEach(function(k){
+        var def = EXAM_MARKER_DEFS.find(function(d){ return d.key===k; });
+        var v = e.values[k];
+        var isOk = def && parseFloat(v)>=def.refLow && parseFloat(v)<=def.refHigh;
+        h += '<div style="background:var(--card);border-radius:8px;padding:4px 8px;font-size:12px">';
+        h += '<span style="color:var(--muted)">'+(def?def.n:k)+':</span> ';
+        h += '<span style="font-weight:600;color:'+(def?(isOk?'var(--green)':'var(--coral)'):'var(--text)')+'">'+v+'</span>';
+        h += '</div>';
+      });
+      h += '</div></div>';
+    });
+    h += '</div>';
+    panel.innerHTML = h;
+    document.getElementById('hist-close').addEventListener('click', function(){ overlay.remove(); });
+    panel.querySelectorAll('[data-delidx]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var idx = parseInt(this.dataset.delidx);
+        if(!confirm('Excluir esta medicao?')) return;
+        if(!pdOverride[curP]) pdOverride[curP]={};
+        if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
+        pdOverride[curP].examHistory.splice(idx, 1);
+        save();
+        if(pdOverride[curP].examHistory.length === 0){ overlay.remove(); renderExames(); return; }
+        renderHistContent();
+        renderExames();
+      });
+    });
+  }
+
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
-  document.getElementById('hist-close').addEventListener('click', function(){ overlay.remove(); });
+  renderHistContent();
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
 }
 

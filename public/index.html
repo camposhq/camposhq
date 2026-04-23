@@ -3024,6 +3024,15 @@ function toggleMA(field,val,el){ var arr=P[field]; var i=arr.indexOf(val); if(i>
 function spSetColor(i){ P.avatarBg=COLORS[i].bg; P.avatarCl=COLORS[i].cl; document.querySelectorAll('.cdot').forEach(function(d,j){d.classList.toggle('sel',j===i);}); var av=document.getElementById('sp-av'); if(av){av.style.background=P.avatarBg;av.style.color=P.avatarCl;} }
 function spUpdateInitials(){ var pts=P.name.trim().split(' '); P.initials=pts.length>=2?(pts[0][0]+pts[pts.length-1][0]).toUpperCase():pts[0]?pts[0].slice(0,2).toUpperCase():''; var av=document.getElementById('sp-av'); if(av&&!P.avatarImg) av.textContent=P.initials||'?'; }
 function spCalcIMC(){ if(!P.weight||!P.height) return '--'; return (parseFloat(P.weight)/Math.pow(parseFloat(P.height)/100,2)).toFixed(1); }
+function spCalcBMR(){
+  if(!P.weight||!P.height||!P.age) return '--';
+  var w=parseFloat(P.weight),h=parseFloat(P.height),a=parseInt(P.age),g=P.gender||'M';
+  return Math.round(g==='M' ? 10*w+6.25*h-5*a+5 : 10*w+6.25*h-5*a-161);
+}
+function spUpdateMetrics(){
+  var iv=document.getElementById('imc-val'); if(iv) iv.textContent=spCalcIMC();
+  var bv=document.getElementById('bmr-calc-val'); if(bv){ var b=spCalcBMR(); bv.textContent=b!='--'?b+' kcal/dia':'--'; }
+}
 
 function spS1(){
   var colorDots = COLORS.map(function(c,i){ return '<div class="cdot'+(P.avatarBg===c.bg?' sel':'')+'" style="background:'+c.bg+';border-color:'+c.cl+'"></div>'; }).join('');
@@ -3037,16 +3046,28 @@ function spS1(){
 }
 
 function spS3(){
+  var bmrCalc = spCalcBMR();
+  var bmrPlaceholder = bmrCalc!='--' ? bmrCalc+'' : '';
   return '<div class="section">' +
     '<div class="field-row">' +
-    '<div class="field"><label class="field-lbl">Idade</label><div class="funit"><input type="number" placeholder="45" value="'+P.age+'" oninput="P.age=this.value"><span class="funit-lbl">anos</span></div></div>' +
-    '<div class="field"><label class="field-lbl">Genero</label><select onchange="P.gender=this.value"><option value="M"'+(P.gender==='M'?' selected':'')+'>Masculino</option><option value="F"'+(P.gender==='F'?' selected':'')+'>Feminino</option></select></div>' +
+    '<div class="field"><label class="field-lbl">Idade</label><div class="funit"><input type="number" placeholder="45" value="'+P.age+'" oninput="P.age=this.value;spUpdateMetrics()"><span class="funit-lbl">anos</span></div></div>' +
+    '<div class="field"><label class="field-lbl">Genero</label><select onchange="P.gender=this.value;spUpdateMetrics()"><option value="M"'+(P.gender==='M'?' selected':'')+'>Masculino</option><option value="F"'+(P.gender==='F'?' selected':'')+'>Feminino</option></select></div>' +
     '</div>' +
     '<div class="field-row">' +
-    '<div class="field"><label class="field-lbl">Altura</label><div class="funit"><input type="number" placeholder="178" value="'+P.height+'" oninput="P.height=this.value"><span class="funit-lbl">cm</span></div></div>' +
-    '<div class="field"><label class="field-lbl">Peso atual</label><div class="funit"><input type="number" placeholder="82" value="'+P.weight+'" oninput="P.weight=this.value"><span class="funit-lbl">kg</span></div></div>' +
+    '<div class="field"><label class="field-lbl">Altura</label><div class="funit"><input type="number" placeholder="178" value="'+P.height+'" oninput="P.height=this.value;spUpdateMetrics()"><span class="funit-lbl">cm</span></div></div>' +
+    '<div class="field"><label class="field-lbl">Peso atual</label><div class="funit"><input type="number" placeholder="82" value="'+P.weight+'" oninput="P.weight=this.value;spUpdateMetrics()"><span class="funit-lbl">kg</span></div></div>' +
     '</div>' +
-    '<div class="card" style="padding:14px 16px"><div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:13px;color:var(--muted)">IMC estimado</span><span style="font-size:13px;font-weight:500;font-family:DM Mono,monospace" id="imc-val">'+spCalcIMC()+'</span></div></div>' +
+    '<div class="card" style="padding:14px 16px">' +
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--muted)">IMC estimado</span><span style="font-size:13px;font-weight:500;font-family:DM Mono,monospace" id="imc-val">'+spCalcIMC()+'</span></div>' +
+    '<div style="padding:10px 0 4px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+    '<span style="font-size:13px;color:var(--muted)">Metabolismo basal estimado</span>' +
+    '<span style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:var(--green)" id="bmr-calc-val">'+(bmrCalc!='--'?bmrCalc+' kcal/dia':'--')+'</span>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Calculado pela fórmula Mifflin-St Jeor. Se você fez um teste de metabolismo, insira o valor medido:</div>' +
+    '<div class="funit"><input type="number" placeholder="'+bmrPlaceholder+'" value="'+(P.bmr||'')+'" oninput="P.bmr=this.value" style="font-size:15px"><span class="funit-lbl">kcal</span></div>' +
+    '</div>' +
+    '</div>' +
     '</div>';
 }
 

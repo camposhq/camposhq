@@ -878,7 +878,7 @@ let curDay = (new Date().getDay()+6)%7;
 let dietaTab = 'all';
 let examesTab = 'todos';
 let expandedExam = {};
-let mealDone = {}, suppDone = {}, habitDone = {};
+let mealDone = {}, suppDone = {}, habitDone = {}, foodDone = {};
 let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {}, walkParams = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
@@ -905,7 +905,14 @@ const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function kcalConsumedToday(pi){
   var idx=pi!=null?pi:curP;
-  return (PD[idx]||{meals:[]}).meals.reduce(function(s,m){ return s+(mealDone[idx+'-'+m.id]?m.kcal:0); },0);
+  return (PD[idx]||{meals:[]}).meals.reduce(function(s,m){
+    // sum individual food items if any are checked, else fall back to whole-meal mealDone
+    var hasItemCheck = m.foods && m.foods.some(function(_,fi){ return foodDone[idx+'-'+m.id+'-'+fi]; });
+    if(hasItemCheck){
+      return s + m.foods.reduce(function(fs,f,fi){ return fs+(foodDone[idx+'-'+m.id+'-'+fi]?(f.k||0):0); },0);
+    }
+    return s+(mealDone[idx+'-'+m.id]?m.kcal:0);
+  },0);
 }
 function totalSetsDoneToday(pi){
   var idx=pi!=null?pi:curP; var p=PD[idx]; if(!p||!p.weekly) return 0;
@@ -927,7 +934,7 @@ function handleDayChange(oldDate){
     }
   });
   // reset daily state (keep exWeights, walkParams, cardioSel — they are permanent preferences)
-  mealDone={}; suppDone={}; habitDone={};
+  mealDone={}; suppDone={}; habitDone={}; foodDone={};
   exChecked={}; exSets={}; cardioChecked={};
   waterGlasses={}; sleepData={};
   // reset to today's day of week
@@ -940,7 +947,7 @@ var saveCloudTimer = null;
 function save(){
   try{
     localStorage.setItem('mh_v4',JSON.stringify({
-      curP,curDay,mealDone,suppDone,habitDone,
+      curP,curDay,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
       lastSavedDate:todayStr(),
@@ -957,7 +964,7 @@ function load(){
     if(!d) return false;
     var s = JSON.parse(d);
     curP = s.curP||0; curDay = s.curDay||curDay;
-    mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
+    mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
     cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{}; waterGlasses = s.waterGlasses||{};
@@ -1855,16 +1862,27 @@ function renderDietaContent(){
     h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
     h += '<div class="section"><div class="sec-label">Refeicoes</div>';
     filtMeals.forEach(function(meal){
-      var key = curP+'-'+meal.id; var done = !!mealDone[key];
-      h += '<div class="meal-card"><div class="meal-hdr" data-mkey="'+key+'">';
+      var mkey = curP+'-'+meal.id;
+      var checkedItems = meal.foods.filter(function(_,fi){ return foodDone[mkey+'-'+fi]; }).length;
+      var totalItems = meal.foods.length;
+      var allDone = checkedItems === totalItems && totalItems > 0;
+      var partDone = checkedItems > 0 && !allDone;
+      var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]?(f.k||0):0); },0);
+      var kcalShow = checkedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
+      h += '<div class="meal-card">';
+      h += '<div class="meal-hdr">';
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
-      h += '<div><div class="meal-name">'+meal.name+'</div><div class="meal-kcal">'+meal.kcal+' kcal</div></div></div>';
-      h += '<div class="mcheck'+(done?' done':'')+'" data-mkey="'+key+'"></div></div>';
-      h += '<div style="'+(done?'opacity:.4':'')+'">'+meal.foods.map(function(f,fi){
-        return '<div class="food-item">'+
-          '<div style="flex:1;min-width:0"><div class="food-name">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
+      h += '<div><div class="meal-name">'+meal.name+'</div>';
+      h += '<div class="meal-kcal" style="color:'+(allDone?'var(--green)':partDone?'var(--amber)':'var(--muted)')+'">'+kcalShow+'</div></div></div>';
+      h += '<div style="font-size:11px;color:var(--muted);text-align:right">'+checkedItems+'/'+totalItems+'<br><span style="font-size:9px">itens</span></div>';
+      h += '</div>';
+      h += '<div>'+meal.foods.map(function(f,fi){
+        var fkey = mkey+'-'+fi; var fdone = !!foodDone[fkey];
+        return '<div class="food-item" data-fkey="'+fkey+'" style="cursor:pointer;'+(fdone?'opacity:.45':'')+'">'+
+          '<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(fdone?'var(--green)':'var(--border)')+';background:'+(fdone?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px">'+(fdone?'<span style="color:#fff;font-size:10px">✓</span>':'')+'</div>'+
+          '<div style="flex:1;min-width:0"><div class="food-name" style="'+(fdone?'text-decoration:line-through':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
           '<div class="food-kcal">'+f.k+' kcal</div>'+
-          '<button class="food-swap" data-mealid="'+meal.id+'" data-fidx="'+fi+'" title="Substituir">🔄</button>'+
+          '<button class="food-swap" data-mealid="'+meal.id+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
         '</div>';
       }).join('')+'</div></div>';
     });
@@ -1894,8 +1912,8 @@ function renderDietaContent(){
 
   document.getElementById('dieta-content').innerHTML = h;
 
-  document.querySelectorAll('.meal-hdr[data-mkey]').forEach(function(el){
-    el.addEventListener('click', function(){ mealDone[this.dataset.mkey]=!mealDone[this.dataset.mkey]; save(); renderDietaContent(); });
+  document.querySelectorAll('.food-item[data-fkey]').forEach(function(el){
+    el.addEventListener('click', function(){ foodDone[this.dataset.fkey]=!foodDone[this.dataset.fkey]; save(); renderDietaContent(); });
   });
   document.querySelectorAll('.supp-item[data-skey]').forEach(function(el){
     el.addEventListener('click', function(){ suppDone[this.dataset.skey]=!suppDone[this.dataset.skey]; save(); renderDietaContent(); });
@@ -3874,7 +3892,7 @@ function loadUserData(uid, callback){
           try{
             var s = data.appState;
             curP = s.curP||0; curDay = s.curDay||curDay;
-            mealDone = s.mealDone||{}; suppDone = s.suppDone||{};
+            mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
             habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
             exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
             cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{}; waterGlasses = s.waterGlasses||{};
@@ -3948,7 +3966,7 @@ function saveToCloud(){
     };
   });
   var appState = {
-    curP:curP, curDay:curDay, mealDone:mealDone, suppDone:suppDone,
+    curP:curP, curDay:curDay, mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,

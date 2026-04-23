@@ -1920,7 +1920,10 @@ function renderDietaContent(){
           '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
           '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>'+
         '</div>';
-      }).join('')+'</div></div>';
+      }).join('')+
+      '<div style="padding:8px 14px;border-top:1px solid var(--border)">'+
+        '<button class="food-swap" data-additem-mi="'+mi+'" onclick="event.stopPropagation()" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar alimento</button>'+
+      '</div></div>';
     });
     h += '</div>';
   }
@@ -1967,6 +1970,12 @@ function renderDietaContent(){
         if(allDone){ delete foodDone[mkey+'-'+fi]; } else { foodDone[mkey+'-'+fi]=true; }
       }
       save(); renderDietaContent();
+    });
+  });
+  document.querySelectorAll('.food-swap[data-additem-mi]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      adicionarAlimento(parseInt(this.dataset.additemMi));
     });
   });
   document.querySelectorAll('.supp-item[data-skey]').forEach(function(el){
@@ -2018,6 +2027,76 @@ function renderDietaContent(){
     sysCtx += 'Refeicoes:\n'+p.meals.map(function(m){ return '- '+m.name+' ('+m.kcal+' kcal): '+m.foods.map(function(f){ return f.n+' '+f.p+' '+f.k+'kcal'; }).join(', '); }).join('\n');
     sysCtx += '\nSuplementos: '+p.supps.map(function(s){ return s.n+' '+s.dose; }).join(', ')+'.';
     openChatWithContext('dieta-analise', sysCtx, 'Plano nutricional analisado. Me pergunte sobre deficiencias, qualidade das escolhas, timing, micronutrientes ou o que melhorar.');
+  });
+}
+
+function adicionarAlimento(mealIdx){
+  var p = PD[curP];
+  var meal = p.meals[mealIdx];
+  if(!meal) return;
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML =
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'+
+      '<div>'+
+        '<div style="font-family:Fraunces,serif;font-size:18px">Adicionar <em>alimento</em></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+meal.name+'</div>'+
+      '</div>'+
+      '<button id="fadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+    '</div>'+
+    '<input id="fadd-name" type="text" placeholder="Nome do alimento (ex: ovo cozido)" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:10px">'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<input id="fadd-porcao" type="text" placeholder="Porcao (ex: 2 unid)" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box">'+
+      '<input id="fadd-kcal" type="number" placeholder="kcal" style="width:90px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box">'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Ou deixe a porcao e kcal em branco para a IA calcular automaticamente.</div>'+
+    '<button id="fadd-btn" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Adicionar</button>';
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('fadd-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  setTimeout(function(){ document.getElementById('fadd-name').focus(); }, 200);
+
+  document.getElementById('fadd-btn').addEventListener('click', function(){
+    var btn = this;
+    var nome = document.getElementById('fadd-name').value.trim();
+    if(!nome){ showToast('Informe o nome do alimento'); return; }
+    var porcao = document.getElementById('fadd-porcao').value.trim();
+    var kcalVal = parseInt(document.getElementById('fadd-kcal').value);
+
+    function aplicar(n, po, k){
+      meal.foods.push({n:n, p:po||'1 porcao', k:k||0});
+      meal.kcal = meal.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].meals = p.meals;
+      save(); overlay.remove();
+      showToast('"'+n+'" adicionado ✓');
+      renderDietaContent();
+    }
+
+    if(porcao && kcalVal > 0){
+      aplicar(nome, porcao, kcalVal);
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Calculando...';
+    var instr = 'Qual a quantidade de calorias de "'+nome+'"'+(porcao?' na porcao "'+porcao+'"':'')+' ? Retorne SOMENTE JSON valido: {"n":"'+nome+'","p":"porcao padrao","k":NUMERO_INTEIRO}';
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-haiku-4-5-20251001', max_tokens:100,
+        system:'Voce e um nutricionista. Retorne apenas JSON valido sem texto.',
+        messages:[{role:'user', content:instr}]})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      aplicar(parsed.n||nome, parsed.p||porcao||'1 porcao', parsed.k||0);
+    }).catch(function(){
+      aplicar(nome, porcao||'1 porcao', kcalVal||0);
+    });
   });
 }
 

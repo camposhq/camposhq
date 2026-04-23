@@ -2376,7 +2376,15 @@ function renderExames(){
 
 function getExamHistory(){
   var o = pdOverride[curP];
-  return (o && o.examHistory) ? o.examHistory : [];
+  if(!o || !o.examHistory) return [];
+  // migrate old entries that only have month+year in dateLabel
+  return o.examHistory.map(function(e){
+    if(e.date && e.dateLabel && !/\d{2}/.test(e.dateLabel.split(' ')[0])){
+      var d = new Date(e.date+'T12:00:00');
+      e.dateLabel = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+    }
+    return e;
+  });
 }
 
 function renderExamesContent(){
@@ -2526,7 +2534,7 @@ function openAddExam(){
     if(!pdOverride[curP]) pdOverride[curP]={};
     if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
     var today = new Date();
-    pdOverride[curP].examHistory.push({date:today.toISOString().slice(0,10), dateLabel:today.toLocaleDateString('pt-BR',{month:'short',year:'numeric'}), values:vals});
+    pdOverride[curP].examHistory.push({date:today.toISOString().slice(0,10), dateLabel:today.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}), values:vals});
     save();
     overlay.remove();
     showToast('Medicao salva!');
@@ -3828,7 +3836,7 @@ function spSave(){
   if(hasExam){
     if(!pdOverride[curP].examHistory) pdOverride[curP].examHistory=[];
     var today2 = new Date();
-    pdOverride[curP].examHistory.push({date:today2.toISOString().slice(0,10), dateLabel:today2.toLocaleDateString('pt-BR',{month:'short',year:'numeric'}), values:examVals});
+    pdOverride[curP].examHistory.push({date:today2.toISOString().slice(0,10), dateLabel:today2.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}), values:examVals});
   }
   profileComplete=true;
   save(); showToast('Perfil salvo! Treino e dieta atualizados ✓');

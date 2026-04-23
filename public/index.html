@@ -940,9 +940,11 @@ function handleDayChange(oldDate){
     var imc=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
     var entry=sleepData[pi]||{hours:p.sleep};
     var kcal=kcalConsumedToday(pi);
+    var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
+    var deficit=kcal>0?kcal-gasto:null;
     var existing=historyData[pi].find(function(e){return e.date===oldDate;});
     if(!existing){
-      historyData[pi].push({date:oldDate,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:entry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories});
+      historyData[pi].push({date:oldDate,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:entry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit});
     }
   });
   // reset daily state (keep exWeights, walkParams, cardioSel — they are permanent preferences)
@@ -2774,7 +2776,8 @@ function snapshotHistory(idx){
   if(!historyData[idx]) historyData[idx]=[];
   // update or append for this month
   var existing = historyData[idx].findIndex(function(e){ return e.date===dateKey; });
-  var entry = {date:dateKey,label:label,weight:p.weight,imc:imc,fat:historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null,sleep:p.sleep||0,avg:avg,scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},calories:p.calories||0};
+  var kcalToday=kcalConsumedToday(idx); var gastoToday=getBasalKcal(p)+calcWorkoutKcalToday(idx);
+  var entry = {date:dateKey,label:label,weight:p.weight,imc:imc,fat:historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null,sleep:p.sleep||0,avg:avg,scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},calories:kcalToday>0?kcalToday:p.calories||0,gasto:gastoToday,deficit:kcalToday>0?kcalToday-gastoToday:null};
   if(existing>=0) historyData[idx][existing]=entry;
   else historyData[idx].push(entry);
   save();
@@ -2900,7 +2903,15 @@ function renderEvolucao(){
     // Habitos
     h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
     h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep;}),labels,p.sleep,'h','#1a5a8a',false,7.8);
-    h+=evoCard('Meta calorica','🔥',hist.map(function(e){return e.calories;}),labels,p.calories,'kcal','#c47a1a',false,null);
+    h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories;}),labels,kcalConsumedToday(),'kcal','#c47a1a',false,p.calories);
+    var gastoHist=hist.map(function(e){return e.gasto||null;});
+    var deficitHist=hist.map(function(e){return e.deficit!=null?e.deficit:null;});
+    var gastoAtual=getBasalKcal(p)+calcWorkoutKcalToday();
+    var deficitAtual=kcalConsumedToday()-gastoAtual;
+    if(gastoHist.some(function(v){return v!=null;})){
+      h+=evoCard('Gasto total','🔥',gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
+      h+=evoCard('Deficit calorico','⚖️',deficitHist,labels,deficitAtual,'kcal','#1a5a8a',true,0);
+    }
     h+='</div>';
   }
   // AI analysis button

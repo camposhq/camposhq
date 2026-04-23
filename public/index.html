@@ -2710,13 +2710,13 @@ function renderExamesContent(){
   var ehist=document.getElementById('e-hist');
   var exCtx = 'Exames de '+p.name+' ('+p.age+' anos, '+p.weight+'kg, objetivo: '+p.goal+'):\n'+exStr;
   if(ea) ea.addEventListener('click', function(){
-    openChatWithContext('exames', exCtx+'\nFoco: interpretacao dos valores fora do ideal e impacto em saude e treino.', 'Exames carregados. Me pergunte sobre qualquer marcador, o que esta fora do ideal ou o impacto na sua saude.');
+    openChatWithContext('exames-interpretar', 'Voce e um medico especialista em medicina funcional. '+exCtx, 'Exames carregados. O que quer interpretar — algum marcador especifico, o que esta fora do ideal ou o impacto geral na sua saude?');
   });
   if(es) es.addEventListener('click', function(){
-    openChatWithContext('exames', exCtx+'\nFoco: suplementacao baseada nos resultados dos exames.', 'Exames carregados. Me pergunte sobre suplementos, doses ou deficiencias especificas que quer corrigir.');
+    openChatWithContext('exames-suplementos', 'Voce e um especialista em nutraceutica e medicina preventiva. '+exCtx, 'Exames carregados. Me pergunte sobre suplementos especificos, doses ou como corrigir as deficiencias encontradas.');
   });
   if(em) em.addEventListener('click', function(){
-    openChatWithContext('exames', exCtx+'\nFoco: preparar consulta medica com base nos exames.', 'Exames carregados. Me pergunte sobre quais exames repetir, perguntas para o medico ou o que merece atencao na proxima consulta.');
+    openChatWithContext('exames-consulta', 'Voce e um medico preparando o paciente para uma consulta. '+exCtx, 'Exames carregados. Me pergunte o que priorizar na consulta, quais exames repetir ou quais especialistas procurar.');
   });
   if(ehist) ehist.addEventListener('click', showExamHistory);
 }
@@ -3383,6 +3383,9 @@ var CHAT_QPS = {
   'sono-analise':['Como esta minha qualidade de sono?','Impacto do sono na recuperacao','Tendencia dos ultimos dias','O que melhorar primeiro?'],
   sono:['Protocolo noturno ideal','Suplementos para dormir','Horario ideal de treino','Recuperacao ativa'],
   exames:['Interpretar resultados','Suplementos pelos exames','Perguntas ao medico','Ver tendencias'],
+  'exames-interpretar':['O que esta fora do ideal?','Impacto no meu treino','Quais marcadores sao criticos?','Compare com referencia ideal'],
+  'exames-suplementos':['Top 5 suplementos para mim','Dose ideal de Vitamina D','Como corrigir deficiencia de ferro?','Protocolo de suplementacao'],
+  'exames-consulta':['Quais exames repetir?','Perguntas para o endocrinologista','O que priorizar na consulta?','Exames que ainda faltam pedir'],
   saude:['Analise geral de saude','Prioridades desta semana','Longevidade','Meu score de saude'],
 };
 
@@ -3455,7 +3458,7 @@ function openChat(ctx, initialMsg, customGreeting){
   chatSystemExtra = chatSystemExtra||''; // preserve if set by openChatWithContext
   chatCtx = ctx;
   var p = PD[curP];
-  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA','dieta-ajustar':'Ajustar Plano Alimentar','dieta-analise':'Analise Nutricional',sono:'Especialista em Sono','sono-prot':'Protocolo de Sono','sono-analise':'Analise de Sono',exames:'Analise de Exames',saude:'MyHealth IA'};
+  var titles = {treino:'Assistente de Treino',dieta:'Nutricionista IA','dieta-ajustar':'Ajustar Plano Alimentar','dieta-analise':'Analise Nutricional',sono:'Especialista em Sono','sono-prot':'Protocolo de Sono','sono-analise':'Analise de Sono',exames:'Analise de Exames','exames-interpretar':'Interpretar Exames','exames-suplementos':'Suplementos pelos Exames','exames-consulta':'Preparar Consulta',saude:'MyHealth IA'};
   document.getElementById('chat-ttl').textContent = titles[ctx]||'MyHealth IA';
   document.getElementById('chat-sub').textContent = p.name+' · '+p.age+' anos · '+p.goal;
   document.getElementById('chat-msgs').innerHTML = '';

@@ -1858,12 +1858,6 @@ function applyResetMealsFlag(){
 
 function renderDietaContent(){
   var p = PD[curP]; var h = '';
-  if(pdOverride[curP]&&pdOverride[curP].meals){
-    h += '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;margin:12px 16px 0;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">';
-    h += '<span style="font-size:12px;color:#856404">Plano personalizado ativo</span>';
-    h += '<button id="d-reset-meals" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">↩ Restaurar original</button>';
-    h += '</div>';
-  }
   var mDone = p.meals.filter(function(m,mi){ var mkey=curP+'-'+(m.id||'m'+mi); return m.foods.length>0&&m.foods.every(function(_,fi){ return foodDone[mkey+'-'+fi]===true; }); }).length;
   var sDone = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var wk2 = curP+'-water'; var glasses = waterGlasses[wk2]||0; var totalG = Math.round(p.water/250);
@@ -1928,9 +1922,8 @@ function renderDietaContent(){
       return id.startsWith(dietaTab)||nm.startsWith(dietaTab);
     }
     h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
-    h += '<div class="section"><div class="sec-label">Refeicoes</div>';
-    p.meals.map(function(m,mi){ return {meal:m, mi:mi}; }).forEach(function(x){
-      var meal=x.meal; var mi=x.mi;
+    h += '<div class="section"><div class="sec-label">Refeicoes</div></div>';
+    p.meals.forEach(function(meal, mi){
       var highlight = mealMatchesTab(meal);
       var mkey = curP+'-'+(meal.id||'m'+mi);
       var totalItems = meal.foods.length;
@@ -1939,7 +1932,8 @@ function renderDietaContent(){
       var partDone = checkedItems > 0 && checkedItems < totalItems;
       var kcalEaten = meal.foods.reduce(function(s,f,fi){ return s+(foodDone[mkey+'-'+fi]===true?(f.k||0):0); },0);
       var kcalShow = checkedItems>0 ? kcalEaten+' / '+meal.kcal+' kcal' : meal.kcal+' kcal';
-      h += '<div class="meal-card" id="meal-anchor-'+mi+'" style="'+(highlight?'border:1.5px solid var(--green)':'')+'">';
+      h += '<div class="section" style="padding-bottom:0" id="meal-anchor-'+mi+'">';
+      h += '<div class="meal-card" style="'+(highlight?'border:2px solid var(--green)':'')+'">';
       h += '<div class="meal-hdr">';
       h += '<div class="meal-hdr-l"><div class="meal-time">'+meal.time+'</div>';
       h += '<div><div class="meal-name">'+meal.name+'</div>';
@@ -1961,9 +1955,11 @@ function renderDietaContent(){
       }).join('')+
       '<div style="padding:8px 14px;border-top:1px solid var(--border)">'+
         '<button class="food-swap" data-additem-mi="'+mi+'" onclick="event.stopPropagation()" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar alimento</button>'+
-      '</div></div></div>';  // closes: add-btn-wrapper / foods-div / meal-card
+      '</div>';  // closes add-btn-wrapper
+      h += '</div>';  // closes foods-div
+      h += '</div>';  // closes meal-card
+      h += '</div>';  // closes section
     });
-    h += '</div>';  // closes section
   }
 
   if(dietaTab==='all'||dietaTab==='supp'){
@@ -2080,11 +2076,6 @@ function renderDietaContent(){
       });
     }, 80);
   }
-  var dReset = document.getElementById('d-reset-meals');
-  if(dReset) dReset.addEventListener('click', function(){
-    if(!confirm('Restaurar o plano alimentar original? As alteracoes feitas serao perdidas.')) return;
-    resetDietaPlan();
-  });
 }
 
 function adicionarAlimento(mealIdx){
@@ -4355,7 +4346,7 @@ function loadUserData(uid, callback){
                 if(o.fat!=null) PD[i].fat = o.fat;
                 if(o.water!=null) PD[i].water = o.water;
                 if(o.weekly) PD[i].weekly = o.weekly;
-                if(o.meals) PD[i].meals = o.meals;
+                // meals intentionally NOT loaded from Firebase (localStorage only, avoids cloud corruption)
                 if(o.sleep!=null) PD[i].sleep = o.sleep;
                 if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
                 if(o.scores) PD[i].scores = o.scores;
@@ -4392,7 +4383,7 @@ function saveToCloud(){
     pdOverrideSafe[idx] = {
       name:o.name, initials:o.initials, age:o.age, weight:o.weight, height:o.height,
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
-      water:o.water, weekly:o.weekly, meals:o.meals,
+      water:o.water, weekly:o.weekly,
       sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
       examHistory:o.examHistory,
       avatarImg: o.avatarImg||'',

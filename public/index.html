@@ -1000,7 +1000,13 @@ function load(){
       if(o.fat!=null) PD[i].fat = o.fat;
       if(o.water!=null) PD[i].water = o.water;
       if(o.weekly) PD[i].weekly = o.weekly;
-      if(o.meals) PD[i].meals = o.meals;
+      if(o.meals && o.meals.length > 0){
+        // sanity check: if all meals share the same id/name, data is corrupt — auto-clear
+        var ids = o.meals.map(function(m){ return (m.id||m.name||'').toLowerCase(); });
+        var allSame = ids.every(function(v){ return v === ids[0]; });
+        if(!allSame) PD[i].meals = o.meals;
+        else delete o.meals; // clear corrupt data silently
+      }
       if(o.sleep!=null) PD[i].sleep = o.sleep;
       if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
       if(o.scores) PD[i].scores = o.scores;

@@ -1672,13 +1672,12 @@ function renderTreinosContent(){
       exSets[dotKey]=!wasDone;
       save(); renderTreinosContent();
       if(!wasDone){
-        if(sidx < stotal-1){
-          // between sets — show rest timer (timer beeps when done)
-          showRestTimer();
-        } else {
-          // last set of exercise — play "exercise complete" sound
+        if(sidx === stotal-1){
+          // last set — play exercise complete sound then show rest timer for next exercise
           playExerciseDone();
         }
+        // always show rest timer after any set (between sets or before next exercise)
+        showRestTimer();
       }
     });
   });

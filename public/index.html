@@ -1516,6 +1516,7 @@ function renderTreinosContent(){
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
+    h += '<button class="food-swap" data-day="'+curDay+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:4px">🔄</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
     h += '<div style="display:flex;gap:6px;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+'</div>';
@@ -1659,6 +1660,9 @@ function renderTreinosContent(){
   });
   document.querySelectorAll('.ex-wbtn').forEach(function(el){
     el.addEventListener('click', function(){ openWeight(this.dataset.wkey, this.dataset.wname, parseFloat(this.dataset.wcur)); });
+  });
+  document.querySelectorAll('.food-swap[data-exidx]').forEach(function(el){
+    el.addEventListener('click', function(){ substituirExercicio(parseInt(this.dataset.day), parseInt(this.dataset.exidx)); });
   });
   document.querySelectorAll('.ex-vid').forEach(function(el){
     el.addEventListener('click', function(){ openExVideo(this.dataset.vid); });
@@ -1938,6 +1942,50 @@ function substituirAlimento(mealId, foodIdx){
     }).catch(function(){
       btn.disabled = false; btn.textContent = 'Substituir com IA';
       showToast('Nao foi possivel substituir. Tente novamente.');
+    });
+  });
+}
+
+function substituirExercicio(dayIdx, exIdx){
+  var p = PD[curP];
+  var ex = p.weekly[dayIdx] && p.weekly[dayIdx].exs && p.weekly[dayIdx].exs[exIdx];
+  if(!ex) return;
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end;justify-content:center';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:var(--radius) var(--radius) 0 0;padding:24px 20px 32px;width:100%;max-width:480px">' +
+    '<div style="font-family:Fraunces,serif;font-size:18px;margin-bottom:4px">Trocar exercício</div>' +
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">Atual: <strong>'+ex.n+'</strong> · '+ex.s+'</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Substituir por (deixe em branco para IA sugerir):</div>' +
+    '<input id="exsub-inp" type="text" placeholder="Ex: Leg press, exercicio em casa, sem equipamento..." style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--surface);color:var(--text);font-family:DM Sans,sans-serif;box-sizing:border-box;margin-bottom:12px">' +
+    '<button id="exsub-btn" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Trocar com IA</button>' +
+    '<button id="exsub-cancel" style="width:100%;padding:10px;background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;margin-top:6px">Cancelar</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  document.getElementById('exsub-cancel').onclick = function(){ overlay.remove(); };
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('exsub-btn').addEventListener('click', function(){
+    var btn = this;
+    var suggestion = document.getElementById('exsub-inp').value.trim();
+    btn.disabled = true; btn.textContent = 'Buscando...';
+    var prompt = 'Substitua o exercicio "'+ex.n+'" ('+ex.s+') por '+(suggestion?'"'+suggestion+'"':'um exercicio equivalente')+
+      ' para '+p.name+', '+p.age+' anos, '+p.weight+'kg, nivel '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+
+      ', objetivo: '+p.goal+'. Retorne APENAS JSON: {"n":"nome","s":"3x10-12","w":0,"m":"musculo trabalhado"}';
+    fetch('/api/claude', {method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      var parsed = JSON.parse(txt);
+      if(!parsed.n) throw new Error('invalid');
+      p.weekly[dayIdx].exs[exIdx] = {n:parsed.n, s:parsed.s||ex.s, w:parsed.w||0, m:parsed.m||ex.m};
+      if(!pdOverride[curP]) pdOverride[curP]={};
+      pdOverride[curP].weekly = p.weekly;
+      save(); overlay.remove();
+      showToast('"'+ex.n+'" trocado por "'+parsed.n+'" ✓');
+      renderTreinosContent();
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = 'Trocar com IA';
+      showToast('Nao foi possivel trocar. Tente novamente.');
     });
   });
 }

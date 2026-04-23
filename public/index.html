@@ -682,6 +682,15 @@ const CARDIO_OPTS = [
    steps:[{n:'Aquecimento',d:'Pular leve 2 min',t:'2 min'},{n:'Series x6',d:'2 min / 1 min descanso',t:'15 min'},{n:'Alongamento',d:'Panturrilhas',t:'3 min'}]},
   {id:'walk',icon:'🚶',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
    params:[],steps:[]},
+  {id:'futvoley',icon:'⚽',label:'Futvoley',color:'#c4621a',cl:'#fdf0e8',title:'Futvoley',sub:'Alta intensidade • Explosao + aerobico',dur:'60 min',
+   params:[{v:'60',l:'Min'},{v:'Alta',l:'Intensidade'},{v:'80%',l:'FC max'},{v:'~500',l:'Kcal'}],
+   steps:[{n:'Aquecimento',d:'Passe + mobilidade',t:'10 min'},{n:'Jogo',d:'Partidas de futvoley',t:'45 min'},{n:'Volta a calma',d:'Alongamento',t:'5 min'}]},
+  {id:'beachtennis',icon:'🎾',label:'Beach Tennis',color:'#1a5a8a',cl:'#e3f0fd',title:'Beach Tennis',sub:'Aerobico + explosao lateral',dur:'60 min',
+   params:[{v:'60',l:'Min'},{v:'Mod-Alta',l:'Intensidade'},{v:'75%',l:'FC max'},{v:'~450',l:'Kcal'}],
+   steps:[{n:'Aquecimento',d:'Troca de bolas leve',t:'10 min'},{n:'Jogo',d:'Sets / rally',t:'45 min'},{n:'Volta a calma',d:'Alongamento',t:'5 min'}]},
+  {id:'voleyareia',icon:'🏐',label:'Voley de Areia',color:'#854f0b',cl:'#faeeda',title:'Voley de Areia',sub:'Full body • Areia aumenta o gasto',dur:'60 min',
+   params:[{v:'60',l:'Min'},{v:'Mod-Alta',l:'Intensidade'},{v:'78%',l:'FC max'},{v:'~480',l:'Kcal'}],
+   steps:[{n:'Aquecimento',d:'Passes e movimentacao',t:'10 min'},{n:'Jogo',d:'Sets de voley na areia',t:'45 min'},{n:'Volta a calma',d:'Alongamento leve',t:'5 min'}]},
 ];
 function calcWalkKcal(weight, speedKmh, incPct, mins){
   var met = 2.8 + Math.max(0,(speedKmh-3.2)*0.5) + incPct*0.35;

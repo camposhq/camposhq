@@ -1464,6 +1464,23 @@ function closeRestTimer(){
   var ov=document.getElementById('rest-timer-overlay');
   if(ov) ov.remove();
 }
+function playExerciseDone(){
+  // Ascending C-E-G chord — distinct from rest timer (which is 3x 880Hz)
+  try{
+    var ac=new(window.AudioContext||window.webkitAudioContext)();
+    [[523,0],[659,120],[784,240]].forEach(function(nf){
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type='sine'; o.frequency.value=nf[0];
+      g.gain.setValueAtTime(0.3, ac.currentTime+nf[1]/1000);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+nf[1]/1000+0.4);
+      o.start(ac.currentTime+nf[1]/1000);
+      o.stop(ac.currentTime+nf[1]/1000+0.4);
+    });
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
+  showToast('Exercício completo! Próximo exercício ✓');
+}
 // ──────────────────────────────────────────────────────────────
 
 function renderTreinosContent(){
@@ -1654,8 +1671,15 @@ function renderTreinosContent(){
       var wasDone=!!exSets[dotKey];
       exSets[dotKey]=!wasDone;
       save(); renderTreinosContent();
-      // show timer when marking done, not on last set
-      if(!wasDone && sidx < stotal-1) showRestTimer();
+      if(!wasDone){
+        if(sidx < stotal-1){
+          // between sets — show rest timer (timer beeps when done)
+          showRestTimer();
+        } else {
+          // last set of exercise — play "exercise complete" sound
+          playExerciseDone();
+        }
+      }
     });
   });
   document.querySelectorAll('.ex-wbtn').forEach(function(el){

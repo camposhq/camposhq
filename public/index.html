@@ -4640,17 +4640,21 @@ function loadUserData(uid, callback){
           try{
             var s = data.appState;
             curP = s.curP||0; curDay = s.curDay||curDay;
-            // preserve today's local tracking if localStorage is more recent than Firebase
-            var localIsToday = (s.lastSavedDate !== todayStr());
-            mealDone = localIsToday ? mealDone : (s.mealDone||{});
-            foodDone = localIsToday ? foodDone : (s.foodDone||{});
-            suppDone = localIsToday ? suppDone : (s.suppDone||{});
-            habitDone = localIsToday ? habitDone : (s.habitDone||{});
-            waterGlasses = localIsToday ? waterGlasses : (s.waterGlasses||{});
+            // merge today's tracking: union of local + Firebase so nothing is lost
+            function mergeObj(local, remote){
+              var r = remote||{}; var out = Object.assign({}, r);
+              Object.keys(local||{}).forEach(function(k){ if(local[k]===true) out[k]=true; else if(!(k in out)) out[k]=local[k]; });
+              return out;
+            }
+            mealDone = mergeObj(mealDone, s.mealDone);
+            foodDone = mergeObj(foodDone, s.foodDone);
+            suppDone = mergeObj(suppDone, s.suppDone);
+            habitDone = mergeObj(habitDone, s.habitDone);
+            waterGlasses = mergeObj(waterGlasses, s.waterGlasses);
             exChecked = s.exChecked||{};
             exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
             cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{};
-            sleepData = localIsToday ? sleepData : (s.sleepData||{}); expandedExam = s.expandedExam||{};
+            sleepData = mergeObj(sleepData, s.sleepData); expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
               pdOverride = s.pdOverride;

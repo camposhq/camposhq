@@ -1084,8 +1084,20 @@ function load(){
         // sanity check: if all meals share the same id/name, data is corrupt — auto-clear
         var ids = o.meals.map(function(m){ return (m.id||m.name||'').toLowerCase(); });
         var allSame = ids.every(function(v){ return v === ids[0]; });
-        if(!allSame) PD[i].meals = o.meals;
-        else delete o.meals; // clear corrupt data silently
+        if(!allSame){
+          // migration: insert missing lanche2 from defaults if not present
+          var hasLanche2 = o.meals.some(function(m){ return (m.id||'').indexOf('lanche2')>=0||(m.name||'').toLowerCase().indexOf('tarde')>=0; });
+          if(!hasLanche2 && PD_DEFAULT_MEALS[i]){
+            var defLanche2 = PD_DEFAULT_MEALS[i].meals.find(function(m){ return m.id==='lanche2'; });
+            if(defLanche2){
+              // insert after almoco
+              var almocoIdx = o.meals.findIndex(function(m){ return (m.id||'').indexOf('almoco')>=0; });
+              if(almocoIdx>=0) o.meals.splice(almocoIdx+1,0,defLanche2);
+              else o.meals.push(defLanche2);
+            }
+          }
+          PD[i].meals = o.meals;
+        } else delete o.meals;
       }
       if(o.sleep!=null) PD[i].sleep = o.sleep;
       if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;

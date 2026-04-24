@@ -959,6 +959,8 @@ function totalSetsDoneToday(pi){
   p.weekly.forEach(function(w,d){ if(w.rest||!w.exs) return; w.exs.forEach(function(ex,i){ var k=idx+'-'+d+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) tot++; } }); });
   return tot;
 }
+var dayChangeHandled = false; // prevent double execution
+
 function resetDailyState(){
   mealDone={}; suppDone={}; habitDone={}; foodDone={};
   exChecked={}; exSets={}; cardioChecked={};
@@ -966,6 +968,8 @@ function resetDailyState(){
 }
 
 function handleDayChange(oldDate){
+  if(dayChangeHandled) return; // already ran, skip
+  dayChangeHandled = true;
   // backfill all missed days between oldDate and yesterday
   var today = new Date(); today.setHours(0,0,0,0);
   var cursor = new Date(oldDate+'T12:00:00');
@@ -4959,24 +4963,36 @@ function loadUserData(uid, callback){
           try{
             var s = data.appState;
             curP = s.curP||0; curDay = s.curDay||curDay;
-            // merge today's tracking: union of local + Firebase so nothing is lost
             function mergeObj(local, remote){
               var r = remote||{}; var out = Object.assign({}, r);
               Object.keys(local||{}).forEach(function(k){ if(local[k]===true) out[k]=true; else if(!(k in out)) out[k]=local[k]; });
               return out;
             }
-            mealDone = mergeObj(mealDone, s.mealDone);
-            foodDone = mergeObj(foodDone, s.foodDone);
-            suppDone = mergeObj(suppDone, s.suppDone);
-            habitDone = mergeObj(habitDone, s.habitDone);
-            waterGlasses = mergeObj(waterGlasses, s.waterGlasses);
-            exChecked = mergeObj(exChecked, s.exChecked);
-            exSets = mergeObj(exSets, s.exSets);
-            exWeights = Object.assign({}, s.exWeights||{}, exWeights); // local weights take priority
-            cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
-            cardioChecked = mergeObj(cardioChecked, s.cardioChecked);
-            walkParams = Object.assign({}, s.walkParams||{}, walkParams);
-            sleepData = mergeObj(sleepData, s.sleepData); expandedExam = s.expandedExam||{};
+            // only merge daily tracking if Firebase data is from TODAY
+            // if Firebase is from a previous day, daily state was already reset — don't restore old data
+            var firebaseIsToday = (s.lastSavedDate === todayStr());
+            if(firebaseIsToday){
+              mealDone = mergeObj(mealDone, s.mealDone);
+              foodDone = mergeObj(foodDone, s.foodDone);
+              suppDone = mergeObj(suppDone, s.suppDone);
+              habitDone = mergeObj(habitDone, s.habitDone);
+              waterGlasses = mergeObj(waterGlasses, s.waterGlasses);
+              exChecked = mergeObj(exChecked, s.exChecked);
+              exSets = mergeObj(exSets, s.exSets);
+            } else {
+              // Firebase has old data — keep local (already reset) state, don't restore yesterday
+              exWeights = Object.assign({}, s.exWeights||{}, exWeights);
+              cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
+              walkParams = Object.assign({}, s.walkParams||{}, walkParams);
+            }
+            if(firebaseIsToday){
+              exWeights = Object.assign({}, s.exWeights||{}, exWeights);
+              cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
+              cardioChecked = mergeObj(cardioChecked, s.cardioChecked);
+              walkParams = Object.assign({}, s.walkParams||{}, walkParams);
+              sleepData = mergeObj(sleepData, s.sleepData);
+            }
+            expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
               pdOverride = s.pdOverride;

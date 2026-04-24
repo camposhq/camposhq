@@ -3301,7 +3301,10 @@ function renderEvolucao(){
     h+='</div>';
   }
   // AI analysis button
-  h+='<div class="section"><div class="actions"><button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button></div></div>';
+  h+='<div class="section"><div class="actions">';
+  h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
+  h+='<button class="act-btn" id="evo-export-btn"><span class="act-icon">📤</span><span class="act-lbl">Exportar</span><span class="act-sub">Compartilhar progresso</span></button>';
+  h+='</div></div>';
 
   document.getElementById('evolucao-content').innerHTML = h;
 
@@ -3317,6 +3320,73 @@ function renderEvolucao(){
     openChat('saude','Analise minha evolucao de saude: '+summary+'. Perfil: '+p.name+', '+p.age+' anos. O que melhorou, o que precisa de atencao e as 3 prioridades para os proximos 90 dias.');
   });
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
+  var exportBtn = document.getElementById('evo-export-btn');
+  if(exportBtn) exportBtn.addEventListener('click', exportProgresso);
+}
+
+function exportProgresso(){
+  var p = PD[curP];
+  var hist = (historyData[curP]||[]).slice(-30);
+  var streak = calcStreak();
+  var weekly = calcWeeklySummary();
+  var avg = Math.round(Object.values(p.scores).reduce(function(a,b){return a+b;},0)/4);
+  var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+  var today = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  var win = window.open('','_blank');
+  if(!win){ showToast('Permita popups para exportar'); return; }
+
+  var css = 'body{font-family:DM Sans,sans-serif;background:#f4f6f0;margin:0;padding:20px;color:#1a1a1a}'+
+    '.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}'+
+    'h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px}'+
+    '.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}'+
+    '.metric{background:#f4f6f0;border-radius:10px;padding:12px;text-align:center}'+
+    '.metric-val{font-size:28px;font-weight:700;font-family:monospace}'+
+    '.metric-lbl{font-size:11px;color:#666;margin-top:4px}'+
+    '.green{color:#1a7a4a}.amber{color:#c47a1a}.blue{color:#1a5a8a}'+
+    '.scores{display:flex;gap:8px;flex-wrap:wrap}'+
+    '.score-pill{background:#e8f5ee;color:#1a7a4a;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}'+
+    '@media print{body{background:#fff;padding:0}.no-print{display:none}}';
+
+  var examHist = (pdOverride[curP]&&pdOverride[curP].examHistory||[]);
+  var lastExam = examHist.length>0?examHist[examHist.length-1]:null;
+  var examHtml = '';
+  if(lastExam){
+    examHtml = '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">🧪 Últimos exames ('+lastExam.dateLabel+')</h2><div class="scores">';
+    var defs = {vitd:'Vit D',ferro:'Ferritina',vitb12:'B12',testo:'Testosterona',tsh:'TSH',gli:'Glicemia',pce:'PCR',trig:'Triglicerídeos',hdl:'HDL'};
+    Object.keys(lastExam.values||{}).forEach(function(k){
+      if(lastExam.values[k]!=null) examHtml+='<span class="score-pill" style="background:#e3f0fd;color:#1a5a8a">'+defs[k]+': '+lastExam.values[k]+'</span>';
+    });
+    examHtml += '</div></div>';
+  }
+
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Evolução — '+p.name+'</title><style>'+css+'</style></head><body>'+
+    '<div class="card" style="background:linear-gradient(135deg,#1a7a4a,#0f4f30);color:#fff">'+
+      '<h1>'+p.name+'</h1>'+
+      '<div style="font-size:13px;opacity:.8">'+today+' · '+p.age+' anos · Objetivo: '+p.goal+'</div>'+
+      (streak>0?'<div style="margin-top:8px;font-size:13px">🔥 '+streak+' dias de consistência</div>':'')+'</div>'+
+    '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">📊 Score de Saúde</h2>'+
+      '<div style="font-size:48px;font-weight:700;font-family:monospace;color:#1a7a4a;margin-bottom:8px">'+avg+'<span style="font-size:16px;color:#666"> / 100</span></div>'+
+      '<div class="scores">'+
+        ['Saude','Fitness','Sono','Nutricao'].map(function(k){ return '<span class="score-pill">'+k+': '+p.scores[k]+'</span>'; }).join('')+
+      '</div></div>'+
+    '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">⚖️ Composição Corporal</h2>'+
+      '<div class="grid">'+
+        '<div class="metric"><div class="metric-val green">'+p.weight+'</div><div class="metric-lbl">Peso (kg)</div></div>'+
+        '<div class="metric"><div class="metric-val amber">'+imc+'</div><div class="metric-lbl">IMC</div></div>'+
+      '</div></div>'+
+    (weekly?'<div class="card"><h2 style="font-size:15px;margin:0 0 12px">📅 Últimos 7 dias</h2>'+
+      '<div class="grid">'+
+        '<div class="metric"><div class="metric-val green">'+weekly.avgScore+'</div><div class="metric-lbl">Score médio</div></div>'+
+        '<div class="metric"><div class="metric-val blue">'+weekly.avgSleep+'h</div><div class="metric-lbl">Sono médio</div></div>'+
+        (weekly.avgDeficit!=null?'<div class="metric" style="grid-column:span 2"><div class="metric-val '+(weekly.avgDeficit<=0?'green':'amber')+'">'+
+          (weekly.avgDeficit<=0?'Déficit ':'Superávit ')+Math.abs(weekly.avgDeficit)+' kcal</div><div class="metric-lbl">Balanço calórico médio</div></div>':'')+
+      '</div></div>':'')+ examHtml+
+    '<div class="no-print" style="text-align:center;padding:20px">'+
+      '<button onclick="window.print()" style="background:#1a7a4a;color:#fff;border:none;border-radius:10px;padding:12px 32px;font-size:15px;font-weight:600;cursor:pointer;margin-right:8px">🖨️ Imprimir / Salvar PDF</button>'+
+      '<button onclick="window.close()" style="background:#eee;border:none;border-radius:10px;padding:12px 24px;font-size:15px;cursor:pointer">Fechar</button></div>'+
+    '</body></html>');
+  win.document.close();
 }
 
 function openAddHistory(){

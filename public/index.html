@@ -1211,6 +1211,37 @@ function renderProfiles(containerId){
 // ══════════════════════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════════════════════
+function calcStreak(){
+  var hist = (historyData[curP]||[]).slice().sort(function(a,b){ return a.date>b.date?-1:1; });
+  if(!hist.length) return 0;
+  var streak = 0;
+  var today = todayStr();
+  var cursor = new Date(today+'T12:00:00');
+  for(var i=0; i<hist.length; i++){
+    var d = cursor.toISOString().slice(0,10);
+    var entry = hist.find(function(e){ return e.date===d; });
+    if(!entry) break;
+    // day counts if sleep was logged or score exists
+    if(entry.avg>0 || entry.sleep>0) streak++;
+    else break;
+    cursor.setDate(cursor.getDate()-1);
+  }
+  return streak;
+}
+
+function calcWeeklySummary(){
+  var hist = historyData[curP]||[];
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+  var cutStr = cutoff.toISOString().slice(0,10);
+  var week = hist.filter(function(e){ return e.date>=cutStr; });
+  if(!week.length) return null;
+  var avgSleep = (week.reduce(function(s,e){ return s+(e.sleep||0); },0)/week.length).toFixed(1);
+  var avgScore = Math.round(week.reduce(function(s,e){ return s+(e.avg||0); },0)/week.length);
+  var deficits = week.filter(function(e){ return e.deficit!=null; });
+  var avgDeficit = deficits.length ? Math.round(deficits.reduce(function(s,e){ return s+e.deficit; },0)/deficits.length) : null;
+  return {days:week.length, avgSleep:avgSleep, avgScore:avgScore, avgDeficit:avgDeficit};
+}
+
 function renderHome(){
   renderProfiles('home-profiles');
   var p = PD[curP];
@@ -1476,6 +1507,32 @@ function renderHome(){
     h += '</div>';
   });
   h += '</div></div></div></div>';
+  // Streak
+  var streak = calcStreak();
+  if(streak>0){
+    var streakMsg = streak>=30?'🔥 Incrível! '+streak+' dias!':streak>=14?'💪 '+streak+' dias seguidos!':streak>=7?'⚡ '+streak+' dias seguidos!':'🌱 '+streak+' dia'+(streak>1?'s':'')+' seguidos';
+    h += '<div class="section"><div style="background:linear-gradient(135deg,#1a7a4a,#0f4f30);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">';
+    h += '<div><div style="color:#fff;font-size:15px;font-weight:600">'+streakMsg+'</div>';
+    h += '<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">Consistência é o segredo</div></div>';
+    h += '<div style="font-size:36px">🔥</div></div></div>';
+  }
+  // Weekly summary
+  var weekly = calcWeeklySummary();
+  if(weekly && weekly.days>=3){
+    h += '<div class="section"><div class="card" style="padding:14px 16px">';
+    h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📅 Resumo dos últimos 7 dias</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+weekly.avgScore+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Score médio</div></div>';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgSleep+'h</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
+    if(weekly.avgDeficit!==null){
+      var defCol = weekly.avgDeficit<=0?'var(--green)':'var(--coral)';
+      var defTxt = weekly.avgDeficit<=0?'Déficit '+(Math.abs(weekly.avgDeficit)):'Superávit '+weekly.avgDeficit;
+      h += '<div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+defCol+'">'+defTxt+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">kcal/dia</div></div>';
+    } else {
+      h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+weekly.days+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">dias registrados</div></div>';
+    }
+    h += '</div></div></div>';
+  }
   // AI
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise do dia</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
@@ -4794,6 +4851,60 @@ function logout(){
 }
 
 // ══════════════════════════════════════════════════════════════
+// ── SERVICE WORKER + NOTIFICAÇÕES ────────────────────────────
+var swReg = null;
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(function(reg){ swReg = reg; });
+}
+
+function requestNotifPermission(onGranted){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='granted'){ if(onGranted) onGranted(); return; }
+  if(Notification.permission==='denied') return;
+  Notification.requestPermission().then(function(p){ if(p==='granted' && onGranted) onGranted(); });
+}
+
+function sendNotif(title, body, tag){
+  if(Notification.permission!=='granted') return;
+  if(swReg && swReg.active){
+    swReg.active.postMessage({type:'SHOW_NOTIFICATION', title:title, body:body, tag:tag});
+  } else {
+    new Notification(title, {body:body, icon:'/icon-192.png'});
+  }
+}
+
+var notifTimers = [];
+function scheduleNotifications(){
+  notifTimers.forEach(clearTimeout); notifTimers=[];
+  if(Notification.permission!=='granted') return;
+  var p = PD[curP];
+  var now = new Date();
+  function msUntil(h,m){ var t=new Date(); t.setHours(h,m,0,0); var d=t-now; return d>0?d:null; }
+  var reminders = [
+    {h:8,  m:0,  title:'🌅 Café da manhã', body:'Hora do café da manhã! Registre o que comeu.'},
+    {h:10, m:30, title:'🥜 Lanche da manhã', body:'Lanche da manhã — não esqueça de registrar.'},
+    {h:13, m:0,  title:'🍽️ Almoço', body:'Hora do almoço! Marque suas refeições.'},
+    {h:16, m:0,  title:'🍎 Lanche da tarde', body:'Lanche da tarde — mantenha o plano!'},
+    {h:20, m:0,  title:'🍴 Jantar', body:'Hora do jantar. Registre o que comeu.'},
+    {h:22, m:0,  title:'😴 Hora de dormir', body:'Meta de sono: '+p.sleepTarget+'h. Boa noite!'},
+  ];
+  reminders.forEach(function(r){
+    var ms = msUntil(r.h, r.m);
+    if(ms) notifTimers.push(setTimeout(function(){ sendNotif(r.title, r.body, 'meal-'+r.h); }, ms));
+  });
+}
+
+// ask for permission once, then schedule
+setTimeout(function(){
+  requestNotifPermission(scheduleNotifications);
+}, 3000);
+
+// reschedule daily
+setInterval(function(){
+  var h = new Date().getHours(), m = new Date().getMinutes();
+  if(h===0 && m===0) scheduleNotifications();
+}, 60000);
+
 // INIT — Dashboard direto, sem login
 // ══════════════════════════════════════════════════════════════
 load();

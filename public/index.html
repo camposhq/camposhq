@@ -1126,6 +1126,25 @@ function load(){
 // ══════════════════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════════════════
+// ── WAKE LOCK — prevent screen from sleeping while app is open ──
+var wakeLock = null;
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    if(wakeLock) return; // already active
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', function(){ wakeLock = null; });
+  }catch(e){}
+}
+function releaseWakeLock(){
+  if(wakeLock){ wakeLock.release(); wakeLock = null; }
+}
+// re-acquire when app comes back to foreground
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible') requestWakeLock();
+  else releaseWakeLock();
+});
+
 function showScreen(id){
   // Guard: redirect to login if not authenticated and trying to access main screens
   var mainScreens = ['home','treinos','dieta','sono','exames','evolucao'];
@@ -1152,6 +1171,9 @@ function showScreen(id){
   var rmap = {home:renderHome, treinos:renderTreinos, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
   if(rmap[id]) rmap[id]();
   else if(id==='dieta') renderDieta(true);
+  // keep screen on while using the app
+  if(['home','treinos','dieta','sono','exames','evolucao'].indexOf(id)>=0) requestWakeLock();
+  else releaseWakeLock();
 }
 
 document.querySelectorAll('.nav-item').forEach(function(btn){

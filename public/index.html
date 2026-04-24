@@ -5024,6 +5024,12 @@ function loadUserData(uid, callback){
                 historyData[ri] = merged.sort(function(a,b){ return a.date<b.date?-1:1; });
               });
             }
+            // merge chat histories
+            if(s.chatHistories){
+              Object.keys(s.chatHistories).forEach(function(k){
+                if(!chatHistories[k] || !chatHistories[k].length) chatHistories[k] = s.chatHistories[k];
+              });
+            }
             // day-change detection for Firestore data
             if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
           }catch(e){}
@@ -5076,7 +5082,7 @@ function saveToCloud(){
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
-    historyData:historyData,
+    historyData:historyData, chatHistories:chatHistories,
     lastSavedDate:todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };

@@ -3250,23 +3250,33 @@ function snapshotHistory(idx){
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
   var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
   var today = new Date();
-  var dateKey = today.getFullYear()+'-'+(today.getMonth()+1).toString().padStart(2,'0');
-  var label = today.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  // use daily date format (consistent with handleDayChange)
+  var dateKey = today.toISOString().slice(0,10);
+  var label = today.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
   if(!historyData[idx]) historyData[idx]=[];
-  // update or append for this month
   var existing = historyData[idx].findIndex(function(e){ return e.date===dateKey; });
   var kcalToday=kcalConsumedToday(idx); var gastoToday=getBasalKcal(p)+calcWorkoutKcalToday(idx);
-  var entry = {date:dateKey,label:label,weight:p.weight,imc:imc,fat:historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null,sleep:p.sleep||0,avg:avg,scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},calories:kcalToday>0?kcalToday:p.calories||0,gasto:gastoToday,deficit:kcalToday>0?kcalToday-gastoToday:null};
+  var waterMl=Math.round((waterGlasses[idx+'-water']||0)*250);
+  var sleepEntry=sleepData[idx]||{hours:p.sleep};
+  var entry = {
+    date:dateKey, label:label, weight:p.weight, imc:imc,
+    fat:historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null,
+    sleep:sleepEntry.hours||p.sleep||0, avg:avg,
+    scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},
+    calories:kcalToday>0?kcalToday:p.calories||0,
+    gasto:gastoToday, deficit:kcalToday>0?kcalToday-gastoToday:null,
+    water:waterMl>0?waterMl:null
+  };
   if(existing>=0) historyData[idx][existing]=entry;
   else historyData[idx].push(entry);
-  save();
+  historyData[idx].sort(function(a,b){ return a.date<b.date?-1:1; });
+  save(true);
 }
 
 function sparklineSVG(values, labels, color, tgt){
   var vw=340, vh=160, padL=38, padR=18, padT=22, padB=26;
   var innerW=vw-padL-padR, innerH=vh-padT-padB;
   if(!values||values.length<1) return '<div style="height:120px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Sem historico ainda</div>';
-  if(values.length===1) return '<div style="height:120px;display:flex;align-items:center;font-size:12px;color:var(--muted);padding:0 4px">1 registro · adicione mais para ver evolucao</div>';
   // scale includes target so goal line is always visible
   var allVals = tgt!=null ? values.concat([tgt]) : values;
   var dataMin=Math.min.apply(null,allVals), dataMax=Math.max.apply(null,allVals);
@@ -4796,6 +4806,8 @@ function initAuth(){
     if(user){
       currentUser = user;
       loadUserData(user.uid, function(){
+        // snapshot today's state so Evolucao always has at least today's entry
+        if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); });
         showScreen('home');
       });
     } else {

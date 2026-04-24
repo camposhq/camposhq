@@ -1233,8 +1233,10 @@ function releaseWakeLock(){
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='visible'){
     requestWakeLock();
+    // reschedule notifications when app comes back to foreground
+    if(Notification.permission==='granted') scheduleNotifications();
   } else {
-    save(true); // immediate save when app goes to background
+    save(true);
     releaseWakeLock();
   }
 });
@@ -5143,10 +5145,13 @@ function requestNotifPermission(onGranted){
 
 function sendNotif(title, body, tag){
   if(Notification.permission!=='granted') return;
+  // try SW first, fallback to direct Notification
   if(swReg && swReg.active){
-    swReg.active.postMessage({type:'SHOW_NOTIFICATION', title:title, body:body, tag:tag});
+    swReg.active.postMessage({type:'SHOW_NOTIFICATION', title:title, body:body, tag:tag||'mh'});
+  } else if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({type:'SHOW_NOTIFICATION', title:title, body:body, tag:tag||'mh'});
   } else {
-    new Notification(title, {body:body, icon:'/icon-192.png'});
+    try{ new Notification(title, {body:body, icon:'/icon-192.png'}); }catch(e){}
   }
 }
 

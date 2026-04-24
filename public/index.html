@@ -516,6 +516,7 @@ input[type=file]{display:none}
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ai-badge" id="home-ai-btn">IA ativo</div>
+        <div id="sync-status" style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px">⏳ salvando...</div>
         <button id="save-now-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--green);border-radius:8px;font-size:13px;font-weight:500;color:var(--green);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">💾 Salvar</button>
         <button id="logout-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--coral);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
@@ -4835,8 +4836,18 @@ function loadUserData(uid, callback){
     .catch(function(){ if(!done){ done=true; clearTimeout(timer); applyResetMealsFlag(); if(callback) callback(); } });
 }
 
+function setSyncStatus(status){
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  if(status==='saving'){ el.textContent='⏳ salvando...'; el.style.color='var(--muted)'; }
+  else if(status==='ok'){ el.textContent='✓ salvo'; el.style.color='var(--green)'; }
+  else if(status==='error'){ el.textContent='⚠ erro ao salvar'; el.style.color='var(--coral)'; }
+  else if(status==='local'){ el.textContent='💾 local'; el.style.color='var(--muted)'; }
+}
+
 function saveToCloud(){
-  if(!fbAuth || !fbAuth.currentUser || !fbDb) return;
+  if(!fbAuth || !fbAuth.currentUser || !fbDb){ setSyncStatus('local'); return; }
+  setSyncStatus('saving');
   var uid = fbAuth.currentUser.uid;
   // Strip image data from pdOverride before saving (too large for Firestore)
   var pdOverrideSafe = {};
@@ -4870,7 +4881,8 @@ function saveToCloud(){
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})
-    .catch(function(e){ console.log('Firestore save error:', e); });
+    .then(function(){ setSyncStatus('ok'); })
+    .catch(function(e){ setSyncStatus('error'); console.log('Firestore save error:', e); });
 }
 
 // Logout function

@@ -3334,9 +3334,13 @@ function renderEvolucao(){
   if(addBtn) addBtn.addEventListener('click', openAddHistory);
   var aiBtn = document.getElementById('evo-ai-btn');
   if(aiBtn) aiBtn.addEventListener('click', function(){
-    var hist2 = historyData[curP]||[];
-    var summary = hist2.length>0?hist2.map(function(e){ return e.label+': peso '+e.weight+'kg, score '+e.avg+', sono '+e.sleep+'h'; }).join(' | '):'Sem historico';
-    openChat('saude','Analise minha evolucao de saude: '+summary+'. Perfil: '+p.name+', '+p.age+' anos. O que melhorou, o que precisa de atencao e as 3 prioridades para os proximos 90 dias.');
+    var hist2 = (historyData[curP]||[]).slice(-30);
+    var sysCtx = 'Perfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, objetivo: '+p.goal+'.\n';
+    sysCtx += 'Score atual: '+Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4)+' (Saude:'+p.scores.Saude+', Fitness:'+p.scores.Fitness+', Sono:'+p.scores.Sono+', Nutricao:'+p.scores.Nutricao+').\n';
+    if(hist2.length>0) sysCtx += 'Historico ('+hist2.length+' entradas): '+hist2.map(function(e){ return e.label+': peso '+e.weight+'kg, score '+e.avg+', sono '+e.sleep+'h'+(e.deficit!=null?', deficit '+(e.deficit)+'kcal':''); }).join(' | ');
+    var streak = calcStreak();
+    if(streak>0) sysCtx += '\nStreak atual: '+streak+' dias consecutivos.';
+    openChatWithContext('saude', sysCtx, 'Historico de evolucao carregado. Me pergunte sobre o que melhorou, tendencias, pontos de atencao ou as prioridades para os proximos 90 dias.');
   });
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
   var exportBtn = document.getElementById('evo-export-btn');

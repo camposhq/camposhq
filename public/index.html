@@ -4640,11 +4640,17 @@ function loadUserData(uid, callback){
           try{
             var s = data.appState;
             curP = s.curP||0; curDay = s.curDay||curDay;
-            mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
-            habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
+            // preserve today's local tracking if localStorage is more recent than Firebase
+            var localIsToday = (s.lastSavedDate !== todayStr());
+            mealDone = localIsToday ? mealDone : (s.mealDone||{});
+            foodDone = localIsToday ? foodDone : (s.foodDone||{});
+            suppDone = localIsToday ? suppDone : (s.suppDone||{});
+            habitDone = localIsToday ? habitDone : (s.habitDone||{});
+            waterGlasses = localIsToday ? waterGlasses : (s.waterGlasses||{});
+            exChecked = s.exChecked||{};
             exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
-            cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{}; waterGlasses = s.waterGlasses||{};
-            sleepData = s.sleepData||{}; expandedExam = s.expandedExam||{};
+            cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{};
+            sleepData = localIsToday ? sleepData : (s.sleepData||{}); expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
               pdOverride = s.pdOverride;

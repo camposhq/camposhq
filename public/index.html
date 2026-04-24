@@ -1009,16 +1009,15 @@ function handleDayChange(oldDate){
     historyData[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
   });
 
-  // show day summary popup before resetting (only if it was yesterday, not multiple days ago)
-  if(datesToFill.length===1){
-    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0);
-  } else {
-    resetDailyState();
-    save();
-  }
-  // reset to today's day of week
+  // reset IMMEDIATELY — don't wait for popup confirmation
+  resetDailyState();
   curDay = (new Date().getDay()+6)%7;
   curDayManualOverride = false;
+  save();
+  // show summary popup as informational only (no longer gates the reset)
+  if(datesToFill.length===1){
+    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0);
+  }
 }
 
 function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, mealsTotal, water){
@@ -1061,9 +1060,7 @@ function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, meals
     '</div>';
   document.body.appendChild(overlay);
   document.getElementById('day-summary-ok').addEventListener('click', function(){
-    overlay.remove();
-    resetDailyState();
-    save();
+    overlay.remove(); // reset already happened — just close
   });
 }
 

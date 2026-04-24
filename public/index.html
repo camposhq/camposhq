@@ -4880,12 +4880,28 @@ function scheduleNotifications(){
   var p = PD[curP];
   var now = new Date();
   function msUntil(h,m){ var t=new Date(); t.setHours(h,m,0,0); var d=t-now; return d>0?d:null; }
+  var totalGlasses = Math.round(p.water/250);
+  var waterMsgs = [
+    'Beba um copo agora! Meta: '+totalGlasses+' copos no dia 💧',
+    'Hidratação em dia? Tome um copo de água agora 💧',
+    'Seu corpo agradece! Um copo de água 💧',
+    'Não se esqueça da água — '+(Math.round(totalGlasses/2))+' copos até agora? 💧',
+    'Metade do dia passou — está hidratado? 💧',
+    'Mais um copo de água! Faltam poucas horas 💧',
+    'Último lembrete de água do dia — beba agora! 💧',
+  ];
   var reminders = [
     {h:8,  m:0,  title:'🌅 Café da manhã', body:'Hora do café da manhã! Registre o que comeu.'},
+    {h:9,  m:0,  title:'💧 Água', body:waterMsgs[0], tag:'water'},
     {h:10, m:30, title:'🥜 Lanche da manhã', body:'Lanche da manhã — não esqueça de registrar.'},
+    {h:11, m:30, title:'💧 Água', body:waterMsgs[1], tag:'water'},
     {h:13, m:0,  title:'🍽️ Almoço', body:'Hora do almoço! Marque suas refeições.'},
+    {h:14, m:30, title:'💧 Água', body:waterMsgs[2], tag:'water'},
     {h:16, m:0,  title:'🍎 Lanche da tarde', body:'Lanche da tarde — mantenha o plano!'},
+    {h:17, m:30, title:'💧 Água', body:waterMsgs[3], tag:'water'},
+    {h:19, m:0,  title:'💧 Água', body:waterMsgs[4], tag:'water'},
     {h:20, m:0,  title:'🍴 Jantar', body:'Hora do jantar. Registre o que comeu.'},
+    {h:21, m:0,  title:'💧 Água', body:waterMsgs[5], tag:'water'},
     {h:22, m:0,  title:'😴 Hora de dormir', body:'Meta de sono: '+p.sleepTarget+'h. Boa noite!'},
   ];
   reminders.forEach(function(r){

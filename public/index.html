@@ -516,6 +516,7 @@ input[type=file]{display:none}
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ai-badge" id="home-ai-btn">IA ativo</div>
+        <button id="save-now-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--green);border-radius:8px;font-size:13px;font-weight:500;color:var(--green);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">💾 Salvar</button>
         <button id="logout-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--coral);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
         </button>
@@ -4694,7 +4695,8 @@ function loadUserData(uid, callback){
           }catch(e){}
         }
       }
-      applyResetMealsFlag(); // apply after Firebase so it overrides corrupt Firebase data
+      applyResetMealsFlag();
+      save(); // immediately persist merged state back to Firebase
       if(callback) callback();
     })
     .catch(function(){ if(!done){ done=true; clearTimeout(timer); applyResetMealsFlag(); if(callback) callback(); } });
@@ -4749,7 +4751,15 @@ function logout(){
 // ══════════════════════════════════════════════════════════════
 load();
 // Wire up topbar buttons after DOM ready
-document.getElementById('logout-btn').onclick = function(){ if(confirm('Deseja sair?')) logout(); };
+document.getElementById('save-now-btn').onclick = function(){
+  save();
+  var btn = this; btn.textContent = '✓ Salvo!';
+  setTimeout(function(){ btn.textContent = '💾 Salvar'; }, 2000);
+};
+document.getElementById('logout-btn').onclick = function(){
+  save(); // force save before logout
+  if(confirm('Deseja sair?')) logout();
+};
 document.getElementById('logout-btn').onmouseenter = function(){ this.style.background='var(--coral-light)'; };
 document.getElementById('logout-btn').onmouseleave = function(){ this.style.background='none'; };
 document.getElementById('edit-profile-topbar').onclick = function(){

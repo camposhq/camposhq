@@ -1096,6 +1096,9 @@ function load(){
               else o.meals.push(defLanche2);
             }
           }
+          // migration: update old meal times to new schedule
+          var timeMap = {'cafe':'08:00','lanche1':'10:30','almoco':'13:00','lanche2':'16:00','jantar':'20:00'};
+          o.meals.forEach(function(m){ if(timeMap[m.id]) m.time = timeMap[m.id]; });
           PD[i].meals = o.meals;
         } else delete o.meals;
       }

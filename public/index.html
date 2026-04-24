@@ -1568,17 +1568,8 @@ function startRestCountdown(totalSecs){
     if(timeEl) timeEl.textContent=m+':'+(s<10?'0':'')+s;
     if(restTimer.remaining<=0){
       clearInterval(restTimer.interval); restTimer.interval=null;
-      try{
-        var ac=new(window.AudioContext||window.webkitAudioContext)();
-        [0,180,360].forEach(function(d){
-          var o=ac.createOscillator(),g=ac.createGain();
-          o.connect(g); g.connect(ac.destination);
-          o.frequency.value=880; g.gain.value=0.25;
-          o.start(ac.currentTime+d/1000); o.stop(ac.currentTime+d/1000+0.18);
-        });
-      }catch(e){}
+      playTimerBeep(function(){ setTimeout(closeRestTimer,600); });
       if(navigator.vibrate) navigator.vibrate([200,100,200]);
-      setTimeout(closeRestTimer,1400);
       return;
     }
     restTimer.remaining--;
@@ -1586,24 +1577,58 @@ function startRestCountdown(totalSecs){
   tick();
   restTimer.interval=setInterval(tick,1000);
 }
+function playTimerBeep(onEnd){
+  try{
+    // Request playback audio session — ducks Spotify/music on iOS
+    if(navigator.audioSession) navigator.audioSession.category = 'playback';
+    var ac = new(window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==='suspended') ac.resume();
+    var totalDur = 0.9; // seconds
+    [0, 0.22, 0.44].forEach(function(t){
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.type='sine'; o.frequency.value=880;
+      g.gain.setValueAtTime(0, ac.currentTime+t);
+      g.gain.linearRampToValueAtTime(0.5, ac.currentTime+t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+t+0.18);
+      o.start(ac.currentTime+t); o.stop(ac.currentTime+t+0.2);
+    });
+    // restore ambient after beeps finish so music resumes
+    setTimeout(function(){
+      try{
+        if(navigator.audioSession) navigator.audioSession.category = 'ambient';
+        ac.close();
+      }catch(e){}
+      if(onEnd) onEnd();
+    }, totalDur*1000+200);
+  }catch(e){
+    if(onEnd) onEnd();
+  }
+}
+
 function closeRestTimer(){
   if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
   var ov=document.getElementById('rest-timer-overlay');
   if(ov) ov.remove();
 }
 function playExerciseDone(){
-  // Ascending C-E-G chord — distinct from rest timer (which is 3x 880Hz)
+  // Ascending C-E-G chord with audio ducking
   try{
+    if(navigator.audioSession) navigator.audioSession.category = 'playback';
     var ac=new(window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==='suspended') ac.resume();
     [[523,0],[659,120],[784,240]].forEach(function(nf){
       var o=ac.createOscillator(), g=ac.createGain();
       o.connect(g); g.connect(ac.destination);
       o.type='sine'; o.frequency.value=nf[0];
-      g.gain.setValueAtTime(0.3, ac.currentTime+nf[1]/1000);
+      g.gain.setValueAtTime(0.4, ac.currentTime+nf[1]/1000);
       g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+nf[1]/1000+0.4);
       o.start(ac.currentTime+nf[1]/1000);
       o.stop(ac.currentTime+nf[1]/1000+0.4);
     });
+    setTimeout(function(){
+      try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; ac.close(); }catch(e){}
+    }, 900);
   }catch(e){}
   if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
   showToast('Exercício completo! Próximo exercício ✓');

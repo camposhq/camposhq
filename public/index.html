@@ -1533,6 +1533,20 @@ function renderHome(){
     }
     h += '</div></div></div>';
   }
+  // Notification status + test
+  var notifStatus = ('Notification' in window) ? Notification.permission : 'unsupported';
+  if(notifStatus !== 'granted'){
+    h += '<div class="section"><div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">';
+    h += '<div><div style="font-size:13px;font-weight:600;color:#856404">🔔 Ativar notificações</div>';
+    h += '<div style="font-size:11px;color:#856404;margin-top:2px">Receba lembretes de refeições, água e sono</div></div>';
+    h += '<button id="btn-enable-notif" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ativar</button>';
+    h += '</div></div>';
+  } else {
+    h += '<div class="section"><div style="background:var(--green-light);border:1px solid rgba(26,122,74,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">';
+    h += '<div style="font-size:12px;color:var(--green-deep)">🔔 Notificações ativas</div>';
+    h += '<button id="btn-test-notif" style="background:none;border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--green);cursor:pointer">Testar</button>';
+    h += '</div></div>';
+  }
   // AI
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise do dia</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
@@ -1549,6 +1563,12 @@ function renderHome(){
   document.querySelectorAll('.angle-slot').forEach(function(el){
     el.addEventListener('click', function(){ progressPhotoAngle = parseInt(this.dataset.angle); document.getElementById('file-progress').click(); });
   });
+  var btnEnable = document.getElementById('btn-enable-notif');
+  if(btnEnable) btnEnable.addEventListener('click', function(){
+    requestNotifPermission(function(){ scheduleNotifications(); renderHome(); });
+  });
+  var btnTest = document.getElementById('btn-test-notif');
+  if(btnTest) btnTest.addEventListener('click', function(){ testNotification(); });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4941,6 +4961,16 @@ document.getElementById('edit-profile-topbar').onclick = function(){
   document.getElementById('bottom-nav').style.display='none';
   spRender();
 };
+
+// Notification test helper — fires 5s after calling
+function testNotification(){
+  requestNotifPermission(function(){
+    setTimeout(function(){
+      sendNotif('🔔 Teste de notificação', 'Funcionou! Notificações estão ativas no MyHealth.', 'test');
+    }, 5000);
+    showToast('Notificação chegará em 5 segundos...');
+  });
+}
 // Always hide nav until auth confirms user is logged in
 document.getElementById('bottom-nav').style.display = 'none';
 // Start auth flow

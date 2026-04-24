@@ -4892,9 +4892,12 @@ function loadUserData(uid, callback){
             suppDone = mergeObj(suppDone, s.suppDone);
             habitDone = mergeObj(habitDone, s.habitDone);
             waterGlasses = mergeObj(waterGlasses, s.waterGlasses);
-            exChecked = s.exChecked||{};
-            exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
-            cardioChecked = s.cardioChecked||{}; walkParams = s.walkParams||{};
+            exChecked = mergeObj(exChecked, s.exChecked);
+            exSets = mergeObj(exSets, s.exSets);
+            exWeights = Object.assign({}, s.exWeights||{}, exWeights); // local weights take priority
+            cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
+            cardioChecked = mergeObj(cardioChecked, s.cardioChecked);
+            walkParams = Object.assign({}, s.walkParams||{}, walkParams);
             sleepData = mergeObj(sleepData, s.sleepData); expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
@@ -4914,7 +4917,12 @@ function loadUserData(uid, callback){
                 if(o.fat!=null) PD[i].fat = o.fat;
                 if(o.water!=null) PD[i].water = o.water;
                 if(o.weekly) PD[i].weekly = o.weekly;
-                // meals intentionally NOT loaded from Firebase (localStorage only, avoids cloud corruption)
+                if(o.meals && o.meals.length>0){
+                  var mIds = o.meals.map(function(m){ return (m.id||'').toLowerCase(); });
+                  var allSame = mIds.every(function(v){ return v===mIds[0]; });
+                  if(!allSame) PD[i].meals = o.meals; // only apply if not corrupt
+                }
+                if(o.supps && o.supps.length>0) PD[i].supps = o.supps;
                 if(o.sleep!=null) PD[i].sleep = o.sleep;
                 if(o.sleepTarget!=null) PD[i].sleepTarget = o.sleepTarget;
                 if(o.scores) PD[i].scores = o.scores;
@@ -4926,9 +4934,17 @@ function loadUserData(uid, callback){
               });
             }
             if(s.historyData){
-              // Support old format (array for curP only) and new format (object keyed by profile index)
-              if(Array.isArray(s.historyData)){ historyData[curP]=s.historyData; }
-              else { historyData=s.historyData; }
+              // merge history: keep all entries from both local and Firebase, deduplicate by date
+              var remoteHist = Array.isArray(s.historyData)?{[curP]:s.historyData}:s.historyData;
+              Object.keys(remoteHist).forEach(function(pi){
+                var ri = parseInt(pi);
+                if(!historyData[ri]) historyData[ri] = [];
+                var merged = historyData[ri].slice();
+                (remoteHist[pi]||[]).forEach(function(re){
+                  if(!merged.find(function(le){ return le.date===re.date; })) merged.push(re);
+                });
+                historyData[ri] = merged.sort(function(a,b){ return a.date<b.date?-1:1; });
+              });
             }
             // day-change detection for Firestore data
             if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
@@ -4962,7 +4978,7 @@ function saveToCloud(){
     pdOverrideSafe[idx] = {
       name:o.name, initials:o.initials, age:o.age, weight:o.weight, height:o.height,
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
-      water:o.water, weekly:o.weekly,
+      water:o.water, weekly:o.weekly, meals:o.meals||null, supps:o.supps||null,
       sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
       examHistory:o.examHistory,
       avatarImg: o.avatarImg||'',

@@ -983,6 +983,7 @@ function handleDayChange(oldDate){
   var deficit0 = kcal0-gasto0;
   var sleep0 = (sleepData[curP]||{hours:p0.sleep}).hours;
   var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
+  var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
 
   PD.forEach(function(p,pi){
@@ -992,12 +993,13 @@ function handleDayChange(oldDate){
     var kcal=kcalConsumedToday(pi);
     var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
     var deficit=kcal>0?kcal-gasto:null;
+    var waterMl=Math.round((waterGlasses[pi+'-water']||0)*250);
     datesToFill.forEach(function(dateStr){
       var existing=historyData[pi].find(function(e){return e.date===dateStr;});
       if(!existing){
         var d=new Date(dateStr+'T12:00:00');
         var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-        historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit});
+        historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit,water:waterMl>0?waterMl:null});
       }
     });
     historyData[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
@@ -1005,7 +1007,7 @@ function handleDayChange(oldDate){
 
   // show day summary popup before resetting (only if it was yesterday, not multiple days ago)
   if(datesToFill.length===1){
-    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length);
+    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0);
   } else {
     resetDailyState();
     save();
@@ -1015,7 +1017,7 @@ function handleDayChange(oldDate){
   curDayManualOverride = false;
 }
 
-function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, mealsTotal){
+function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, mealsTotal, water){
   var defColor = deficit<=0?'var(--green)':'var(--coral)';
   var defLabel = deficit<=0?'Deficit de '+(Math.abs(deficit))+' kcal':'Superávit de '+deficit+' kcal';
   var overlay = document.createElement('div');
@@ -1042,8 +1044,13 @@ function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, meals
           '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+sleep+'h</div>'+
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">sono</div>'+
         '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px;grid-column:span 2">'+
-          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+mealsDone+'/'+mealsTotal+' refeições registradas</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+mealsDone+'/'+mealsTotal+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">refeições</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+(water>0?water+'ml':'—')+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">hidratação</div>'+
         '</div>'+
       '</div>'+
       '<button id="day-summary-ok" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer">Começar novo dia ✓</button>'+
@@ -1341,7 +1348,9 @@ function calcWeeklySummary(){
   var avgScore = Math.round(week.reduce(function(s,e){ return s+(e.avg||0); },0)/week.length);
   var deficits = week.filter(function(e){ return e.deficit!=null; });
   var avgDeficit = deficits.length ? Math.round(deficits.reduce(function(s,e){ return s+e.deficit; },0)/deficits.length) : null;
-  return {days:week.length, avgSleep:avgSleep, avgScore:avgScore, avgDeficit:avgDeficit};
+  var waters = week.filter(function(e){ return e.water>0; });
+  var avgWater = waters.length ? Math.round(waters.reduce(function(s,e){ return s+e.water; },0)/waters.length) : null;
+  return {days:week.length, avgSleep:avgSleep, avgScore:avgScore, avgDeficit:avgDeficit, avgWater:avgWater};
 }
 
 function renderHome(){
@@ -1626,7 +1635,9 @@ function renderHome(){
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+weekly.avgScore+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Score médio</div></div>';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgSleep+'h</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
-    if(weekly.avgDeficit!==null){
+    if(weekly.avgWater){
+      h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgWater+'ml</div><div style="font-size:10px;color:var(--muted);margin-top:2px">hidratação/dia</div></div>';
+    } else if(weekly.avgDeficit!==null){
       var defCol = weekly.avgDeficit<=0?'var(--green)':'var(--coral)';
       var defTxt = weekly.avgDeficit<=0?'Déficit '+(Math.abs(weekly.avgDeficit)):'Superávit '+weekly.avgDeficit;
       h += '<div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+defCol+'">'+defTxt+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">kcal/dia</div></div>';
@@ -3390,6 +3401,11 @@ function renderEvolucao(){
     if(gastoHist.some(function(v){return v!=null;})){
       h+=evoCard('Gasto total','🔥',gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
       h+=evoCard('Deficit calorico','⚖️',deficitHist,labels,deficitAtual,'kcal','#1a5a8a',true,0);
+    }
+    var waterHist=hist.map(function(e){return e.water||null;});
+    var waterAtual=Math.round((waterGlasses[curP+'-water']||0)*250);
+    if(waterHist.some(function(v){return v!=null;})||waterAtual>0){
+      h+=evoCard('Hidratação','💧',waterHist,labels,waterAtual,'ml','#1a5a8a',false,p.water);
     }
     h+='</div>';
   }

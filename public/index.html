@@ -27,6 +27,17 @@
   --border:rgba(0,0,0,0.07);--radius:16px;--radius-sm:10px;
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
 }
+html.dark{
+  --surface:#111312;--card:#1c1e1b;--text:#eceeed;--muted:#8a9088;
+  --border:rgba(255,255,255,0.08);
+  --green-light:#0d2a1a;--orange-light:#2a1a0d;--blue-light:#0d1e2a;
+  --indigo-light:#16153a;--coral-light:#2a0d0d;--purple-light:#1a1330;
+  --amber-light:#2a1e0d;
+}
+html.dark body{ background:var(--surface); }
+html.dark .bottom-nav{ background:rgba(17,19,18,.96); }
+html.dark .topbar{ background:var(--surface); }
+html.dark input,html.dark textarea{ background:#222;color:var(--text);border-color:var(--border); }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);min-height:100dvh}
 .screen{display:none;min-height:100dvh;padding-bottom:calc(72px + var(--safe-bottom));padding-top:var(--safe-top);overflow-y:auto}
@@ -520,6 +531,7 @@ input[type=file]{display:none}
         <div class="ai-badge" id="home-ai-btn">IA ativo</div>
         <div id="offline-badge" style="display:none;font-size:11px;background:#fee2e2;color:#c0392b;border-radius:6px;padding:3px 8px;font-weight:600">📵 offline</div>
         <div id="sync-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px">⏳ salvando...</div>
+        <button id="dark-toggle" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:15px;cursor:pointer;line-height:1">🌙</button>
         <button id="logout-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--coral);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
         </button>
@@ -5060,6 +5072,20 @@ setInterval(function(){
 // ══════════════════════════════════════════════════════════════
 load();
 // Wire up topbar buttons after DOM ready
+// Dark mode
+function applyDarkMode(dark){
+  document.documentElement.classList.toggle('dark', dark);
+  var btn = document.getElementById('dark-toggle');
+  if(btn) btn.textContent = dark ? '☀️' : '🌙';
+}
+var darkMode = localStorage.getItem('mh_dark')==='1';
+applyDarkMode(darkMode);
+document.getElementById('dark-toggle').onclick = function(){
+  darkMode = !darkMode;
+  localStorage.setItem('mh_dark', darkMode?'1':'0');
+  applyDarkMode(darkMode);
+};
+
 document.getElementById('logout-btn').onclick = function(){
   save(true); // immediate Firebase save before logout
   if(confirm('Deseja sair?')) logout();

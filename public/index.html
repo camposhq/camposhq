@@ -1041,7 +1041,7 @@ function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, meals
 }
 
 var saveCloudTimer = null;
-function save(){
+function save(immediate){
   try{
     localStorage.setItem('mh_v4',JSON.stringify({
       curP,curDay,mealDone,foodDone,suppDone,habitDone,
@@ -1051,9 +1051,14 @@ function save(){
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     }));
   }catch(e){}
-  // Debounce cloud save 3s
-  if(saveCloudTimer) clearTimeout(saveCloudTimer);
-  saveCloudTimer = setTimeout(saveToCloud, 3000);
+  if(immediate){
+    if(saveCloudTimer){ clearTimeout(saveCloudTimer); saveCloudTimer=null; }
+    saveToCloud();
+  } else {
+    // Debounce cloud save 1s
+    if(saveCloudTimer) clearTimeout(saveCloudTimer);
+    saveCloudTimer = setTimeout(saveToCloud, 1000);
+  }
 }
 function load(){
   try{
@@ -1141,8 +1146,12 @@ function releaseWakeLock(){
 }
 // re-acquire when app comes back to foreground
 document.addEventListener('visibilitychange', function(){
-  if(document.visibilityState==='visible') requestWakeLock();
-  else releaseWakeLock();
+  if(document.visibilityState==='visible'){
+    requestWakeLock();
+  } else {
+    save(true); // immediate save when app goes to background
+    releaseWakeLock();
+  }
 });
 
 function showScreen(id){
@@ -4946,12 +4955,12 @@ setInterval(function(){
 load();
 // Wire up topbar buttons after DOM ready
 document.getElementById('save-now-btn').onclick = function(){
-  save();
+  save(true); // immediate Firebase save
   var btn = this; btn.textContent = '✓ Salvo!';
   setTimeout(function(){ btn.textContent = '💾 Salvar'; }, 2000);
 };
 document.getElementById('logout-btn').onclick = function(){
-  save(); // force save before logout
+  save(true); // immediate Firebase save before logout
   if(confirm('Deseja sair?')) logout();
 };
 document.getElementById('logout-btn').onmouseenter = function(){ this.style.background='var(--coral-light)'; };

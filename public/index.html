@@ -1143,7 +1143,7 @@ function load(){
     Object.keys(pdOverride).forEach(function(idx){
       var i = parseInt(idx); if(!PD[i]) return;
       var o = pdOverride[idx];
-      if(o.calories!=null) PD[i].calories = o.calories;
+      if(o.calories!=null) PD[i].calories = o.calories; // localStorage always wins
       if(o.protein!=null) PD[i].protein = o.protein;
       if(o.carbs!=null) PD[i].carbs = o.carbs;
       if(o.fat!=null) PD[i].fat = o.fat;
@@ -2401,7 +2401,8 @@ function renderDietaContent(){
     PD[curP].calories = n;
     if(!pdOverride[curP]) pdOverride[curP]={};
     pdOverride[curP].calories = n;
-    save(); renderDietaContent();
+    pdOverride[curP].caloriesLocked = true; // prevent Firebase from overwriting
+    save(true); renderDietaContent();
   });
   var da=document.getElementById('d-ajustar'); var dan=document.getElementById('d-analise');
   if(da) da.addEventListener('click', function(){
@@ -5017,7 +5018,10 @@ function loadUserData(uid, callback){
                 if(o.weight) PD[i].weight = o.weight;
                 if(o.height) PD[i].height = o.height;
                 if(o.goal) PD[i].goal = o.goal;
-                if(o.calories!=null) PD[i].calories = o.calories;
+                // only apply calories from Firebase if local user hasn't locked it manually
+                var localLocked = pdOverride[i] && pdOverride[i].caloriesLocked;
+                if(o.calories!=null && !localLocked) PD[i].calories = o.calories;
+                if(o.caloriesLocked) { if(!pdOverride[i]) pdOverride[i]={}; pdOverride[i].caloriesLocked = o.caloriesLocked; }
                 if(o.protein!=null) PD[i].protein = o.protein;
                 if(o.carbs!=null) PD[i].carbs = o.carbs;
                 if(o.fat!=null) PD[i].fat = o.fat;
@@ -5092,6 +5096,7 @@ function saveToCloud(){
       goal:o.goal, calories:o.calories, protein:o.protein, carbs:o.carbs, fat:o.fat,
       water:o.water, weekly:o.weekly, meals:o.meals||null, supps:o.supps||null,
       sleep:o.sleep, sleepTarget:o.sleepTarget, scores:o.scores, insight:o.insight,
+      caloriesLocked: o.caloriesLocked||false,
       examHistory:o.examHistory,
       avatarImg: o.avatarImg||'',
       progressPhotos: o.progressPhotos||[],

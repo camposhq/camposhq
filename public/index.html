@@ -5222,6 +5222,14 @@ document.getElementById('edit-profile-topbar').onclick = function(){
 };
 
 // Notification test helper — fires 5s after calling
+// Dev helper: simulate day change to test the summary popup
+function testDaySummary(){
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  var yStr = yesterday.toISOString().slice(0,10);
+  dayChangeHandled = false; // allow re-run
+  handleDayChange(yStr);
+}
+
 function testNotification(){
   requestNotifPermission(function(){
     setTimeout(function(){

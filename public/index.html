@@ -1942,13 +1942,11 @@ function startRestCountdown(totalSecs){
 }
 function playTimerBeep(onEnd){
   if(navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
-  // use pre-created Audio (from user gesture) — ambient so Spotify keeps playing
   try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
   function playPulse(){
     if(readyBeepTimer){
       readyBeepTimer.currentTime=0;
       readyBeepTimer.play().catch(function(){
-        // fallback: try fresh Audio
         try{ new Audio(beepTimerURL).play().catch(function(){}); }catch(e){}
       });
     }
@@ -1956,7 +1954,14 @@ function playTimerBeep(onEnd){
   playPulse();
   setTimeout(playPulse, 400);
   setTimeout(playPulse, 800);
-  setTimeout(function(){ if(onEnd) onEnd(); }, 1200);
+  setTimeout(function(){
+    // release audio session so Spotify resumes
+    try{
+      if(readyBeepTimer){ readyBeepTimer.pause(); readyBeepTimer.src=''; readyBeepTimer=null; }
+      if(navigator.audioSession) navigator.audioSession.category='ambient';
+    }catch(e){}
+    if(onEnd) onEnd();
+  }, 1200);
 }
 
 function closeRestTimer(){

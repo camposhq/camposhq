@@ -1861,7 +1861,16 @@ function initBeeps(){
 initBeeps();
 
 // Pre-create Audio elements and unlock on first user gesture
-// No pre-created Audio elements — create fresh only when beep plays to avoid interrupting Spotify
+// Pre-create Audio on user gesture (set tap) so iOS allows play() later from setInterval
+var readyBeepTimer = null;
+var readyBeepEx = null;
+function prepareBeeps(){
+  // create on user gesture — no .load() to avoid audio session registration
+  try{
+    if(beepTimerURL && !readyBeepTimer){ readyBeepTimer = new Audio(); readyBeepTimer.src = beepTimerURL; }
+    if(beepExDoneURL && !readyBeepEx){ readyBeepEx = new Audio(); readyBeepEx.src = beepExDoneURL; }
+  }catch(e){}
+}
 function showRestTimer(){
   if(document.getElementById('rest-timer-overlay')) return;
   var ov=document.createElement('div');
@@ -1933,17 +1942,21 @@ function startRestCountdown(totalSecs){
 }
 function playTimerBeep(onEnd){
   if(navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
-  try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
-  // create Audio fresh — no pre-loading that could interrupt Spotify earlier
-  [0,350,700].forEach(function(delay){
-    setTimeout(function(){
-      try{ var a=new Audio(beepTimerURL); a.play().catch(function(){}); }catch(e){}
-    }, delay);
-  });
-  setTimeout(function(){
-    try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
-    if(onEnd) onEnd();
-  }, 1100);
+  // use pre-created Audio (from user gesture) — ambient so Spotify keeps playing
+  try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
+  function playPulse(){
+    if(readyBeepTimer){
+      readyBeepTimer.currentTime=0;
+      readyBeepTimer.play().catch(function(){
+        // fallback: try fresh Audio
+        try{ new Audio(beepTimerURL).play().catch(function(){}); }catch(e){}
+      });
+    }
+  }
+  playPulse();
+  setTimeout(playPulse, 400);
+  setTimeout(playPulse, 800);
+  setTimeout(function(){ if(onEnd) onEnd(); }, 1200);
 }
 
 function closeRestTimer(){
@@ -1955,9 +1968,9 @@ function closeRestTimer(){
 }
 function playExerciseDone(){
   if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
-  try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
-  try{ var a=new Audio(beepExDoneURL); a.play().catch(function(){}); }catch(e){}
-  setTimeout(function(){ try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){} }, 900);
+  try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
+  if(readyBeepEx){ readyBeepEx.currentTime=0; readyBeepEx.play().catch(function(){}); }
+  else{ try{ new Audio(beepExDoneURL).play().catch(function(){}); }catch(e){} }
   if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
   showToast('Exercício completo! Próximo exercício ✓');
 }
@@ -2149,6 +2162,7 @@ function renderTreinosContent(){
 
   document.querySelectorAll('.ex-set-dot').forEach(function(el){
     el.addEventListener('click', function(){
+      prepareBeeps(); // prepare Audio during user gesture so iOS allows play later
       var skey=this.dataset.skey, sidx=parseInt(this.dataset.sidx), stotal=parseInt(this.dataset.stotal);
       var dotKey=skey+'-s'+sidx;
       var wasDone=!!exSets[dotKey];

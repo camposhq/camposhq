@@ -3470,7 +3470,7 @@ function renderEvolucao(){
     // Habitos
     h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
     var sleepAtual = parseFloat(((sleepData[curP]||{hours:p.sleep}).hours||p.sleep).toFixed(1));
-    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep||null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
+    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep>0?parseFloat(parseFloat(e.sleep).toFixed(1)):null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
     var kcalAtual = kcalConsumedToday();
     h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);
     var gastoHist=hist.map(function(e){return e.gasto>0?e.gasto:null;});
@@ -3482,10 +3482,6 @@ function renderEvolucao(){
     var balancoAtual=kcalAtualBal>0?(kcalAtualBal-gastoAtual):null;
     if(gastoHist.some(function(v){return v!=null;})){
       h+=evoCard('Gasto total','🔥',gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
-    }
-    if(balancoHist.some(function(v){return v!=null;})){
-      // lowerBetter=true: deficit (negative) shown as green, surplus (positive) as amber/red
-      h+=evoCard('Balanço calórico','⚖️',balancoHist,labels,balancoAtual,'kcal','#1a5a8a',true,0);
     }
     var waterHist=hist.map(function(e){return e.water>0?e.water:null;});
     var waterAtual=Math.round((waterGlasses[curP+'-water']||0)*250);

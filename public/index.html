@@ -1143,16 +1143,22 @@ function saveBackup(){
 
 function save(immediate){
   try{
-    // Every 5 saves, take a backup of the previous state
     saveCount++;
     if(saveCount % 5 === 0) saveBackup();
 
-    localStorage.setItem('mh_v4',JSON.stringify({
+    var data = {
       curP,curDay,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
       lastSavedDate:todayStr(),
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
+    };
+    localStorage.setItem('mh_v4', JSON.stringify(data));
+    // separate fast backup for daily tracking — survives even if main save fails
+    localStorage.setItem('mh_daily', JSON.stringify({
+      foodDone:foodDone, mealDone:mealDone, suppDone:suppDone,
+      waterGlasses:waterGlasses, sleepData:sleepData,
+      exSets:exSets, habitDone:habitDone, date:todayStr()
     }));
   }catch(e){}
   if(immediate){
@@ -1190,6 +1196,20 @@ function load(){
     pdOverride = s.pdOverride||{};
     chatHistories = s.chatHistories||{};
     historyData = s.historyData||{};
+    // Restore from fast daily backup if main data looks empty but daily backup has today's data
+    try{
+      var daily = JSON.parse(localStorage.getItem('mh_daily')||'{}');
+      if(daily.date === todayStr()){
+        function mergeDaily(cur, bak){ var out=Object.assign({},cur); Object.keys(bak||{}).forEach(function(k){ if(bak[k]===true&&!out[k]) out[k]=true; }); return out; }
+        foodDone   = mergeDaily(foodDone,   daily.foodDone);
+        mealDone   = mergeDaily(mealDone,   daily.mealDone);
+        suppDone   = mergeDaily(suppDone,   daily.suppDone);
+        habitDone  = mergeDaily(habitDone,  daily.habitDone);
+        waterGlasses = mergeDaily(waterGlasses, daily.waterGlasses);
+        exSets     = mergeDaily(exSets,     daily.exSets);
+        if(daily.sleepData) Object.keys(daily.sleepData).forEach(function(k){ if(!sleepData[k]) sleepData[k]=daily.sleepData[k]; });
+      }
+    }catch(e){}
     // Auto-reset if day changed
     if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
     Object.keys(pdOverride).forEach(function(idx){

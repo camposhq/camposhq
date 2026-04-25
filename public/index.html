@@ -3408,10 +3408,11 @@ function evoCard(title, icon, values, labels, current, unit, color, lowerBetter,
       tgtBadge='<div style="font-size:10px;color:#b45309">Faltam '+gapToTgt+' '+unit+' p/ meta</div>';
     }
   }
+  var currentDisplay = (current==null||current===undefined) ? '—' : current;
   var h='<div class="evo-card">';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">';
   h+='<div><span style="font-size:13px;font-weight:500;color:var(--text)">'+icon+' '+title+'</span>'+tgtBadge+'</div>';
-  h+='<div style="text-align:right"><div class="evo-val" style="color:'+color+'">'+current+'<span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:2px">'+unit+'</span></div>'+deltaHtml+'</div>';
+  h+='<div style="text-align:right"><div class="evo-val" style="color:'+(current==null?'var(--muted)':color)+'">'+currentDisplay+'<span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:2px">'+(current==null?'':unit)+'</span></div>'+deltaHtml+'</div>';
   h+='</div>';
   h+='<div style="margin:0 -4px">'+sparklineSVG(values, labels, color, tgt)+'</div>';
   h+='</div>';
@@ -3486,10 +3487,10 @@ function renderEvolucao(){
       // lowerBetter=true: deficit (negative) shown as green, surplus (positive) as amber/red
       h+=evoCard('Balanço calórico','⚖️',balancoHist,labels,balancoAtual,'kcal','#1a5a8a',true,0);
     }
-    var waterHist=hist.map(function(e){return e.water||null;});
+    var waterHist=hist.map(function(e){return e.water>0?e.water:null;});
     var waterAtual=Math.round((waterGlasses[curP+'-water']||0)*250);
     if(waterHist.some(function(v){return v!=null;})||waterAtual>0){
-      h+=evoCard('Hidratação','💧',waterHist,labels,waterAtual,'ml','#1a5a8a',false,p.water);
+      h+=evoCard('Hidratação','💧',waterHist,labels,waterAtual>0?waterAtual:null,'ml','#1a5a8a',false,p.water);
     }
     h+='</div>';
   }

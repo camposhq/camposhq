@@ -1803,26 +1803,57 @@ function renderTreinosStrip(){
 // ── Rest timer ────────────────────────────────────────────────
 var restTimer={interval:null,remaining:0,total:0,endTime:0};
 
-// Single persistent AudioContext — unlocked on first user touch
-var globalAC = null;
-function getAudioContext(){
-  if(!globalAC || globalAC.state==='closed'){
-    try{ globalAC = new(window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+// Generate beep WAV as data URL — more reliable than oscillators on iOS
+function makeBeepDataURL(freqs, duration, sampleRate){
+  sampleRate = sampleRate||22050;
+  var numSamples = Math.floor(sampleRate*duration);
+  var buf = new ArrayBuffer(44+numSamples*2);
+  var v = new DataView(buf);
+  function ws(o,s){ for(var i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); }
+  function wu16(o,n){ v.setUint16(o,n,true); }
+  function wu32(o,n){ v.setUint32(o,n,true); }
+  ws(0,'RIFF'); wu32(4,36+numSamples*2); ws(8,'WAVE');
+  ws(12,'fmt '); wu32(16,16); wu16(20,1); wu16(22,1);
+  wu32(24,sampleRate); wu32(28,sampleRate*2); wu16(32,2); wu16(34,16);
+  ws(36,'data'); wu32(40,numSamples*2);
+  for(var i=0;i<numSamples;i++){
+    var t=i/sampleRate;
+    var s=0;
+    freqs.forEach(function(f){ s+=Math.sin(2*Math.PI*f*t); });
+    s = s/freqs.length * 0.7 * Math.exp(-4*t/duration); // envelope
+    v.setInt16(44+i*2, Math.max(-32767,Math.min(32767,Math.round(s*32767))), true);
   }
-  return globalAC;
+  var bytes=new Uint8Array(buf); var bin='';
+  for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,'+btoa(bin);
+}
+
+var beepTimerURL = null;   // 3x 880Hz — rest timer done
+var beepExDoneURL = null;  // C-E-G chord — exercise done
+
+function initBeeps(){
+  try{
+    beepTimerURL = makeBeepDataURL([880], 0.6);         // 880Hz x3 (3 short pulses via Audio)
+    beepExDoneURL = makeBeepDataURL([523,659,784], 0.7); // C+E+G chord
+  }catch(e){}
+}
+initBeeps();
+
+// Pre-create Audio elements and unlock on first user gesture
+var audioBeepTimer = null;
+var audioBeepEx = null;
+function initAudioElements(){
+  if(audioBeepTimer) return;
+  try{
+    if(beepTimerURL){ audioBeepTimer = new Audio(beepTimerURL); audioBeepTimer.load(); }
+    if(beepExDoneURL){ audioBeepEx = new Audio(beepExDoneURL); audioBeepEx.load(); }
+  }catch(e){}
 }
 function unlockAudioContext(){
-  var ac = getAudioContext(); if(!ac) return;
-  if(ac.state==='suspended'){
-    ac.resume().then(function(){
-      // play silent buffer to fully unlock on iOS
-      var buf=ac.createBuffer(1,1,22050);
-      var src=ac.createBufferSource(); src.buffer=buf;
-      src.connect(ac.destination); src.start(0);
-    }).catch(function(){});
-  }
+  initAudioElements();
+  // play+immediately pause to unlock on iOS
+  if(audioBeepTimer){ audioBeepTimer.play().then(function(){ audioBeepTimer.pause(); audioBeepTimer.currentTime=0; }).catch(function(){}); }
 }
-// Unlock on first touch anywhere in the app
 document.addEventListener('touchstart', unlockAudioContext, {once:true, passive:true});
 document.addEventListener('click', unlockAudioContext, {once:true, passive:true});
 function showRestTimer(){
@@ -1896,28 +1927,28 @@ function startRestCountdown(totalSecs){
   restTimer.interval=setInterval(tick,500); // 500ms for smoother catch-up after background
 }
 function playTimerBeep(onEnd){
-  try{
-    if(navigator.audioSession) navigator.audioSession.category = 'playback';
-    var ac = getAudioContext(); if(!ac){ if(onEnd) onEnd(); return; }
-    var resume = ac.state==='suspended' ? ac.resume() : Promise.resolve();
-    resume.then(function(){
-      var now = ac.currentTime;
-      [0, 0.22, 0.44].forEach(function(t){
-        var o=ac.createOscillator(), g=ac.createGain();
-        o.connect(g); g.connect(ac.destination);
-        o.type='sine'; o.frequency.value=880;
-        g.gain.setValueAtTime(0, now+t);
-        g.gain.linearRampToValueAtTime(0.6, now+t+0.02);
-        g.gain.exponentialRampToValueAtTime(0.001, now+t+0.19);
-        o.start(now+t); o.stop(now+t+0.2);
-      });
+  try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+  initAudioElements();
+  var played = false;
+  function doPlay(){
+    if(played) return; played=true;
+    if(audioBeepTimer){
+      audioBeepTimer.currentTime=0;
+      audioBeepTimer.play().catch(function(){});
+    }
+    // play 3 pulses
+    [0,350,700].forEach(function(delay){
       setTimeout(function(){
-        try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
-        if(onEnd) onEnd();
-      }, 1200);
-    }).catch(function(){ if(onEnd) onEnd(); });
-    if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
-  }catch(e){ if(onEnd) onEnd(); }
+        if(audioBeepTimer){ audioBeepTimer.currentTime=0; audioBeepTimer.play().catch(function(){}); }
+      }, delay);
+    });
+    setTimeout(function(){
+      try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
+      if(onEnd) onEnd();
+    }, 1200);
+  }
+  doPlay();
 }
 
 function closeRestTimer(){
@@ -1928,24 +1959,11 @@ function closeRestTimer(){
   try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
 }
 function playExerciseDone(){
-  try{
-    if(navigator.audioSession) navigator.audioSession.category = 'playback';
-    var ac=getAudioContext(); if(!ac) return;
-    var resume = ac.state==='suspended' ? ac.resume() : Promise.resolve();
-    resume.then(function(){
-      var now=ac.currentTime;
-      [[523,0],[659,0.13],[784,0.26]].forEach(function(nf){
-        var o=ac.createOscillator(), g=ac.createGain();
-        o.connect(g); g.connect(ac.destination);
-        o.type='sine'; o.frequency.value=nf[0];
-        g.gain.setValueAtTime(0.5, now+nf[1]);
-        g.gain.exponentialRampToValueAtTime(0.001, now+nf[1]+0.4);
-        o.start(now+nf[1]); o.stop(now+nf[1]+0.4);
-      });
-      setTimeout(function(){ try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){} }, 900);
-    }).catch(function(){});
-    if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
-  }catch(e){}
+  try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
+  initAudioElements();
+  if(audioBeepEx){ audioBeepEx.currentTime=0; audioBeepEx.play().catch(function(){}); }
+  setTimeout(function(){ try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){} }, 900);
   if(navigator.vibrate) navigator.vibrate([100,50,100,50,300]);
   showToast('Exercício completo! Próximo exercício ✓');
 }

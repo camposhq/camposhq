@@ -4171,15 +4171,37 @@ function getExamInputsText(){
 }
 
 function getExamsText(p){
+  // First try real user-entered exams from examHistory
+  var userExams = getUserExamsText();
+  if(userExams) return userExams;
+  // Fallback to hardcoded profile exams (demo data)
   if(!p.exams || !p.exams.length) return '';
-  var lines = ['Exames laboratoriais recentes:'];
+  var lines = ['Exames laboratoriais (perfil base):'];
   p.exams.forEach(function(ex){
-    var status = ex.status==='danger'?'CRITICO':ex.status==='alert'?'ATENCAO':'OK';
     var markers = ex.markers.map(function(m){
       var flag = m.c==='#c0392b'?'⚠️ BAIXO':m.c==='#c47a1a'?'⚠️ LIMÍTROFE':'✓ OK';
       return m.n+': '+m.v+' '+m.u+' (ref: '+m.ref+') '+flag;
     }).join(', ');
-    lines.push('- '+ex.name+' ['+ex.date+'] ['+status+']: '+markers);
+    lines.push('- '+ex.name+' ['+ex.date+']: '+markers);
+  });
+  return lines.join('\n');
+}
+
+function getUserExamsText(){
+  // Read from real user-entered exam history (pdOverride.examHistory)
+  var history = getExamHistory();
+  if(!history.length) return '';
+  // Use most recent entry
+  var latest = history[history.length-1];
+  if(!latest.values || !Object.keys(latest.values).length) return '';
+  var lines = ['Exames laboratoriais reais ('+latest.dateLabel+'):'];
+  EXAM_MARKER_DEFS.forEach(function(m){
+    var v = latest.values[m.key];
+    if(v==null) return;
+    var flag = v < m.refLow ? '⚠️ ABAIXO do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
+               v > m.refHigh ? '⚠️ ACIMA do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
+               '✓ OK (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')';
+    lines.push(m.n+': '+v+' '+m.u+' — '+flag);
   });
   return lines.join('\n');
 }

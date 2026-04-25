@@ -1871,12 +1871,10 @@ function initAudioElements(){
   }catch(e){}
 }
 function unlockAudioContext(){
+  // called on set tap — unlock audio ONLY when user is actively training (not on app open)
   initAudioElements();
-  // play+immediately pause to unlock on iOS
-  if(audioBeepTimer){ audioBeepTimer.play().then(function(){ audioBeepTimer.pause(); audioBeepTimer.currentTime=0; }).catch(function(){}); }
 }
-document.addEventListener('touchstart', unlockAudioContext, {once:true, passive:true});
-document.addEventListener('click', unlockAudioContext, {once:true, passive:true});
+// unlock on set tap (see ex-set-dot listener), NOT on general touch to avoid interrupting Spotify
 function showRestTimer(){
   if(document.getElementById('rest-timer-overlay')) return;
   var ov=document.createElement('div');
@@ -1921,9 +1919,7 @@ function startRestCountdown(totalSecs){
   // clear any running interval before starting fresh
   if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
   countdownEl.style.display='block';
-  // keep audioSession as ambient during countdown so Spotify keeps playing
-  try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
-  try{ var ac=getAudioContext(); if(ac && ac.state==='suspended') ac.resume().catch(function(){}); }catch(e){}
+  // DO NOT touch AudioContext or audioSession here — would interrupt Spotify
   var circle=document.getElementById('rt-circle');
   var timeEl=document.getElementById('rt-time');
   var circ=402;
@@ -1949,30 +1945,24 @@ function startRestCountdown(totalSecs){
   restTimer.interval=setInterval(tick,500); // 500ms for smoother catch-up after background
 }
 function playTimerBeep(onEnd){
+  if(navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+  // set playback ONLY now — just before beep
   try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
-  if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
   initAudioElements();
-  var played = false;
-  function doPlay(){
-    if(played) return; played=true;
-    if(audioBeepTimer){
-      audioBeepTimer.currentTime=0;
-      audioBeepTimer.play().catch(function(){});
-    }
-    // play 3 pulses
-    [0,350,700].forEach(function(delay){
-      setTimeout(function(){
-        if(audioBeepTimer){ audioBeepTimer.currentTime=0; audioBeepTimer.play().catch(function(){}); }
-      }, delay);
-    });
+  var pulses=[0,350,700];
+  pulses.forEach(function(delay){
     setTimeout(function(){
-      // restore ambient immediately so Spotify resumes
-      try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
-      // small delay before telling Spotify to resume
-      setTimeout(function(){ if(onEnd) onEnd(); }, 200);
-    }, 900);
-  }
-  doPlay();
+      if(audioBeepTimer){
+        var a=new Audio(beepTimerURL); // fresh instance each pulse
+        a.play().catch(function(){});
+      }
+    }, delay);
+  });
+  setTimeout(function(){
+    // restore ambient — Spotify resumes
+    try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
+    if(onEnd) onEnd();
+  }, 1100);
 }
 
 function closeRestTimer(){

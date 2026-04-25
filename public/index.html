@@ -991,6 +991,27 @@ function handleDayChange(oldDate){
   var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
   var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
   var suppDone0 = p0.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
+  // workout summary
+  var w0 = p0.weekly[curDay]||{};
+  var workout0 = null;
+  if(!w0.rest && w0.exs && w0.exs.length>0){
+    var totalSets0=0, doneSets0=0;
+    w0.exs.forEach(function(ex,i){
+      var k=curP+'-'+curDay+'-'+i;
+      var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      totalSets0+=ns;
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) doneSets0++; }
+    });
+    workout0 = {name:w0.name, done:doneSets0, total:totalSets0};
+  }
+  // auto highlight
+  var highlights0 = [];
+  if(deficit0<=0 && kcal0>0) highlights0.push('🎯 Meta calórica atingida');
+  if(sleep0>=(p0.sleepTarget||7.5)) highlights0.push('😴 Meta de sono atingida');
+  if(mealsDone0===p0.meals.length) highlights0.push('🍽 Todas as refeições registradas');
+  if(workout0 && workout0.done===workout0.total && workout0.total>0) highlights0.push('💪 Treino 100% completo');
+  if(water0>=(p0.water||2500)) highlights0.push('💧 Meta de hidratação atingida');
+  var highlight0 = highlights0.length>=3 ? '🔥 Dia completo!' : highlights0.length>0 ? highlights0[0] : null;
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
@@ -1020,11 +1041,11 @@ function handleDayChange(oldDate){
   save();
   // show summary popup as informational only (no longer gates the reset)
   if(datesToFill.length===1){
-    showDaySummary(oldDateFull, kcal0, basal0, treino0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0, suppDone0, p0.supps.length);
+    showDaySummary(oldDateFull, kcal0, basal0, treino0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0, suppDone0, p0.supps.length, workout0, highlight0);
   }
 }
 
-function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, mealsDone, mealsTotal, water, suppDone, suppTotal){
+function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, mealsDone, mealsTotal, water, suppDone, suppTotal, workout, highlight){
   var defColor = deficit<=0?'var(--green)':'var(--coral)';
   var defLabel = deficit<=0?'−'+Math.abs(deficit)+' kcal deficit':'+'+deficit+' kcal superávit';
   var sleepColor = sleep>=7?'var(--green)':sleep>=6?'var(--amber)':'var(--coral)';
@@ -1070,6 +1091,19 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">💊 Suplementos</div>'+
         '</div>'+
       '</div>'+
+      // Treino + Destaque (linha compacta, só se houver dados)
+      (workout||highlight?
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
+          (workout?'<div style="background:var(--surface);border-radius:10px;padding:8px 12px;flex:1;min-width:0">'+
+            '<div style="font-size:11px;color:var(--muted)">💪 Treino</div>'+
+            '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+workout.name+'</div>'+
+            '<div style="font-size:11px;color:'+(workout.done===workout.total?'var(--green)':'var(--amber)')+'">'+workout.done+'/'+workout.total+' séries</div>'+
+          '</div>':'')+
+          (highlight?'<div style="background:var(--green-light);border-radius:10px;padding:8px 12px;flex:1;min-width:0;text-align:center">'+
+            '<div style="font-size:13px;font-weight:600;color:var(--green)">'+highlight+'</div>'+
+          '</div>':'')+
+        '</div>'
+      :'')+
       '<button id="day-summary-ok" style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Começar novo dia ✓</button>'+
       '</div>'+
     '</div>';

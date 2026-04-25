@@ -1921,8 +1921,8 @@ function startRestCountdown(totalSecs){
   // clear any running interval before starting fresh
   if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
   countdownEl.style.display='block';
-  showToast('Timer iniciando: '+totalSecs+'s');
-  try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
+  // keep audioSession as ambient during countdown so Spotify keeps playing
+  try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
   try{ var ac=getAudioContext(); if(ac && ac.state==='suspended') ac.resume().catch(function(){}); }catch(e){}
   var circle=document.getElementById('rt-circle');
   var timeEl=document.getElementById('rt-time');
@@ -1966,9 +1966,11 @@ function playTimerBeep(onEnd){
       }, delay);
     });
     setTimeout(function(){
+      // restore ambient immediately so Spotify resumes
       try{ if(navigator.audioSession) navigator.audioSession.category='ambient'; }catch(e){}
-      if(onEnd) onEnd();
-    }, 1200);
+      // small delay before telling Spotify to resume
+      setTimeout(function(){ if(onEnd) onEnd(); }, 200);
+    }, 900);
   }
   doPlay();
 }

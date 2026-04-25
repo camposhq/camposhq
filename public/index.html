@@ -3472,13 +3472,19 @@ function renderEvolucao(){
     h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep||null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
     var kcalAtual = kcalConsumedToday();
     h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);
-    var gastoHist=hist.map(function(e){return e.gasto||null;});
-    var deficitHist=hist.map(function(e){return e.deficit!=null?e.deficit:null;});
+    var gastoHist=hist.map(function(e){return e.gasto>0?e.gasto:null;});
+    // balanco: positive = surplus (ate more than spent), negative = deficit (ate less)
+    // only include days where calories were tracked (>0)
+    var balancoHist=hist.map(function(e){return (e.calories>0&&e.gasto>0)?(e.calories-e.gasto):null;});
     var gastoAtual=getBasalKcal(p)+calcWorkoutKcalToday();
-    var deficitAtual=kcalConsumedToday()-gastoAtual;
+    var kcalAtualBal=kcalConsumedToday();
+    var balancoAtual=kcalAtualBal>0?(kcalAtualBal-gastoAtual):null;
     if(gastoHist.some(function(v){return v!=null;})){
       h+=evoCard('Gasto total','🔥',gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
-      h+=evoCard('Deficit calorico','⚖️',deficitHist,labels,deficitAtual,'kcal','#1a5a8a',true,0);
+    }
+    if(balancoHist.some(function(v){return v!=null;})){
+      // lowerBetter=true: deficit (negative) shown as green, surplus (positive) as amber/red
+      h+=evoCard('Balanço calórico','⚖️',balancoHist,labels,balancoAtual,'kcal','#1a5a8a',true,0);
     }
     var waterHist=hist.map(function(e){return e.water||null;});
     var waterAtual=Math.round((waterGlasses[curP+'-water']||0)*250);

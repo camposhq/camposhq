@@ -3330,6 +3330,10 @@ function snapshotHistory(idx){
 }
 
 function sparklineSVG(values, labels, color, tgt){
+  // filter out null/undefined values keeping aligned labels
+  var filteredVals=[], filteredLabels=[];
+  (values||[]).forEach(function(v,i){ if(v!=null&&!isNaN(parseFloat(v))){ filteredVals.push(parseFloat(v)); filteredLabels.push(labels&&labels[i]?labels[i]:''); } });
+  values=filteredVals; labels=filteredLabels;
   var vw=340, vh=160, padL=38, padR=18, padT=22, padB=26;
   var innerW=vw-padL-padR, innerH=vh-padT-padB;
   if(!values||values.length<1) return '<div style="height:120px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)">Sem historico ainda</div>';
@@ -3381,8 +3385,10 @@ function sparklineSVG(values, labels, color, tgt){
 
 function evoCard(title, icon, values, labels, current, unit, color, lowerBetter, tgt){
   if(!values) values=[];
-  var first = values.length>1?values[0]:null;
-  var diff = first!==null?parseFloat((current-first).toFixed(1)):null;
+  // filter nulls for delta calculation
+  var validVals = values.filter(function(v){ return v!=null&&!isNaN(parseFloat(v)); });
+  var first = validVals.length>1?validVals[0]:null;
+  var diff = first!==null&&current!=null?parseFloat((current-first).toFixed(1)):null;
   var isGood = diff===null?null:(lowerBetter?diff<0:diff>0);
   var deltaHtml='';
   if(diff!==null&&diff!==0){
@@ -3444,11 +3450,11 @@ function renderEvolucao(){
     // Scores
     h+='<div class="section"><div class="sec-label">Scores de saude · meta: top 20% da sua faixa</div>';
     var avgCur=p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0;
-    h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
-    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude;}),labels,p.scores&&p.scores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
-    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness;}),labels,p.scores&&p.scores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
-    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono;}),labels,p.scores&&p.scores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
-    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao;}),labels,p.scores&&p.scores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
+    h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg>0?e.avg:null;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
+    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,p.scores&&p.scores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
+    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,p.scores&&p.scores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
+    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono>0?e.scores.Sono:null;}),labels,p.scores&&p.scores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
+    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao>0?e.scores.Nutricao:null;}),labels,p.scores&&p.scores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
     h+='</div>';
     // Corpo
     h+='<div class="section"><div class="sec-label">Composicao corporal · meta: top 20%</div>';
@@ -3462,8 +3468,10 @@ function renderEvolucao(){
     h+='</div>';
     // Habitos
     h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
-    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep;}),labels,p.sleep,'h','#1a5a8a',false,7.8);
-    h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories;}),labels,kcalConsumedToday(),'kcal','#c47a1a',false,p.calories);
+    var sleepAtual = parseFloat(((sleepData[curP]||{hours:p.sleep}).hours||p.sleep).toFixed(1));
+    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep||null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
+    var kcalAtual = kcalConsumedToday();
+    h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);
     var gastoHist=hist.map(function(e){return e.gasto||null;});
     var deficitHist=hist.map(function(e){return e.deficit!=null?e.deficit:null;});
     var gastoAtual=getBasalKcal(p)+calcWorkoutKcalToday();

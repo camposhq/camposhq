@@ -1917,15 +1917,13 @@ function showRestTimer(){
 }
 function startRestCountdown(totalSecs){
   var countdownEl=document.getElementById('rt-countdown');
-  if(!countdownEl) return;
+  if(!countdownEl){ showToast('DEBUG: rt-countdown not found'); return; }
   // clear any running interval before starting fresh
   if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
   countdownEl.style.display='block';
-  // set audio session to playback NOW so iOS keeps audio alive in background
+  showToast('Timer iniciando: '+totalSecs+'s');
   try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}
-  // keep AudioContext alive and resumed during timer
-  var ac=getAudioContext();
-  if(ac && ac.state==='suspended') ac.resume().catch(function(){});
+  try{ var ac=getAudioContext(); if(ac && ac.state==='suspended') ac.resume().catch(function(){}); }catch(e){}
   var circle=document.getElementById('rt-circle');
   var timeEl=document.getElementById('rt-time');
   var circ=402;

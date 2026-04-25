@@ -1917,9 +1917,8 @@ function showRestTimer(){
   setTimeout(function(){ startRestCountdown(lastRestSecs); }, 100);
 }
 function startRestCountdown(totalSecs){
-  var presetsEl=document.getElementById('rt-presets');
   var countdownEl=document.getElementById('rt-countdown');
-  if(!presetsEl||!countdownEl) return;
+  if(!countdownEl) return;
   countdownEl.style.display='block';
   // set audio session to playback NOW so iOS keeps audio alive in background
   try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}

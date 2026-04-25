@@ -1280,8 +1280,16 @@ function releaseWakeLock(){
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='visible'){
     requestWakeLock();
-    // reschedule notifications when app comes back to foreground
     if(Notification.permission==='granted') scheduleNotifications();
+    // check if rest timer expired while app was in background
+    if(restTimer.endTime>0 && restTimer.interval){
+      var msLeft = restTimer.endTime - Date.now();
+      if(msLeft<=0){
+        clearInterval(restTimer.interval); restTimer.interval=null;
+        playTimerBeep(function(){ setTimeout(closeRestTimer,600); });
+        if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+      }
+    }
   } else {
     save(true);
     releaseWakeLock();
@@ -1785,7 +1793,7 @@ function renderTreinosStrip(){
 }
 
 // ── Rest timer ────────────────────────────────────────────────
-var restTimer={interval:null,remaining:0,total:0};
+var restTimer={interval:null,remaining:0,total:0,endTime:0};
 
 // Single persistent AudioContext — unlocked on first user touch
 var globalAC = null;
@@ -1859,7 +1867,11 @@ function startRestCountdown(totalSecs){
   var timeEl=document.getElementById('rt-time');
   var circ=402;
   restTimer.remaining=totalSecs; restTimer.total=totalSecs;
+  restTimer.endTime = Date.now() + totalSecs*1000; // absolute end time survives background
   function tick(){
+    // recalculate from absolute end time — works correctly after background/foreground
+    var msLeft = restTimer.endTime - Date.now();
+    restTimer.remaining = Math.max(0, Math.round(msLeft/1000));
     var pct=restTimer.remaining/restTimer.total;
     if(circle) circle.setAttribute('stroke-dashoffset',(circ*(1-pct)).toFixed(1));
     if(circle) circle.style.stroke=pct>0.4?'var(--green)':pct>0.15?'#f59e0b':'var(--coral)';
@@ -1868,13 +1880,12 @@ function startRestCountdown(totalSecs){
     if(restTimer.remaining<=0){
       clearInterval(restTimer.interval); restTimer.interval=null;
       playTimerBeep(function(){ setTimeout(closeRestTimer,600); });
-      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
       return;
     }
-    restTimer.remaining--;
   }
   tick();
-  restTimer.interval=setInterval(tick,1000);
+  restTimer.interval=setInterval(tick,500); // 500ms for smoother catch-up after background
 }
 function playTimerBeep(onEnd){
   try{

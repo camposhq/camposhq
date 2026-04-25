@@ -1705,10 +1705,16 @@ function renderHome(){
     h += '<button id="btn-enable-notif" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ativar</button>';
     h += '</div></div>';
   } else {
-    h += '<div class="section"><div style="background:var(--green-light);border:1px solid rgba(26,122,74,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">';
-    h += '<div style="font-size:12px;color:var(--green-deep)">🔔 Notificações ativas</div>';
-    h += '<button id="btn-test-notif" style="background:none;border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--green);cursor:pointer">Testar notif</button>';
-    h += '<button id="btn-test-summary" style="background:none;border:1px solid var(--blue);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--blue);cursor:pointer">Testar resumo</button>';
+    var scheduled = scheduleNotifications();
+    var nextNotif = scheduled.length>0 ? 'Próxima: '+scheduled[0] : 'Nenhuma restante hoje';
+    h += '<div class="section"><div style="background:var(--green-light);border:1px solid rgba(26,122,74,.2);border-radius:10px;padding:10px 14px">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    h += '<div style="font-size:12px;color:var(--green-deep);font-weight:600">🔔 Notificações ativas · '+scheduled.length+' hoje</div>';
+    h += '<div style="display:flex;gap:6px">';
+    h += '<button id="btn-test-notif" style="background:none;border:1px solid var(--green);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--green);cursor:pointer">Testar</button>';
+    h += '<button id="btn-test-summary" style="background:none;border:1px solid var(--blue);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--blue);cursor:pointer">Resumo</button>';
+    h += '</div></div>';
+    h += '<div style="font-size:11px;color:var(--muted)">'+nextNotif+'</div>';
     h += '</div></div>';
   }
   // AI
@@ -5236,10 +5242,15 @@ function scheduleNotifications(){
     {h:21, m:0,  title:'💧 Água', body:waterMsgs[5], tag:'water'},
     {h:22, m:0,  title:'😴 Hora de dormir', body:'Meta de sono: '+p.sleepTarget+'h. Boa noite!'},
   ];
+  var scheduled = [];
   reminders.forEach(function(r){
     var ms = msUntil(r.h, r.m);
-    if(ms) notifTimers.push(setTimeout(function(){ sendNotif(r.title, r.body, 'meal-'+r.h); }, ms));
+    if(ms){
+      (function(rem){ notifTimers.push(setTimeout(function(){ sendNotif(rem.title, rem.body, rem.tag||'meal-'+rem.h); }, ms)); })(r);
+      scheduled.push(r.h+':'+(r.m<10?'0':'')+r.m+' '+r.title);
+    }
   });
+  return scheduled;
 }
 
 // ask for permission once, then schedule

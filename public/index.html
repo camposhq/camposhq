@@ -928,6 +928,7 @@ let examesTab = 'todos';
 let evoPeriod = 30; // days
 let expandedExam = {};
 let mealDone = {}, suppDone = {}, habitDone = {}, foodDone = {};
+let inputHistory = {foods:[], portions:[], exercises:[], supplements:[]};
 let exChecked = {}, exSets = {}, exWeights = {}, cardioSel = {}, cardioChecked = {}, walkParams = {};
 let waterGlasses = {}, sleepData = {};
 let weightKey = null, weightExName = '';
@@ -969,6 +970,54 @@ function totalSetsDoneToday(pi){
   return tot;
 }
 var dayChangeHandled = false; // prevent double execution
+
+// ── AUTOCOMPLETE ─────────────────────────────────────────────
+function addToHistory(key, value){
+  if(!value || value.trim().length<2) return;
+  var v = value.trim();
+  if(!inputHistory[key]) inputHistory[key]=[];
+  // remove duplicate and put at front
+  inputHistory[key] = [v].concat(inputHistory[key].filter(function(x){ return x.toLowerCase()!==v.toLowerCase(); })).slice(0,30);
+  save();
+}
+
+function attachAutocomplete(inputEl, key, onSelect){
+  if(!inputEl) return;
+  var dropdown = null;
+  function removeDropdown(){ if(dropdown){ dropdown.remove(); dropdown=null; } }
+  inputEl.addEventListener('input', function(){
+    removeDropdown();
+    var q = this.value.trim().toLowerCase();
+    if(!q || q.length<1) return;
+    var matches = (inputHistory[key]||[]).filter(function(h){ return h.toLowerCase().indexOf(q)===0; }).slice(0,6);
+    if(!matches.length) return;
+    dropdown = document.createElement('div');
+    dropdown.style.cssText = 'position:absolute;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;overflow:hidden;margin-top:2px';
+    matches.forEach(function(m){
+      var item = document.createElement('div');
+      item.style.cssText = 'padding:11px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)';
+      item.textContent = m;
+      item.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      item.addEventListener('click', function(){
+        inputEl.value = m;
+        removeDropdown();
+        if(onSelect) onSelect(m);
+      });
+      dropdown.appendChild(item);
+    });
+    var wrap = inputEl.parentNode;
+    if(wrap.style.position!=='relative') wrap.style.position='relative';
+    wrap.appendChild(dropdown);
+  });
+  inputEl.addEventListener('blur', function(){ setTimeout(removeDropdown, 150); });
+  inputEl.addEventListener('keydown', function(e){
+    if(e.key==='Escape') removeDropdown();
+    if(e.key==='Enter' && dropdown){
+      var first = dropdown.querySelector('div');
+      if(first){ inputEl.value=first.textContent; removeDropdown(); if(onSelect) onSelect(first.textContent); }
+    }
+  });
+}
 
 function resetDailyState(){
   mealDone={}; suppDone={}; habitDone={}; foodDone={};
@@ -1150,7 +1199,7 @@ function save(immediate){
     var data = {
       curP,curDay,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
-      waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,
+      waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,inputHistory,
       lastSavedDate:todayStr(),
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     };
@@ -1196,6 +1245,7 @@ function load(){
     profileComplete = s.profileComplete||false;
     pdOverride = s.pdOverride||{};
     chatHistories = s.chatHistories||{};
+    if(s.inputHistory) inputHistory = s.inputHistory;
     historyData = s.historyData||{};
     // Restore from fast daily backup if main data looks empty but daily backup has today's data
     try{
@@ -2598,6 +2648,8 @@ function adicionarAlimento(mealIdx){
   document.getElementById('fadd-close').addEventListener('click', function(){ overlay.remove(); });
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   setTimeout(function(){ document.getElementById('fadd-name').focus(); }, 200);
+  attachAutocomplete(document.getElementById('fadd-name'), 'foods');
+  attachAutocomplete(document.getElementById('fadd-porcao'), 'portions');
 
   document.getElementById('fadd-btn').addEventListener('click', function(){
     var btn = this;
@@ -2607,6 +2659,8 @@ function adicionarAlimento(mealIdx){
     var kcalVal = parseInt(document.getElementById('fadd-kcal').value);
 
     function aplicar(n, po, k){
+      addToHistory('foods', n);
+      if(po && po!=='1 porcao') addToHistory('portions', po);
       meal.foods.push({n:n, p:po||'1 porcao', k:k||0});
       meal.kcal = meal.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
       if(!pdOverride[curP]) pdOverride[curP]={};
@@ -2682,6 +2736,7 @@ function substituirAlimento(mealIdx, foodIdx){
   document.body.appendChild(overlay);
 
   document.getElementById('fsub-close').addEventListener('click', function(){ overlay.remove(); });
+  attachAutocomplete(document.getElementById('fsub-inp'), 'foods');
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   setTimeout(function(){ document.getElementById('fsub-inp').focus(); }, 200);
 
@@ -2761,6 +2816,7 @@ function substituirSuplemento(idx){
   document.body.appendChild(overlay);
 
   document.getElementById('ssub-close').addEventListener('click', function(){ overlay.remove(); });
+  attachAutocomplete(document.getElementById('ssub-inp'), 'supplements');
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   setTimeout(function(){ document.getElementById('ssub-inp').focus(); }, 200);
 
@@ -2821,6 +2877,7 @@ function substituirExercicio(dayIdx, exIdx){
     '</div>';
   document.body.appendChild(overlay);
   document.getElementById('exsub-cancel').onclick = function(){ overlay.remove(); };
+  attachAutocomplete(document.getElementById('exsub-inp'), 'exercises');
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   document.getElementById('exsub-btn').addEventListener('click', function(){
     var btn = this;
@@ -2889,6 +2946,7 @@ function adicionarExercicio(dayIdx){
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
   document.getElementById('exadd-close').addEventListener('click', function(){ overlay.remove(); });
+  attachAutocomplete(document.getElementById('exadd-name'), 'exercises');
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
   setTimeout(function(){ document.getElementById('exadd-name').focus(); }, 200);
 
@@ -2900,6 +2958,7 @@ function adicionarExercicio(dayIdx){
     var peso = parseFloat(document.getElementById('exadd-peso').value) || 0;
 
     function aplicar(n, s, w){
+      addToHistory('exercises', n);
       day.exs.push({n:n, s:s||'3x12', w:w||0});
       if(!pdOverride[curP]) pdOverride[curP]={};
       pdOverride[curP].weekly = p.weekly;
@@ -5362,6 +5421,22 @@ setInterval(function(){
 // INIT — Dashboard direto, sem login
 // ══════════════════════════════════════════════════════════════
 load();
+// pre-populate history from existing plan data (first run)
+(function seedHistory(){
+  if(inputHistory.foods.length>0 || inputHistory.exercises.length>0) return;
+  PD.forEach(function(p){
+    (p.meals||[]).forEach(function(m){
+      (m.foods||[]).forEach(function(f){
+        if(f.n) addToHistory('foods', f.n);
+        if(f.p && f.p!=='a vontade' && f.p!=='tempero') addToHistory('portions', f.p);
+      });
+    });
+    (p.weekly||[]).forEach(function(w){
+      (w.exs||[]).forEach(function(ex){ if(ex.n) addToHistory('exercises', ex.n); });
+    });
+    (p.supps||[]).forEach(function(s){ if(s.n) addToHistory('supplements', s.n); });
+  });
+})();
 // Wire up topbar buttons after DOM ready
 // Dark mode
 function applyDarkMode(dark){

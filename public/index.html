@@ -1850,13 +1850,13 @@ function makeBeepDataURL(freqs, duration, sampleRate){
   return 'data:audio/wav;base64,'+btoa(bin);
 }
 
-var beepTimerURL = null;   // 3x 880Hz — rest timer done
+var beepTimerURL = null;   // short 880Hz — rest timer done
 var beepExDoneURL = null;  // C-E-G chord — exercise done
 
 function initBeeps(){
   try{
-    beepTimerURL = makeBeepDataURL([880], 0.6);         // 880Hz x3 (3 short pulses via Audio)
-    beepExDoneURL = makeBeepDataURL([523,659,784], 0.7); // C+E+G chord
+    beepTimerURL = makeBeepDataURL([880], 0.15);         // very short 150ms beep
+    beepExDoneURL = makeBeepDataURL([523,659,784], 0.25); // short chord
   }catch(e){}
 }
 initBeeps();
@@ -1953,11 +1953,11 @@ function playTimerBeep(onEnd){
     }
   }
   playPulse();
+  setTimeout(playPulse, 200);
   setTimeout(playPulse, 400);
-  setTimeout(playPulse, 800);
   setTimeout(function(){
     if(onEnd) onEnd();
-  }, 1200);
+  }, 700);
 }
 
 function closeRestTimer(){

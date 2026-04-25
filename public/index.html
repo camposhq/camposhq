@@ -1822,7 +1822,7 @@ function renderTreinosStrip(){
 
 // ── Rest timer ────────────────────────────────────────────────
 var restTimer={interval:null,remaining:0,total:0,endTime:0};
-var lastRestSecs = 90; // default rest time, updated when user picks
+var lastRestSecs = 60; // default rest time, updated when user picks
 
 // Generate beep WAV as data URL — more reliable than oscillators on iOS
 function makeBeepDataURL(freqs, duration, sampleRate){

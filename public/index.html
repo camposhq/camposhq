@@ -983,12 +983,16 @@ function handleDayChange(oldDate){
   // compute summary for the active profile before resetting
   var p0 = PD[curP];
   var kcal0 = kcalConsumedToday(curP);
-  var gasto0 = getBasalKcal(p0)+calcWorkoutKcalToday(curP);
-  var deficit0 = kcal0-gasto0;
-  var sleep0 = (sleepData[curP]||{hours:p0.sleep}).hours;
+  var basal0 = getBasalKcal(p0);
+  var treino0 = calcWorkoutKcalToday(curP);
+  var gasto0 = basal0 + treino0;
+  var deficit0 = kcal0 - gasto0;
+  var sleep0 = parseFloat(((sleepData[curP]||{hours:p0.sleep}).hours||0).toFixed(1));
   var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
   var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
+  var suppDone0 = p0.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
 
   PD.forEach(function(p,pi){
     if(!historyData[pi]) historyData[pi]=[];
@@ -1016,52 +1020,61 @@ function handleDayChange(oldDate){
   save();
   // show summary popup as informational only (no longer gates the reset)
   if(datesToFill.length===1){
-    showDaySummary(oldDateLabel, kcal0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0);
+    showDaySummary(oldDateFull, kcal0, basal0, treino0, gasto0, deficit0, sleep0, mealsDone0, p0.meals.length, water0, suppDone0, p0.supps.length);
   }
 }
 
-function showDaySummary(dateLabel, kcal, gasto, deficit, sleep, mealsDone, mealsTotal, water){
+function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, mealsDone, mealsTotal, water, suppDone, suppTotal){
   var defColor = deficit<=0?'var(--green)':'var(--coral)';
-  var defLabel = deficit<=0?'Deficit de '+(Math.abs(deficit))+' kcal':'Superávit de '+deficit+' kcal';
+  var defLabel = deficit<=0?'−'+Math.abs(deficit)+' kcal deficit':'+'+deficit+' kcal superávit';
+  var sleepColor = sleep>=7?'var(--green)':sleep>=6?'var(--amber)':'var(--coral)';
+  var waterPct = water>0?Math.round(water/PD[curP].water*100):0;
+  var waterColor = waterPct>=100?'var(--green)':waterPct>=60?'var(--amber)':'var(--coral)';
   var overlay = document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
   overlay.innerHTML=
-    '<div style="background:var(--card);border-radius:20px;width:100%;max-width:380px;padding:24px;text-align:center">'+
-      '<div style="font-size:32px;margin-bottom:8px">🌅</div>'+
-      '<div style="font-family:Fraunces,serif;font-size:20px;margin-bottom:4px">Resumo do dia</div>'+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px;text-transform:capitalize">'+dateLabel+'</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+kcal+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">kcal consumidas</div>'+
+    '<div style="background:var(--card);border-radius:24px;width:100%;max-width:380px;overflow:hidden">'+
+      // Header
+      '<div style="background:linear-gradient(135deg,var(--green),var(--green-deep));padding:20px 24px 16px;text-align:center">'+
+        '<div style="font-size:28px;margin-bottom:6px">📋</div>'+
+        '<div style="font-family:Fraunces,serif;font-size:22px;color:#fff;margin-bottom:2px">Resumo do Dia Anterior</div>'+
+        '<div style="font-size:13px;color:rgba(255,255,255,.75);text-transform:capitalize">'+dateLabel+'</div>'+
+      '</div>'+
+      '<div style="padding:16px">'+
+      // Balanço calórico — destaque
+      '<div style="background:var(--surface);border-radius:14px;padding:14px;margin-bottom:12px;text-align:center">'+
+        '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Balanço Calórico</div>'+
+        '<div style="font-size:26px;font-weight:700;font-family:DM Mono,monospace;color:'+defColor+'">'+defLabel+'</div>'+
+        '<div style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)">'+
+          '<span>🍽 '+kcal+' consumidas</span>'+
+          '<span>🔥 '+gasto+' gastas</span>'+
         '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+gasto+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">kcal gastas</div>'+
+        '<div style="font-size:10px;color:var(--muted);margin-top:4px">Basal '+basal+' + Treino '+treino+' kcal</div>'+
+      '</div>'+
+      // Grid métricas
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+sleep+'h</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">😴 Sono</div>'+
         '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:'+defColor+'">'+defLabel+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">balanço calórico</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+waterColor+'">'+(water>0?water+'ml':'—')+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">💧 Hidratação</div>'+
         '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+sleep+'h</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">sono</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+(mealsDone===mealsTotal?'var(--green)':'var(--amber)')+'">'+mealsDone+'/'+mealsTotal+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">🍽 Refeições</div>'+
         '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+mealsDone+'/'+mealsTotal+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">refeições</div>'+
-        '</div>'+
-        '<div style="background:var(--surface);border-radius:12px;padding:12px">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+(water>0?water+'ml':'—')+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">hidratação</div>'+
+        '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+(suppDone===suppTotal&&suppTotal>0?'var(--green)':'var(--amber)')+'">'+suppDone+'/'+suppTotal+'</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">💊 Suplementos</div>'+
         '</div>'+
       '</div>'+
-      '<button id="day-summary-ok" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer">Começar novo dia ✓</button>'+
+      '<button id="day-summary-ok" style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Começar novo dia ✓</button>'+
+      '</div>'+
     '</div>';
   document.body.appendChild(overlay);
-  document.getElementById('day-summary-ok').addEventListener('click', function(){
-    overlay.remove(); // reset already happened — just close
-  });
+  document.getElementById('day-summary-ok').addEventListener('click', function(){ overlay.remove(); });
 }
 
 var saveCloudTimer = null;

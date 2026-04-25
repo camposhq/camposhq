@@ -1822,6 +1822,7 @@ function renderTreinosStrip(){
 
 // ── Rest timer ────────────────────────────────────────────────
 var restTimer={interval:null,remaining:0,total:0,endTime:0};
+var lastRestSecs = 90; // default rest time, updated when user picks
 
 // Generate beep WAV as data URL — more reliable than oscillators on iOS
 function makeBeepDataURL(freqs, duration, sampleRate){
@@ -1887,11 +1888,13 @@ function showRestTimer(){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'+
     '<div style="font-family:Fraunces,serif;font-size:20px">Descanso <em>entre séries</em></div>'+
     '<button id="rt-skip" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:4px 8px">Pular ✕</button></div>'+
-    '<div id="rt-presets" style="display:flex;gap:8px;margin-bottom:6px">'+
-    '<button class="rt-preset" data-secs="30">0:30</button>'+
-    '<button class="rt-preset" data-secs="45">0:45</button>'+
-    '<button class="rt-preset" data-secs="60">1:00</button>'+
-    '<button class="rt-preset" data-secs="90">1:30</button>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Ajustar tempo</div>'+
+    '<div id="rt-presets" style="display:flex;gap:8px;margin-bottom:14px">'+
+    '<button class="rt-preset'+(lastRestSecs===30?' sel':'')+'" data-secs="30">0:30</button>'+
+    '<button class="rt-preset'+(lastRestSecs===45?' sel':'')+'" data-secs="45">0:45</button>'+
+    '<button class="rt-preset'+(lastRestSecs===60?' sel':'')+'" data-secs="60">1:00</button>'+
+    '<button class="rt-preset'+(lastRestSecs===90?' sel':'')+'" data-secs="90">1:30</button>'+
+    '<button class="rt-preset'+(lastRestSecs===120?' sel':'')+'" data-secs="120">2:00</button>'+
     '</div>'+
     '<div id="rt-countdown" style="display:none;padding-top:6px">'+
     '<svg width="150" height="150" viewBox="0 0 150 150" style="display:block;margin:0 auto 8px">'+
@@ -1908,14 +1911,20 @@ function showRestTimer(){
   document.getElementById('rt-skip').addEventListener('click',closeRestTimer);
   document.getElementById('rt-cancel').addEventListener('click',closeRestTimer);
   panel.querySelectorAll('.rt-preset').forEach(function(btn){
-    btn.addEventListener('click',function(){ startRestCountdown(parseInt(this.dataset.secs)); });
+    btn.addEventListener('click',function(){
+      lastRestSecs = parseInt(this.dataset.secs);
+      panel.querySelectorAll('.rt-preset').forEach(function(b){ b.classList.remove('sel'); });
+      this.classList.add('sel');
+      startRestCountdown(lastRestSecs);
+    });
   });
+  // auto-start with last used time
+  setTimeout(function(){ startRestCountdown(lastRestSecs); }, 100);
 }
 function startRestCountdown(totalSecs){
   var presetsEl=document.getElementById('rt-presets');
   var countdownEl=document.getElementById('rt-countdown');
   if(!presetsEl||!countdownEl) return;
-  presetsEl.style.display='none';
   countdownEl.style.display='block';
   // set audio session to playback NOW so iOS keeps audio alive in background
   try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}

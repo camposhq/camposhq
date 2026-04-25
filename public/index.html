@@ -1013,7 +1013,7 @@ function handleDayChange(oldDate){
   if(water0>=(p0.water||2500)) highlights0.push('💧 Meta de hidratação atingida');
   var highlight0 = highlights0.length>=3 ? '🔥 Dia completo!' : highlights0.length>0 ? highlights0[0] : null;
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}).replace(/ De /g,' de ');
 
   PD.forEach(function(p,pi){
     if(!historyData[pi]) historyData[pi]=[];

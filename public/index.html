@@ -1908,17 +1908,18 @@ function showRestTimer(){
   document.getElementById('rt-skip').addEventListener('click',closeRestTimer);
   document.getElementById('rt-cancel').addEventListener('click',closeRestTimer);
   document.getElementById('rt-minus').addEventListener('click',function(){
-    if(lastRestSecs>15){ lastRestSecs=Math.max(15,lastRestSecs-15); startRestCountdown(lastRestSecs); }
+    lastRestSecs=Math.max(15,lastRestSecs-15); startRestCountdown(lastRestSecs);
   });
   document.getElementById('rt-plus').addEventListener('click',function(){
     lastRestSecs=Math.min(300,lastRestSecs+15); startRestCountdown(lastRestSecs);
   });
-  // auto-start immediately
-  setTimeout(function(){ startRestCountdown(lastRestSecs); }, 100);
+  startRestCountdown(lastRestSecs); // start immediately, no timeout
 }
 function startRestCountdown(totalSecs){
   var countdownEl=document.getElementById('rt-countdown');
   if(!countdownEl) return;
+  // clear any running interval before starting fresh
+  if(restTimer.interval){ clearInterval(restTimer.interval); restTimer.interval=null; }
   countdownEl.style.display='block';
   // set audio session to playback NOW so iOS keeps audio alive in background
   try{ if(navigator.audioSession) navigator.audioSession.category='playback'; }catch(e){}

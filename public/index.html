@@ -2267,6 +2267,34 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
   });
   var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar'); var tan=document.getElementById('t-analise');
+  // shared full profile context for all workout buttons
+  function buildTrainingCtx(){
+    var o = pdOverride[curP]||{};
+    var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+    var hasPhotos = p.progressPhotos&&p.progressPhotos.some(function(ph){return ph.img;});
+    var hist = (historyData[curP]||[]).slice(-12);
+    var ctx = 'PERFIL COMPLETO:\n';
+    ctx += p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, IMC '+imc+'.\n';
+    ctx += 'Objetivo: '+p.goal+'. BMR: '+getBasalKcal(p)+' kcal. Meta calorica: '+p.calories+' kcal.\n';
+    ctx += 'Nivel: '+(o.trainingLevel||'intermediario')+'. Dias de treino: '+(o.trainingDays||5)+'/semana.\n';
+    if(hasPhotos) ctx += 'Fotos corporais: disponíveis no perfil (3 ângulos).\n';
+    ctx += '\nPLANO SEMANAL:\n'+p.weekly.map(function(d,di){
+      if(d.rest) return DAYS[di]+': Descanso';
+      var exStr=(d.exs||[]).map(function(ex,i){
+        var wval=exWeights[wk(curP,di,i)]||ex.w||0;
+        return ex.n+' '+ex.s+(wval>0?' @'+wval+'kg':'');
+      }).join(', ');
+      return DAYS[di]+': '+d.name+' ('+exStr+')';
+    }).join('\n');
+    if(hist.length>0){
+      ctx += '\n\nHISTORICO ('+hist.length+' semanas):\n'+hist.map(function(e){
+        return e.label+': peso '+e.weight+'kg, score '+e.avg+', sono '+e.sleep+'h';
+      }).join(' | ');
+    }
+    var exams = getExamInputsText()||getExamsText(p);
+    if(exams) ctx += '\n\nEXAMES:\n'+exams;
+    return ctx;
+  }
   if(ta) ta.addEventListener('click', function(){
     var exList = (w.exs||[]).map(function(ex,i){
       var key=wk(curP,curDay,i); var wval=exWeights[key]||ex.w||0;
@@ -2274,20 +2302,18 @@ function renderTreinosContent(){
       var done=0; for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) done++; }
       return (i+1)+'. '+ex.n+' — '+ex.s+(wval>0?' @ '+wval+'kg':'')+' ('+done+'/'+ns+' feitas)';
     }).join('\n');
-    var ctx = 'Treino de hoje ('+w.name+'):\n'+exList+'\nNivel: '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+'. BMR: '+(getBasalKcal(p))+' kcal.';
-    openChatWithContext('treino', ctx, 'Careguei o treino de hoje com suas cargas e series feitas. Pode me perguntar sobre progressao de carga, volume, tecnica ou qualquer ajuste.');
+    var ctx = buildTrainingCtx()+'\n\nTREINO DE HOJE ('+w.name+'):\n'+exList;
+    openChatWithContext('treino', ctx, 'Perfil e treino de hoje carregados com cargas e series. Pode pedir ajustes de carga, progressao, tecnica ou qualquer mudanca.');
   });
   if(tg) tg.addEventListener('click', function(){
-    var ctx = 'Plano semanal atual:\n'+p.weekly.map(function(d,i){ return DAYS[i]+': '+(d.rest?'Descanso':(d.name+' — '+(d.exs||[]).length+' exercicios')); }).join('\n');
-    ctx += '\nDias de treino: '+((pdOverride[curP]||{}).trainingDays||5)+'/semana. Nivel: '+((pdOverride[curP]||{}).trainingLevel||'intermediario')+'.';
-    openChatWithContext('treino', ctx, 'Tenho seu perfil e plano atual carregados. Posso gerar um novo plano semanal completo ou tirar duvidas sobre seu treino. O que prefere?');
+    var ctx = buildTrainingCtx();
+    openChatWithContext('treino', ctx, 'Perfil completo, plano atual, historico e exames carregados. Posso gerar um novo plano semanal personalizado ou responder qualquer duvida sobre treino.');
   });
   if(tan) tan.addEventListener('click', function(){
-    var hist = (historyData[curP]||[]).slice(-8);
-    var ctx = 'Historico recente (ultimas '+(hist.length)+' entradas):\n'+hist.map(function(e){ return e.label+': peso '+e.weight+'kg, score '+e.avg; }).join('\n');
+    var ctx = buildTrainingCtx();
     var totalDone=0; (w.exs||[]).forEach(function(ex,i){ var k=wk(curP,curDay,i); var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) totalDone++; } });
-    ctx += '\nHoje: '+totalDone+' series concluidas de '+w.name+'.';
-    openChatWithContext('treino', ctx, 'Careguei seu historico de progresso e treino de hoje. Pode me perguntar sobre evolucao, frequencia, pontos a melhorar ou qualquer analise.');
+    ctx += '\n\nHOJE: '+totalDone+' series concluidas de '+w.name+'.';
+    openChatWithContext('treino', ctx, 'Perfil completo com historico, evolucao e exames carregados. Analise sua evolucao, frequencia, pontos de melhoria ou qualquer aspeto do treino.');
   });
 }
 

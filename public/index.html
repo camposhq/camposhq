@@ -539,7 +539,7 @@ input[type=file]{display:none}
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ai-badge" id="home-ai-btn">IA ativo</div>
         <div id="offline-badge" style="display:none;font-size:11px;background:#fee2e2;color:#c0392b;border-radius:6px;padding:3px 8px;font-weight:600">📵 offline</div>
-        <div id="sync-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px">⏳ salvando...</div>
+        <div id="sync-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer" onclick="showDataSummary()">⏳ salvando...</div>
         <button id="dark-toggle" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:15px;cursor:pointer;line-height:1">🌙</button>
         <button id="backup-restore-btn" title="Restaurar backup" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:15px;cursor:pointer;line-height:1">🔄</button>
         <button id="logout-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--coral);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">
@@ -5283,13 +5283,78 @@ function loadUserData(uid, callback){
     .catch(function(){ if(!done){ done=true; clearTimeout(timer); applyResetMealsFlag(); if(callback) callback(); } });
 }
 
+function showDataSummary(){
+  save(true); // force immediate save before showing
+  var p = PD[curP];
+  var kcal = kcalConsumedToday();
+  var foodsMarked = Object.keys(foodDone).filter(function(k){ return foodDone[k]===true && k.startsWith(curP+'-'); }).length;
+  var suppMarked = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
+  var water = Math.round((waterGlasses[curP+'-water']||0)*250);
+  var sleep = (sleepData[curP]||{hours:0}).hours||0;
+  var setsDone = 0;
+  (p.weekly[curDay]&&p.weekly[curDay].exs||[]).forEach(function(ex,i){
+    var k=curP+'-'+curDay+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+    for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) setsDone++; }
+  });
+  var daily = null;
+  try{ daily = JSON.parse(localStorage.getItem('mh_daily')||'{}'); }catch(e){}
+  var dailyDate = daily&&daily.date===todayStr()?'✅':'❌';
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0';
+  var panel = document.createElement('div');
+  panel.style.cssText='background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px calc(20px + var(--safe-bottom))';
+  panel.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+    '<div style="font-family:Fraunces,serif;font-size:18px">Dados de <em>hoje</em></div>'+
+    '<button id="ds-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+kcal+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">kcal consumidas</div></div>'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+foodsMarked+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">alimentos marcados</div></div>'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+water+'ml</div><div style="font-size:11px;color:var(--muted);margin-top:2px">hidratação</div></div>'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+sleep+'h</div><div style="font-size:11px;color:var(--muted);margin-top:2px">sono</div></div>'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+setsDone+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">séries feitas</div></div>'+
+      '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+suppMarked+'/'+p.supps.length+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">suplementos</div></div>'+
+    '</div>'+
+    '<div style="background:var(--surface);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px">'+
+      '<div style="font-weight:600;margin-bottom:6px">📦 Estado dos backups:</div>'+
+      '<div>'+dailyDate+' Backup local (mh_daily) — '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div>'+
+      '<div>✅ localStorage (mh_v4)</div>'+
+      '<div id="ds-firebase-status">⏳ Firebase a verificar...</div>'+
+    '</div>'+
+    '<button id="ds-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">💾 Forçar save agora</button>';
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  document.getElementById('ds-close').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('ds-save').addEventListener('click', function(){
+    var btn=this; btn.textContent='⏳ Salvando...'; btn.disabled=true;
+    saveToCloud();
+    setTimeout(function(){ btn.textContent='✅ Salvo com sucesso!'; btn.style.background='var(--green)'; }, 2000);
+  });
+  // check Firebase status
+  if(fbAuth&&fbAuth.currentUser&&fbDb){
+    fbDb.collection('users').doc(fbAuth.currentUser.uid).get().then(function(doc){
+      var el=document.getElementById('ds-firebase-status'); if(!el) return;
+      if(doc.exists&&doc.data().appState){
+        var fDate=doc.data().appState.lastSavedDate;
+        var fFood=Object.keys(doc.data().appState.foodDone||{}).filter(function(k){return doc.data().appState.foodDone[k]===true;}).length;
+        el.textContent='✅ Firebase — '+fDate+' · '+fFood+' alimentos';
+        el.style.color='var(--green)';
+      }
+    }).catch(function(){ var el=document.getElementById('ds-firebase-status'); if(el) el.textContent='⚠ Firebase não acessível agora'; });
+  } else {
+    var el=document.getElementById('ds-firebase-status'); if(el) el.textContent='ℹ️ Não autenticado (só local)';
+  }
+}
+
 function setSyncStatus(status){
   var el = document.getElementById('sync-status');
   if(!el) return;
+  var now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   if(status==='saving'){ el.textContent='⏳ salvando...'; el.style.color='var(--muted)'; }
-  else if(status==='ok'){ el.textContent='✓ salvo'; el.style.color='var(--green)'; }
+  else if(status==='ok'){ el.textContent='✓ salvo às '+now; el.style.color='var(--green)'; el.title='Salvo no Firebase às '+now; }
   else if(status==='error'){ el.textContent='⚠ erro ao salvar'; el.style.color='var(--coral)'; }
-  else if(status==='local'){ el.textContent='💾 local'; el.style.color='var(--muted)'; }
+  else if(status==='local'){ el.textContent='💾 local '+now; el.style.color='var(--muted)'; }
 }
 
 function saveToCloud(){

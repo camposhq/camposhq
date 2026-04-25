@@ -2273,11 +2273,16 @@ function renderTreinosContent(){
     var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
     var hasPhotos = p.progressPhotos&&p.progressPhotos.some(function(ph){return ph.img;});
     var hist = (historyData[curP]||[]).slice(-12);
-    var ctx = 'PERFIL COMPLETO:\n';
+    var ctx = 'DADOS COMPLETOS DO ATLETA:\n';
     ctx += p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, IMC '+imc+'.\n';
     ctx += 'Objetivo: '+p.goal+'. BMR: '+getBasalKcal(p)+' kcal. Meta calorica: '+p.calories+' kcal.\n';
     ctx += 'Nivel: '+(o.trainingLevel||'intermediario')+'. Dias de treino: '+(o.trainingDays||5)+'/semana.\n';
-    if(hasPhotos) ctx += 'Fotos corporais: disponíveis no perfil (3 ângulos).\n';
+    if(o.conditions&&o.conditions.length>0) ctx += 'Condicoes/lesoes: '+o.conditions.join(', ')+'.\n';
+    if(hasPhotos) ctx += 'Fotos corporais: 3 angulos disponíveis no perfil.\n';
+    // cardio preferences
+    var cardioSelDay = cardioSel[curP+'-'+curDay];
+    if(cardioSelDay){ var co=CARDIO_OPTS.find(function(x){return x.id===cardioSelDay;}); if(co) ctx += 'Cardio preferido: '+co.title+'.\n'; }
+    if(walkParams[curP+'-'+curDay]) ctx += 'Caminhada: '+(walkParams[curP+'-'+curDay].spd||5.5)+'km/h, '+(walkParams[curP+'-'+curDay].inc||5)+'% inclinacao, '+(walkParams[curP+'-'+curDay].mins||30)+'min.\n';
     ctx += '\nPLANO SEMANAL:\n'+p.weekly.map(function(d,di){
       if(d.rest) return DAYS[di]+': Descanso';
       var exStr=(d.exs||[]).map(function(ex,i){
@@ -4181,17 +4186,37 @@ function getExamsText(p){
 
 function getSysProm(){
   var p = PD[curP];
+  var o = pdOverride[curP]||{};
   var ctxMap = {
     treino:'personal trainer especialista em musculacao e longevidade',
+    'treino-ajustar':'personal trainer especialista em musculacao e longevidade',
     dieta:'nutricionista esportivo especialista em longevidade',
+    'dieta-ajustar':'nutricionista esportivo especialista em longevidade',
+    'dieta-analise':'nutricionista esportivo especialista em longevidade',
     sono:'especialista em medicina do sono e cronobiologia',
+    'sono-prot':'especialista em medicina do sono e cronobiologia',
+    'sono-analise':'especialista em medicina do sono e cronobiologia',
     exames:'medico especialista em medicina preventiva e interpretacao de exames',
+    'exames-interpretar':'medico especialista em medicina preventiva',
+    'exames-suplementos':'especialista em nutraceutica e medicina preventiva',
+    'exames-consulta':'medico especialista em medicina preventiva',
     saude:'especialista em saude integrativa e longevidade'
   };
-  var base = 'Voce e um '+(ctxMap[chatCtx]||'especialista em saude')+'. Responda em portugues brasileiro, de forma pratica, objetiva e personalizada. Use emojis com moderacao.\n\nPerfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, objetivo: '+p.goal+'. Sono medio: '+p.sleep+'h (meta: '+p.sleepTarget+'h). Calorias: '+p.calories+'kcal, proteina: '+p.protein+'g.';
+  var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+  var base = 'Voce e um '+(ctxMap[chatCtx]||'especialista em saude')+'. ';
+  base += 'IMPORTANTE: Voce JA tem acesso a todos os dados do utilizador listados abaixo. NAO peca informacoes que ja estao no contexto. Use diretamente o que esta disponivel e gere respostas personalizadas e concretas.\n\n';
+  base += 'DADOS DO UTILIZADOR:\n';
+  base += p.name+', '+p.age+' anos, '+p.weight+'kg, '+p.height+'cm, IMC '+imc+', objetivo: '+p.goal+'.\n';
+  base += 'BMR: '+getBasalKcal(p)+' kcal. Meta calorica: '+p.calories+' kcal, proteina: '+p.protein+'g.\n';
+  base += 'Sono: '+p.sleep+'h atual (meta '+p.sleepTarget+'h).\n';
+  if(o.trainingLevel) base += 'Nivel de treino: '+o.trainingLevel+'. Dias/semana: '+(o.trainingDays||5)+'.\n';
+  if(o.conditions&&o.conditions.length>0) base += 'Condicoes de saude: '+o.conditions.join(', ')+'.\n';
+  if(o.medications) base += 'Medicamentos: '+o.medications+'.\n';
+  if(o.allergies) base += 'Alergias: '+o.allergies+'.\n';
   var exTxt = getExamsText(p);
-  if(exTxt) base += '\n\n'+exTxt+'\n\nUse os resultados dos exames para personalizar suas recomendacoes de treino, dieta e suplementacao.';
-  if(chatSystemExtra) base += '\n\n'+chatSystemExtra;
+  if(exTxt) base += '\nEXAMES:\n'+exTxt+'\n';
+  if(chatSystemExtra) base += '\nCONTEXTO ADICIONAL:\n'+chatSystemExtra;
+  base += '\n\nResponda em portugues brasileiro, pratico e objetivo. Use emojis com moderacao.';
   return base;
 }
 

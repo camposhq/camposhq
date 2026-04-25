@@ -5271,6 +5271,12 @@ function loadUserData(uid, callback){
                 if(!chatHistories[k] || !chatHistories[k].length) chatHistories[k] = s.chatHistories[k];
               });
             }
+            if(s.inputHistory){
+              Object.keys(s.inputHistory).forEach(function(k){
+                if(s.inputHistory[k]&&s.inputHistory[k].length>(inputHistory[k]||[]).length)
+                  inputHistory[k]=s.inputHistory[k];
+              });
+            }
             // day-change detection for Firestore data
             if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
           }catch(e){}
@@ -5389,7 +5395,7 @@ function saveToCloud(){
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
-    historyData:historyData, chatHistories:chatHistories,
+    historyData:historyData, chatHistories:chatHistories, inputHistory:inputHistory,
     lastSavedDate:todayStr(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };

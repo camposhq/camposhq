@@ -1956,11 +1956,6 @@ function playTimerBeep(onEnd){
   setTimeout(playPulse, 400);
   setTimeout(playPulse, 800);
   setTimeout(function(){
-    // release audio session so Spotify resumes
-    try{
-      if(readyBeepTimer){ readyBeepTimer.pause(); readyBeepTimer.src=''; readyBeepTimer=null; }
-      if(navigator.audioSession) navigator.audioSession.category='ambient';
-    }catch(e){}
     if(onEnd) onEnd();
   }, 1200);
 }

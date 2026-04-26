@@ -1260,8 +1260,7 @@ function load(){
         if(daily.sleepData) Object.keys(daily.sleepData).forEach(function(k){ if(!sleepData[k]) sleepData[k]=daily.sleepData[k]; });
       }
     }catch(e){}
-    // Auto-reset if day changed
-    if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
+    // Apply pdOverride to PD FIRST so handleDayChange gets correct bmr/weight/etc.
     Object.keys(pdOverride).forEach(function(idx){
       var i = parseInt(idx); if(!PD[i]) return;
       var o = pdOverride[idx];
@@ -1309,6 +1308,8 @@ function load(){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
       });
     }
+    // Now handleDayChange with correct profile data (bmr, weight, etc. already applied)
+    if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
     applyResetMealsFlag();
     // Sanity check: if profileComplete but no meaningful pdOverride, check backup
     if(profileComplete && !isCriticalDataValid()){

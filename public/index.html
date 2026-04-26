@@ -707,6 +707,8 @@ const CARDIO_OPTS = [
    steps:[{n:'Aquecimento',d:'Pular leve 2 min',t:'2 min'},{n:'Series x6',d:'2 min / 1 min descanso',t:'15 min'},{n:'Alongamento',d:'Panturrilhas',t:'3 min'}]},
   {id:'walk',icon:'🚶',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
    params:[],steps:[]},
+  {id:'trilha',icon:'🥾',label:'Trilha',color:'#854f0b',cl:'#faeeda',title:'Trilha',editable:true,trilha:true,
+   params:[],steps:[]},
   {id:'futvoley',icon:'⚽',label:'Futvoley',color:'#c4621a',cl:'#fdf0e8',title:'Futvoley',sub:'Alta intensidade • Explosao + aerobico',dur:'60 min',
    params:[{v:'60',l:'Min'},{v:'Alta',l:'Intensidade'},{v:'80%',l:'FC max'},{v:'~500',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Passe + mobilidade',t:'10 min'},{n:'Jogo',d:'Partidas de futvoley',t:'45 min'},{n:'Volta a calma',d:'Alongamento',t:'5 min'}]},
@@ -733,19 +735,26 @@ function getBasalKcal(p){
 function calcWorkoutKcalToday(pi){
   var idx = pi!=null?pi:curP; var p = PD[idx]; var day = curDay;
   var dw = p.weekly[day]||{};
-  if(dw.rest||!dw.exs) return 0;
+  // count muscle sets (even on rest days if user trained)
   var sets=0;
-  dw.exs.forEach(function(ex,i){
-    var k=idx+'-'+day+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-    for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sets++; }
-  });
+  if(!dw.rest && dw.exs){
+    dw.exs.forEach(function(ex,i){
+      var k=idx+'-'+day+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sets++; }
+    });
+  }
   var musK = calcMusKcal(p.weight, sets);
+  // always count cardio regardless of rest day
   var cardK = 0;
   var cselKey = idx+'-'+day;
   var selId = cardioSel[cselKey] || null;
   if(selId === 'walk'){
     var wp = walkParams[cselKey]||{inc:5, spd:5.5, mins:30};
     cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+  } else if(selId === 'trilha'){
+    var tp = walkParams[cselKey]||{mins:60, km:5, dif:'moderada'};
+    var met = tp.dif==='facil'?4:tp.dif==='dificil'?7.5:5.5;
+    cardK = Math.round(met * p.weight * (tp.mins/60));
   } else if(selId){
     var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
     if(co){ var pm = co.params.find(function(x){ return x.l==='Kcal'; }); if(pm) cardK = parseInt((pm.v||'0').replace('~',''))||0; }
@@ -2113,7 +2122,26 @@ function renderTreinosContent(){
   if(selId){
     var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
     if(co){
-      if(co.editable){
+      if(co.trilha){
+        // ── Trilha editável ──
+        var tp = walkParams[cselKey]||{mins:60, km:5, dif:'moderada'};
+        var tMet = tp.dif==='facil'?4:tp.dif==='dificil'?7.5:5.5;
+        var tKcal = Math.round(tMet * p.weight * (tp.mins/60));
+        h += '<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
+        h += '<div style="background:'+co.color+';padding:13px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between">';
+        h += '<div><div style="font-size:15px;font-weight:500">🥾 Trilha</div><div style="font-size:12px;opacity:.8;margin-top:2px">Personalize abaixo</div></div>';
+        h += '<div style="text-align:right"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace" id="walk-kcal">~'+tKcal+'</div><div style="font-size:10px;opacity:.8">kcal</div></div></div>';
+        // difficulty selector
+        h += '<div style="display:flex;gap:0;border-bottom:1px solid var(--border)">';
+        ['facil','moderada','dificil'].forEach(function(d){
+          var sel = (tp.dif||'moderada')===d;
+          h += '<button data-tdif="'+d+'" style="flex:1;padding:11px 4px;border:none;border-right:1px solid var(--border);background:'+(sel?'var(--amber-light)':'var(--surface)')+';font-size:13px;font-weight:'+(sel?'700':'400')+';color:'+(sel?'var(--amber)':'var(--muted)')+';cursor:pointer">'+(d==='facil'?'🟢 Fácil':d==='moderada'?'🟡 Moderada':'🔴 Difícil')+'</button>';
+        });
+        h += '</div>';
+        h += walkRow('Distância','km', tp.km, ' km', 0.5, 0.5, 50);
+        h += walkRow('Tempo','mins', tp.mins, ' min', 5, 5, 300);
+        h += '</div>';
+      } else if(co.editable){
         // ── Caminhada editável ──
         var wKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
         h += '<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
@@ -2251,17 +2279,32 @@ function renderTreinosContent(){
       var wid=this.dataset.wid, act=this.dataset.wact;
       var step=parseFloat(this.dataset.step), mn=parseFloat(this.dataset.min), mx=parseFloat(this.dataset.max);
       var k=curP+'-'+curDay;
-      walkParams[k]=walkParams[k]||{inc:5,spd:5.5,mins:30};
-      var cur=walkParams[k][wid];
+      walkParams[k]=walkParams[k]||{inc:5,spd:5.5,mins:30,km:5,dif:'moderada'};
+      var cur=walkParams[k][wid]||0;
       var nv=act==='plus'?Math.min(mx,parseFloat((cur+step).toFixed(1))):Math.max(mn,parseFloat((cur-step).toFixed(1)));
       walkParams[k][wid]=nv;
       save();
-      // update display without full re-render
-      var unit=wid==='inc'?'%':wid==='spd'?' km/h':' min';
+      var unit=wid==='inc'?'%':wid==='spd'?' km/h':wid==='km'?' km':' min';
       var el2=document.getElementById('wv-'+wid); if(el2) el2.textContent=nv+unit;
       var wp2=walkParams[k];
-      var kc=calcWalkKcal(p.weight,wp2.spd,wp2.inc,wp2.mins);
-      var kcEl=document.getElementById('walk-kcal'); if(kcEl) kcEl.textContent='~'+kc;
+      // update kcal display
+      var kcEl=document.getElementById('walk-kcal');
+      if(kcEl){
+        if(cardioSel[k]==='trilha'){
+          var tMet=wp2.dif==='facil'?4:wp2.dif==='dificil'?7.5:5.5;
+          kcEl.textContent='~'+Math.round(tMet*p.weight*(wp2.mins/60));
+        } else {
+          kcEl.textContent='~'+calcWalkKcal(p.weight,wp2.spd,wp2.inc,wp2.mins);
+        }
+      }
+    });
+  });
+  document.querySelectorAll('[data-tdif]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var k=curP+'-'+curDay;
+      walkParams[k]=walkParams[k]||{mins:60,km:5,dif:'moderada'};
+      walkParams[k].dif=this.dataset.tdif;
+      save(); renderTreinosContent();
     });
   });
   document.querySelectorAll('[data-ckey]').forEach(function(el){

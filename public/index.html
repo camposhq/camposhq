@@ -979,6 +979,22 @@ function totalSetsDoneToday(pi){
 }
 var dayChangeHandled = false; // prevent double execution
 
+function checkDayChange(){
+  // Use a separate localStorage key for last day change — not affected by save() calls
+  var lastChange = localStorage.getItem('mh_last_day_change')||'';
+  if(lastChange !== todayStr()){
+    // day has changed since last registered close
+    var prevDate = lastChange || localStorage.getItem('mh_prev_date') || '';
+    if(prevDate && prevDate !== todayStr()){
+      handleDayChange(prevDate);
+    }
+  }
+}
+function markDayChangeDone(){
+  localStorage.setItem('mh_last_day_change', todayStr());
+  localStorage.setItem('mh_prev_date', todayStr());
+}
+
 // ── AUTOCOMPLETE ─────────────────────────────────────────────
 function addToHistory(key, value){
   if(!value || value.trim().length<2) return;
@@ -1104,6 +1120,7 @@ function handleDayChange(oldDate){
   resetDailyState();
   curDay = (new Date().getDay()+6)%7;
   curDayManualOverride = false;
+  markDayChangeDone(); // record that today's day change was handled
   save();
   // show summary popup as informational only (no longer gates the reset)
   if(datesToFill.length===1){
@@ -1212,6 +1229,7 @@ function save(immediate){
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     };
     localStorage.setItem('mh_v4', JSON.stringify(data));
+    localStorage.setItem('mh_prev_date', todayStr()); // track last active date separately
     // separate fast backup for daily tracking — survives even if main save fails
     localStorage.setItem('mh_daily', JSON.stringify({
       foodDone:foodDone, mealDone:mealDone, suppDone:suppDone,
@@ -1369,6 +1387,8 @@ document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='visible'){
     requestWakeLock();
     if(Notification.permission==='granted') scheduleNotifications();
+    // check day change when returning to foreground (handles overnight case)
+    checkDayChange();
     // check if rest timer expired while app was in background
     if(restTimer.endTime>0 && restTimer.interval){
       var msLeft = restTimer.endTime - Date.now();

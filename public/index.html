@@ -5421,6 +5421,7 @@ function loadUserData(uid, callback){
         }
       }
       applyResetMealsFlag();
+      checkDayChange(); // check BEFORE save() so lastSavedDate hasn't been overwritten yet
       save(); // immediately persist merged state back to Firebase
       if(callback) callback();
     })
@@ -5465,11 +5466,19 @@ function showDataSummary(){
       '<div>✅ localStorage (mh_v4)</div>'+
       '<div id="ds-firebase-status">⏳ Firebase a verificar...</div>'+
     '</div>'+
+    '<button id="ds-close-day" style="width:100%;padding:13px;background:var(--amber);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:8px">📋 Fechar dia de ontem agora</button>'+
     '<button id="ds-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">💾 Forçar save agora</button>';
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
   document.getElementById('ds-close').addEventListener('click', function(){ overlay.remove(); });
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  var dsCloseDay = document.getElementById('ds-close-day');
+  if(dsCloseDay) dsCloseDay.addEventListener('click', function(){
+    overlay.remove();
+    dayChangeHandled = false; // allow re-run
+    var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    handleDayChange(yesterday.toISOString().slice(0,10));
+  });
   document.getElementById('ds-save').addEventListener('click', function(){
     var btn=this; btn.textContent='⏳ Salvando...'; btn.disabled=true;
     saveToCloud();

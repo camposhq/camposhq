@@ -980,19 +980,30 @@ function totalSetsDoneToday(pi){
 var dayChangeHandled = false; // prevent double execution
 
 function checkDayChange(){
-  // Use a separate localStorage key for last day change — not affected by save() calls
+  // Independent check: mh_last_day_change is ONLY set by markDayChangeDone
+  // not by save() — so it reliably tracks if today's day change happened
   var lastChange = localStorage.getItem('mh_last_day_change')||'';
-  if(lastChange !== todayStr()){
-    // day has changed since last registered close
-    var prevDate = lastChange || localStorage.getItem('mh_prev_date') || '';
-    if(prevDate && prevDate !== todayStr()){
-      handleDayChange(prevDate);
+  if(lastChange === todayStr()) return; // already handled today
+  if(dayChangeHandled) return; // already handled this session
+  // find what date to close: read mh_v4 directly to get last saved date before save() overwrote it
+  try{
+    var raw = localStorage.getItem('mh_v4');
+    if(raw){
+      var d = JSON.parse(raw);
+      var lastDate = d.lastSavedDate||'';
+      if(lastDate && lastDate !== todayStr()){
+        handleDayChange(lastDate);
+        return;
+      }
     }
+  }catch(e){}
+  // fallback: use mh_last_day_change as previous date
+  if(lastChange && lastChange !== todayStr()){
+    handleDayChange(lastChange);
   }
 }
 function markDayChangeDone(){
   localStorage.setItem('mh_last_day_change', todayStr());
-  localStorage.setItem('mh_prev_date', todayStr());
 }
 
 // ── AUTOCOMPLETE ─────────────────────────────────────────────
@@ -1229,7 +1240,6 @@ function save(immediate){
       avatars: PD.map(function(p){ return {avatarImg:p.avatarImg, progressPhotos:p.progressPhotos}; })
     };
     localStorage.setItem('mh_v4', JSON.stringify(data));
-    localStorage.setItem('mh_prev_date', todayStr()); // track last active date separately
     // separate fast backup for daily tracking — survives even if main save fails
     localStorage.setItem('mh_daily', JSON.stringify({
       foodDone:foodDone, mealDone:mealDone, suppDone:suppDone,

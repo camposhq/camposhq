@@ -5434,7 +5434,7 @@ function showDataSummary(){
   var foodsMarked = Object.keys(foodDone).filter(function(k){ return foodDone[k]===true && k.startsWith(curP+'-'); }).length;
   var suppMarked = p.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   var water = Math.round((waterGlasses[curP+'-water']||0)*250);
-  var sleep = (sleepData[curP]||{hours:0}).hours||0;
+  var sleep = parseFloat(((sleepData[curP]||{hours:0}).hours||0).toFixed(1));
   var setsDone = 0;
   (p.weekly[curDay]&&p.weekly[curDay].exs||[]).forEach(function(ex,i){
     var k=curP+'-'+curDay+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;

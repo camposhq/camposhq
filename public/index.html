@@ -1625,7 +1625,7 @@ function renderHome(){
   h += '</div>';
   h += '<div class="dash-score-row">';
   [{k:'Saude',i:'❤️'},{k:'Fitness',i:'💪'},{k:'Sono',i:'🌙'},{k:'Nutricao',i:'🥗'}].forEach(function(sc){
-    h += '<div class="dsi"><div class="dsi-val">'+p.scores[sc.k]+'</div><div class="dsi-lbl">'+sc.i+' '+sc.k+'</div></div>';
+    h += '<div class="dsi"><div class="dsi-val">'+(scores[sc.k]||p.scores[sc.k]||0)+'</div><div class="dsi-lbl">'+sc.i+' '+sc.k+'</div></div>';
   });
   h += '</div></div>';
   // Metrics with mini comparison bars
@@ -1783,7 +1783,7 @@ function renderHome(){
   h += '<div class="sec-label" style="margin:0">Scores vs. media mundial</div>';
   h += '<div style="font-size:10px;color:var(--muted)">Faixa '+p.age+' anos</div></div>';
   sMeta.forEach(function(sc){
-    var myVal = p.scores[sc.k]||0;
+    var myVal = (scores&&scores[sc.k])||p.scores[sc.k]||0;
     var avgVal = bench.avg[sc.k]||0;
     var tgtVal = bench.tgt[sc.k]||0;
     var diffAvg = myVal - avgVal;

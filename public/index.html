@@ -3734,8 +3734,9 @@ function renderEvolucao(){
   // filter by selected period
   var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-evoPeriod);
   var cutStr = cutoff.toISOString().slice(0,10);
-  var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
-  if(hist.length===0) hist = allHist.slice(-2); // always show at least last 2
+  // exclude today from chart — incomplete day causes misleading drop
+  var hist = allHist.filter(function(e){ return (!e.date||e.date>=cutStr) && e.date!==todayStr(); });
+  if(hist.length===0) hist = allHist.filter(function(e){ return e.date!==todayStr(); }).slice(-2);
   var labels = hist.map(function(e){ return e.label; });
   var bench = getPopBench(p.age);
   var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);

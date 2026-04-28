@@ -3618,13 +3618,16 @@ function snapshotHistory(idx){
   var sleepEntry=sleepData[idx]||{};
   var sleepHours = sleepEntry.hours>0 ? sleepEntry.hours : null; // null if not logged today
   var prev = existing>=0 ? historyData[idx][existing] : null;
+  // use dynamic scores for today's snapshot so chart shows real progress
+  var dynToday = null; try{ dynToday = calcDynamicScores(idx); }catch(e){}
+  var snapScores = dynToday ? {Saude:dynToday.Saude,Fitness:dynToday.Fitness,Sono:dynToday.Sono,Nutricao:dynToday.Nutricao} : p.scores;
+  var snapAvg = dynToday ? dynToday.Geral : avg;
   var entry = {
     date:dateKey, label:label, weight:p.weight, imc:imc,
     fat: (prev&&prev.fat>0) ? prev.fat : (historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null),
-    // preserve existing sleep if more accurate (user logged it); only overwrite if we have real data
     sleep: sleepHours || (prev&&prev.sleep>0 ? prev.sleep : p.sleep||0),
-    avg:avg,
-    scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},
+    avg:snapAvg,
+    scores:snapScores,
     calories:kcalToday>0?kcalToday:(prev&&prev.calories>0?prev.calories:p.calories||0),
     gasto:gastoToday,
     deficit:kcalToday>0?kcalToday-gastoToday:(prev&&prev.deficit!=null?prev.deficit:null),
@@ -3734,9 +3737,8 @@ function renderEvolucao(){
   // filter by selected period
   var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-evoPeriod);
   var cutStr = cutoff.toISOString().slice(0,10);
-  // exclude today from chart — incomplete day causes misleading drop
-  var hist = allHist.filter(function(e){ return (!e.date||e.date>=cutStr) && e.date!==todayStr(); });
-  if(hist.length===0) hist = allHist.filter(function(e){ return e.date!==todayStr(); }).slice(-2);
+  var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
+  if(hist.length===0) hist = allHist.slice(-2);
   var labels = hist.map(function(e){ return e.label; });
   var bench = getPopBench(p.age);
   var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);

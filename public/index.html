@@ -3555,13 +3555,27 @@ function showExamHistory(){
 // ══════════════════════════════════════════════════════════════
 function calcDynamicScores(idx){
   var p = PD[idx]; if(!p) return null;
-  var hist7 = (historyData[idx]||[]).slice(-7);
-  // SONO: media 7 dias vs meta
+  // include today's live data alongside last 6 days of history
+  var hist6 = (historyData[idx]||[]).slice(-6);
+  var todayKcal = kcalConsumedToday(idx);
+  var todayGasto = getBasalKcal(p)+calcWorkoutKcalToday(idx);
+  var todayWater = Math.round((waterGlasses[idx+'-water']||0)*250);
+  var todaySleep = (sleepData[idx]||{}).hours||0;
+  var todayEntry = {
+    calories: todayKcal>0?todayKcal:null,
+    gasto: todayGasto>0?todayGasto:null,
+    water: todayWater>0?todayWater:null,
+    sleep: todaySleep>0?todaySleep:null
+  };
+  var hist7 = hist6.concat([todayEntry]); // today always included
+
+  // SONO: media incluindo hoje
   var sleepVals = hist7.filter(function(e){ return e.sleep>0; }).map(function(e){ return e.sleep; });
-  var avgSleep = sleepVals.length ? sleepVals.reduce(function(s,v){ return s+v; },0)/sleepVals.length : (sleepData[idx]||{}).hours||p.sleep||0;
+  var avgSleep = sleepVals.length ? sleepVals.reduce(function(s,v){ return s+v; },0)/sleepVals.length : p.sleep||0;
   var sleepTarget = p.sleepTarget||7.5;
-  var sonoScore = avgSleep>0 ? Math.min(100, Math.round(avgSleep/sleepTarget*90 + (avgSleep>=sleepTarget?10:0))) : 50;
-  // NUTRIÇÃO: % dias atingiu meta calorica + hidratação
+  var sonoScore = avgSleep>0 ? Math.min(100, Math.round(avgSleep/sleepTarget*90+(avgSleep>=sleepTarget?10:0))) : 50;
+
+  // NUTRIÇÃO: incluindo hoje
   var calDays = hist7.filter(function(e){ return e.calories>0; });
   var calHit = calDays.filter(function(e){ return e.calories>=p.calories*0.75&&e.calories<=p.calories*1.15; }).length;
   var calScore = calDays.length ? Math.round(calHit/calDays.length*65) : 50;
@@ -3569,19 +3583,21 @@ function calcDynamicScores(idx){
   var waterHit = waterDays.filter(function(e){ return e.water>=(p.water||2500)*0.8; }).length;
   var waterScore = waterDays.length ? Math.round(waterHit/waterDays.length*35) : 20;
   var nutricaoScore = Math.min(100, calScore+waterScore);
-  // FITNESS: extra kcal (treino) vs esperado + consistencia
-  var gastoDays = hist7.filter(function(e){ return e.gasto>0; });
+
+  // FITNESS: incluindo hoje
   var avgBasal = getBasalKcal(p);
+  var gastoDays = hist7.filter(function(e){ return e.gasto>0; });
   var avgExtraKcal = gastoDays.length ? gastoDays.reduce(function(s,e){ return s+Math.max(0,e.gasto-avgBasal); },0)/gastoDays.length : 0;
-  var targetExtra = avgBasal*0.2; // 20% of basal as exercise target (~380 kcal)
+  var targetExtra = Math.max(1, avgBasal*0.2);
   var exerciseScore = Math.min(60, Math.round(avgExtraKcal/targetExtra*60));
   var consistencyScore = gastoDays.length ? Math.round(gastoDays.length/7*40) : 0;
   var fitnessScore = Math.min(100, exerciseScore+consistencyScore);
-  // SAÚDE: IMC + tendencia + exames
+
+  // SAÚDE: IMC + tendencia
   var imc = p.weight/Math.pow((p.height||175)/100,2);
   var imcScore = imc<18.5?60:imc<=22?100:imc<=24.9?90:imc<=27?75:imc<=30?60:45;
-  var trendBonus = hist7.length>3 ? (hist7[hist7.length-1].avg>hist7[0].avg?5:0) : 0;
-  var saudeScore = Math.min(100, Math.round(imcScore*0.6 + sonoScore*0.2 + nutricaoScore*0.2 + trendBonus));
+  var saudeScore = Math.min(100, Math.round(imcScore*0.6+sonoScore*0.2+nutricaoScore*0.2));
+
   var geral = Math.round((saudeScore+fitnessScore+sonoScore+nutricaoScore)/4);
   return {Saude:saudeScore, Fitness:fitnessScore, Sono:sonoScore, Nutricao:nutricaoScore, Geral:geral};
 }

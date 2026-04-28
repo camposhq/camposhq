@@ -3550,11 +3550,51 @@ function showExamHistory(){
 }
 
 // ══════════════════════════════════════════════════════════════
+function calcDynamicScores(idx){
+  var p = PD[idx]; if(!p) return null;
+  var hist7 = (historyData[idx]||[]).slice(-7);
+  // SONO: media 7 dias vs meta
+  var sleepVals = hist7.filter(function(e){ return e.sleep>0; }).map(function(e){ return e.sleep; });
+  var avgSleep = sleepVals.length ? sleepVals.reduce(function(s,v){ return s+v; },0)/sleepVals.length : (sleepData[idx]||{}).hours||p.sleep||0;
+  var sleepTarget = p.sleepTarget||7.5;
+  var sonoScore = avgSleep>0 ? Math.min(100, Math.round(avgSleep/sleepTarget*90 + (avgSleep>=sleepTarget?10:0))) : 50;
+  // NUTRIÇÃO: % dias atingiu meta calorica + hidratação
+  var calDays = hist7.filter(function(e){ return e.calories>0; });
+  var calHit = calDays.filter(function(e){ return e.calories>=p.calories*0.75&&e.calories<=p.calories*1.15; }).length;
+  var calScore = calDays.length ? Math.round(calHit/calDays.length*65) : 50;
+  var waterDays = hist7.filter(function(e){ return e.water>0; });
+  var waterHit = waterDays.filter(function(e){ return e.water>=(p.water||2500)*0.8; }).length;
+  var waterScore = waterDays.length ? Math.round(waterHit/waterDays.length*35) : 20;
+  var nutricaoScore = Math.min(100, calScore+waterScore);
+  // FITNESS: extra kcal (treino) vs esperado + consistencia
+  var gastoDays = hist7.filter(function(e){ return e.gasto>0; });
+  var avgBasal = getBasalKcal(p);
+  var avgExtraKcal = gastoDays.length ? gastoDays.reduce(function(s,e){ return s+Math.max(0,e.gasto-avgBasal); },0)/gastoDays.length : 0;
+  var targetExtra = avgBasal*0.2; // 20% of basal as exercise target (~380 kcal)
+  var exerciseScore = Math.min(60, Math.round(avgExtraKcal/targetExtra*60));
+  var consistencyScore = gastoDays.length ? Math.round(gastoDays.length/7*40) : 0;
+  var fitnessScore = Math.min(100, exerciseScore+consistencyScore);
+  // SAÚDE: IMC + tendencia + exames
+  var imc = p.weight/Math.pow((p.height||175)/100,2);
+  var imcScore = imc<18.5?60:imc<=22?100:imc<=24.9?90:imc<=27?75:imc<=30?60:45;
+  var trendBonus = hist7.length>3 ? (hist7[hist7.length-1].avg>hist7[0].avg?5:0) : 0;
+  var saudeScore = Math.min(100, Math.round(imcScore*0.6 + sonoScore*0.2 + nutricaoScore*0.2 + trendBonus));
+  var geral = Math.round((saudeScore+fitnessScore+sonoScore+nutricaoScore)/4);
+  return {Saude:saudeScore, Fitness:fitnessScore, Sono:sonoScore, Nutricao:nutricaoScore, Geral:geral};
+}
+
 function snapshotHistory(idx){
   var p = PD[idx];
   if(!p || !p.weight) return;
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-  var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
+  // use dynamic scores if enough history, otherwise keep stored scores
+  var dynScores = calcDynamicScores(idx);
+  if(dynScores){
+    p.scores = {Saude:dynScores.Saude, Fitness:dynScores.Fitness, Sono:dynScores.Sono, Nutricao:dynScores.Nutricao};
+    if(!pdOverride[idx]) pdOverride[idx]={};
+    pdOverride[idx].scores = p.scores;
+  }
+  var avg = dynScores ? dynScores.Geral : (p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0);
   var today = new Date();
   // use daily date format (consistent with handleDayChange)
   var dateKey = today.toISOString().slice(0,10);

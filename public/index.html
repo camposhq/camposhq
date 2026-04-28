@@ -1298,6 +1298,14 @@ function load(){
     chatHistories = s.chatHistories||{};
     if(s.inputHistory) inputHistory = s.inputHistory;
     historyData = s.historyData||{};
+    // deduplicate history entries per date on load
+    Object.keys(historyData).forEach(function(pi){
+      var seen={};
+      historyData[pi] = (historyData[pi]||[]).filter(function(e){
+        if(!e.date||seen[e.date]) return false;
+        seen[e.date]=true; return true;
+      }).sort(function(a,b){ return a.date<b.date?-1:1; });
+    });
     // Restore from fast daily backup if main data looks empty but daily backup has today's data
     try{
       var daily = JSON.parse(localStorage.getItem('mh_daily')||'{}');
@@ -3635,7 +3643,12 @@ function snapshotHistory(idx){
   };
   if(existing>=0) historyData[idx][existing]=entry;
   else historyData[idx].push(entry);
-  historyData[idx].sort(function(a,b){ return a.date<b.date?-1:1; });
+  // deduplicate: keep last entry per date, sort by date
+  var seen={};
+  historyData[idx] = historyData[idx].filter(function(e){
+    if(!e.date||seen[e.date]) return false;
+    seen[e.date]=true; return true;
+  }).sort(function(a,b){ return a.date<b.date?-1:1; });
   save(true);
 }
 

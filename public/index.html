@@ -3609,10 +3609,11 @@ function calcDynamicScores(idx){
   var consistencyScore = gastoDays.length ? Math.round(gastoDays.length/7*40) : 0;
   var fitnessScore = Math.min(100, exerciseScore+consistencyScore);
 
-  // SAÚDE: IMC + tendencia
+  // SAÚDE: IMC (30%) + Sono (25%) + Nutrição (25%) + Fitness (20%)
+  // IMC weight reduced — athletes with muscle mass penalized unfairly at high IMC
   var imc = p.weight/Math.pow((p.height||175)/100,2);
-  var imcScore = imc<18.5?60:imc<=22?100:imc<=24.9?90:imc<=27?75:imc<=30?60:45;
-  var saudeScore = Math.min(100, Math.round(imcScore*0.6+sonoScore*0.2+nutricaoScore*0.2));
+  var imcScore = imc<18.5?55:imc<=22?100:imc<=24.9?95:imc<=27?85:imc<=30?75:imc<=33?65:55;
+  var saudeScore = Math.min(100, Math.round(imcScore*0.3+sonoScore*0.25+nutricaoScore*0.25+fitnessScore*0.2));
 
   var geral = Math.round((saudeScore+fitnessScore+sonoScore+nutricaoScore)/4);
   return {Saude:saudeScore, Fitness:fitnessScore, Sono:sonoScore, Nutricao:nutricaoScore, Geral:geral};

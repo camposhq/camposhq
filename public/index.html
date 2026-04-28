@@ -1298,11 +1298,13 @@ function load(){
     chatHistories = s.chatHistories||{};
     if(s.inputHistory) inputHistory = s.inputHistory;
     historyData = s.historyData||{};
-    // deduplicate history entries per date on load
+    // remove future dates (UTC bug) + deduplicate on load
+    var todayLocal = todayStr();
     Object.keys(historyData).forEach(function(pi){
       var seen={};
       historyData[pi] = (historyData[pi]||[]).filter(function(e){
-        if(!e.date||seen[e.date]) return false;
+        if(!e.date||e.date>todayLocal) return false;
+        if(seen[e.date]) return false;
         seen[e.date]=true; return true;
       }).sort(function(a,b){ return a.date<b.date?-1:1; });
     });
@@ -5501,7 +5503,14 @@ function loadUserData(uid, callback){
                 (remoteHist[pi]||[]).forEach(function(re){
                   if(!merged.find(function(le){ return le.date===re.date; })) merged.push(re);
                 });
-                historyData[ri] = merged.sort(function(a,b){ return a.date<b.date?-1:1; });
+                // remove future dates (UTC timezone bug) + deduplicate
+                var today2 = todayStr();
+                var seen2={};
+                historyData[ri] = merged.filter(function(e){
+                  if(!e.date||e.date>today2) return false; // remove future entries
+                  if(seen2[e.date]) return false; // remove duplicates
+                  seen2[e.date]=true; return true;
+                }).sort(function(a,b){ return a.date<b.date?-1:1; });
               });
             }
             // merge chat histories

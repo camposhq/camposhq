@@ -3754,6 +3754,21 @@ function renderEvolucao(){
   var cutStr = cutoff.toISOString().slice(0,10);
   var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
   if(hist.length===0) hist = allHist.slice(-2);
+  // for today's point, inject live dynamic scores so chart always shows current data
+  var dynLive = null; try{ dynLive = calcDynamicScores(curP); }catch(e){}
+  if(dynLive){
+    hist = hist.map(function(e){
+      if(e.date !== todayStr()) return e;
+      return Object.assign({}, e, {
+        avg: dynLive.Geral,
+        scores: {Saude:dynLive.Saude, Fitness:dynLive.Fitness, Sono:dynLive.Sono, Nutricao:dynLive.Nutricao},
+        calories: kcalConsumedToday()>0 ? kcalConsumedToday() : e.calories,
+        water: Math.round((waterGlasses[curP+'-water']||0)*250)>0 ? Math.round((waterGlasses[curP+'-water']||0)*250) : e.water,
+        sleep: (sleepData[curP]||{}).hours>0 ? parseFloat(((sleepData[curP]||{}).hours).toFixed(1)) : e.sleep,
+        gasto: (getBasalKcal(p)+calcWorkoutKcalToday())
+      });
+    });
+  }
   var labels = hist.map(function(e){ return e.label; });
   var bench = getPopBench(p.age);
   var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);

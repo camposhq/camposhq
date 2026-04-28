@@ -3651,7 +3651,7 @@ function evoCard(title, icon, values, labels, current, unit, color, lowerBetter,
   var tgtBadge='';
   if(tgt!=null){
     var atTgt = lowerBetter ? current<=tgt : current>=tgt;
-    var gapToTgt = lowerBetter ? parseFloat((current-tgt).toFixed(1)) : parseFloat((tgt-current).toFixed(1));
+    var gapToTgt = Math.abs(parseFloat((current-tgt).toFixed(1)));
     if(atTgt){
       tgtBadge='<div style="font-size:10px;color:#b45309;font-weight:700">🏆 Meta atingida</div>';
     } else {
@@ -3710,16 +3710,17 @@ function renderEvolucao(){
     // Corpo
     h+='<div class="section"><div class="sec-label">Composicao corporal · meta: top 20%</div>';
     var imcCur=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-    h+=evoCard('Peso','⚖️',hist.map(function(e){return e.weight;}),labels,p.weight,'kg','#993c1d',true,tgtPeso);
-    h+=evoCard('IMC','📐',hist.map(function(e){return e.imc;}),labels,imcCur,'','#993c1d',true,22);
-    var fatVals=hist.map(function(e){return e.fat;}).filter(function(v){return v!=null;});
-    var fatLabels=hist.filter(function(e){return e.fat!=null;}).map(function(e){return e.label;});
+    h+=evoCard('Peso','⚖️',hist.map(function(e){return e.weight>0?e.weight:null;}),labels,p.weight>0?p.weight:null,'kg','#993c1d',true,tgtPeso);
+    h+=evoCard('IMC','📐',hist.map(function(e){return e.imc>0?e.imc:null;}),labels,imcCur>0?imcCur:null,'','#993c1d',true,22);
+    var fatVals=hist.map(function(e){return e.fat;}).filter(function(v){return v!=null&&v>0;});
+    var fatLabels=hist.filter(function(e){return e.fat!=null&&e.fat>0;}).map(function(e){return e.label;});
     var lastFat=fatVals.length>0?fatVals[fatVals.length-1]:null;
     if(lastFat!==null) h+=evoCard('% Gordura','🔬',fatVals,fatLabels,lastFat,'%','#e8630a',true,tgtFat);
     h+='</div>';
     // Habitos
     h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
-    var sleepAtual = parseFloat(((sleepData[curP]||{hours:p.sleep}).hours||p.sleep).toFixed(1));
+    var sleepRaw = (sleepData[curP]||{}).hours||0;
+    var sleepAtual = sleepRaw>0 ? parseFloat(sleepRaw.toFixed(1)) : null; // null if not logged today
     h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep>0?parseFloat(parseFloat(e.sleep).toFixed(1)):null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
     var kcalAtual = kcalConsumedToday();
     h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);

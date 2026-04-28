@@ -1071,6 +1071,8 @@ function resetDailyState(){
   mealDone={}; suppDone={}; habitDone={}; foodDone={};
   exChecked={}; exSets={}; cardioChecked={};
   waterGlasses={}; sleepData={};
+  // Mark reset as done — protects against Firebase restoring old data after reset
+  localStorage.setItem('mh_reset_date', todayStr());
 }
 
 function handleDayChange(oldDate){
@@ -5346,7 +5348,9 @@ function loadUserData(uid, callback){
             // only merge daily tracking if Firebase data is from TODAY
             // if Firebase is from a previous day, daily state was already reset — don't restore old data
             var firebaseIsToday = (s.lastSavedDate === todayStr());
-            if(firebaseIsToday){
+            // Never restore daily tracking if reset already happened today
+            var resetDoneToday = localStorage.getItem('mh_reset_date') === todayStr();
+            if(firebaseIsToday && !resetDoneToday){
               mealDone = mergeObj(mealDone, s.mealDone);
               foodDone = mergeObj(foodDone, s.foodDone);
               suppDone = mergeObj(suppDone, s.suppDone);
@@ -5360,12 +5364,17 @@ function loadUserData(uid, callback){
               cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
               walkParams = Object.assign({}, s.walkParams||{}, walkParams);
             }
-            if(firebaseIsToday){
+            if(firebaseIsToday && !resetDoneToday){
               exWeights = Object.assign({}, s.exWeights||{}, exWeights);
               cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
               cardioChecked = mergeObj(cardioChecked, s.cardioChecked);
               walkParams = Object.assign({}, s.walkParams||{}, walkParams);
               sleepData = mergeObj(sleepData, s.sleepData);
+            } else {
+              // only restore permanent prefs, never daily tracking after reset
+              exWeights = Object.assign({}, s.exWeights||{}, exWeights);
+              cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
+              walkParams = Object.assign({}, s.walkParams||{}, walkParams);
             }
             expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;

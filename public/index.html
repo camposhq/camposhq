@@ -705,6 +705,15 @@ const CARDIO_OPTS = [
   {id:'corda',icon:'⛹️',label:'Corda',color:'#5a3ab7',cl:'#eeedfb',title:'Pular corda',sub:'Alta queima calorica',dur:'20 min',
    params:[{v:'2min',l:'Serie'},{v:'1min',l:'Descanso'},{v:'6x',l:'Rodadas'},{v:'~250',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Pular leve 2 min',t:'2 min'},{n:'Series x6',d:'2 min / 1 min descanso',t:'15 min'},{n:'Alongamento',d:'Panturrilhas',t:'3 min'}]},
+  {id:'onda',icon:'🌊',label:'Onda',color:'#1a5a8a',cl:'#e3f0fd',title:'Protocolo Onda',sub:'Inclinação progressiva em ondas',dur:'25 min',
+   params:[{v:'25',l:'Min'},{v:'5–11%',l:'Inclinação'},{v:'~3.5',l:'km/h'},{v:'~220',l:'Kcal'}],
+   steps:[
+    {n:'Bloco 1',d:'5% inclinação • 3,5 km/h',t:'5 min'},
+    {n:'Bloco 2',d:'7% inclinação • 3,8 km/h',t:'5 min'},
+    {n:'Bloco 3 — PICO',d:'9% inclinação • 4,0 km/h',t:'5 min'},
+    {n:'Bloco 4',d:'11% inclinação • 3,6 km/h',t:'5 min'},
+    {n:'Bloco 5 — Descida',d:'6% inclinação • 3,4 km/h',t:'5 min'},
+   ]},
   {id:'walk',icon:'🚶',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
    params:[],steps:[]},
   {id:'trilha',icon:'🥾',label:'Trilha',color:'#854f0b',cl:'#faeeda',title:'Trilha',editable:true,trilha:true,
@@ -751,6 +760,10 @@ function calcWorkoutKcalToday(pi){
   if(selId === 'walk'){
     var wp = walkParams[cselKey]||{inc:5, spd:5.5, mins:30};
     cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
+  } else if(selId === 'onda'){
+    // Protocol Onda: 5 steps of 5min each
+    var ondaSteps = [{spd:3.5,inc:5},{spd:3.8,inc:7},{spd:4.0,inc:9},{spd:3.6,inc:11},{spd:3.4,inc:6}];
+    cardK = ondaSteps.reduce(function(s,st){ return s+calcWalkKcal(p.weight,st.spd,st.inc,5); },0);
   } else if(selId === 'trilha'){
     var tp = walkParams[cselKey]||{mins:60, km:5, dif:'moderada'};
     var met = tp.dif==='facil'?4:tp.dif==='dificil'?7.5:5.5;
@@ -2233,6 +2246,8 @@ function renderTreinosContent(){
   var musKcal = calcMusKcal(p.weight, totalSetsDone);
   var cardioKcal = 0;
   if(selId==='walk'){ cardioKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins); }
+  else if(selId==='onda'){ var ondaS=[{spd:3.5,inc:5},{spd:3.8,inc:7},{spd:4.0,inc:9},{spd:3.6,inc:11},{spd:3.4,inc:6}]; cardioKcal=ondaS.reduce(function(s,st){return s+calcWalkKcal(p.weight,st.spd,st.inc,5);},0); }
+  else if(selId==='trilha'){ var tp2=walkParams[cselKey]||{mins:60,dif:'moderada'}; var tMet2=tp2.dif==='facil'?4:tp2.dif==='dificil'?7.5:5.5; cardioKcal=Math.round(tMet2*p.weight*(tp2.mins/60)); }
   else if(selId){ var coK=CARDIO_OPTS.find(function(o){return o.id===selId;}); if(coK){ var pm=coK.params.find(function(x){return x.l==='Kcal';}); if(pm) cardioKcal=parseInt(pm.v.replace('~',''))||0; } }
   var totalKcal = musKcal + cardioKcal;
   h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';

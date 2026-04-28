@@ -3587,14 +3587,19 @@ function snapshotHistory(idx){
   var p = PD[idx];
   if(!p || !p.weight) return;
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-  // use dynamic scores if enough history, otherwise keep stored scores
-  var dynScores = calcDynamicScores(idx);
-  if(dynScores){
-    p.scores = {Saude:dynScores.Saude, Fitness:dynScores.Fitness, Sono:dynScores.Sono, Nutricao:dynScores.Nutricao};
+  // calculate dynamic scores safely
+  var dynScores = null;
+  try{ dynScores = calcDynamicScores(idx); }catch(e){}
+  if(dynScores && dynScores.Geral>0){
+    if(!p.scores) p.scores = {Saude:70,Fitness:70,Sono:70,Nutricao:70};
+    p.scores.Saude = dynScores.Saude;
+    p.scores.Fitness = dynScores.Fitness;
+    p.scores.Sono = dynScores.Sono;
+    p.scores.Nutricao = dynScores.Nutricao;
     if(!pdOverride[idx]) pdOverride[idx]={};
     pdOverride[idx].scores = p.scores;
   }
-  var avg = dynScores ? dynScores.Geral : (p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0);
+  var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
   var today = new Date();
   // use daily date format (consistent with handleDayChange)
   var dateKey = today.toISOString().slice(0,10);

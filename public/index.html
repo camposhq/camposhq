@@ -3756,18 +3756,35 @@ function renderEvolucao(){
   if(hist.length===0) hist = allHist.slice(-2);
   // for today's point, inject live dynamic scores so chart always shows current data
   var dynLive = null; try{ dynLive = calcDynamicScores(curP); }catch(e){}
+  var todayK = todayStr();
+  var todayWaterMl = Math.round((waterGlasses[curP+'-water']||0)*250);
+  var todaySleepH = parseFloat(((sleepData[curP]||{}).hours||0).toFixed(1));
+  var todayKcal = kcalConsumedToday();
+  var todayGasto = getBasalKcal(p)+calcWorkoutKcalToday();
   if(dynLive){
-    hist = hist.map(function(e){
-      if(e.date !== todayStr()) return e;
-      return Object.assign({}, e, {
-        avg: dynLive.Geral,
-        scores: {Saude:dynLive.Saude, Fitness:dynLive.Fitness, Sono:dynLive.Sono, Nutricao:dynLive.Nutricao},
-        calories: kcalConsumedToday()>0 ? kcalConsumedToday() : e.calories,
-        water: Math.round((waterGlasses[curP+'-water']||0)*250)>0 ? Math.round((waterGlasses[curP+'-water']||0)*250) : e.water,
-        sleep: (sleepData[curP]||{}).hours>0 ? parseFloat(((sleepData[curP]||{}).hours).toFixed(1)) : e.sleep,
-        gasto: (getBasalKcal(p)+calcWorkoutKcalToday())
+    var todayInHist = hist.some(function(e){ return e.date===todayK; });
+    if(!todayInHist){
+      // add today's entry if missing
+      var imc2=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
+      hist.push({date:todayK, label:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}),
+        weight:p.weight, imc:imc2, avg:dynLive.Geral,
+        scores:{Saude:dynLive.Saude,Fitness:dynLive.Fitness,Sono:dynLive.Sono,Nutricao:dynLive.Nutricao},
+        calories:todayKcal>0?todayKcal:null, water:todayWaterMl>0?todayWaterMl:null,
+        sleep:todaySleepH>0?todaySleepH:null, gasto:todayGasto, fat:null});
+      hist.sort(function(a,b){ return a.date<b.date?-1:1; });
+    } else {
+      hist = hist.map(function(e){
+        if(e.date !== todayK) return e;
+        return Object.assign({}, e, {
+          avg:dynLive.Geral,
+          scores:{Saude:dynLive.Saude,Fitness:dynLive.Fitness,Sono:dynLive.Sono,Nutricao:dynLive.Nutricao},
+          calories:todayKcal>0?todayKcal:e.calories,
+          water:todayWaterMl>0?todayWaterMl:e.water,
+          sleep:todaySleepH>0?todaySleepH:e.sleep,
+          gasto:todayGasto
+        });
       });
-    });
+    }
   }
   var labels = hist.map(function(e){ return e.label; });
   var bench = getPopBench(p.age);

@@ -3608,8 +3608,8 @@ function snapshotHistory(idx){
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
   var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
   var today = new Date();
-  // use daily date format (consistent with handleDayChange)
-  var dateKey = today.toISOString().slice(0,10);
+  // use local date (todayStr) to avoid UTC vs local timezone mismatch at night
+  var dateKey = todayStr();
   var label = today.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
   if(!historyData[idx]) historyData[idx]=[];
   var existing = historyData[idx].findIndex(function(e){ return e.date===dateKey; });

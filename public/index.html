@@ -5216,7 +5216,7 @@ function initAuth(){
     if(user){
       currentUser = user;
       loadUserData(user.uid, function(){
-        if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); });
+        try{ if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); }); }catch(e){}
         hideSplash();
         showScreen('home');
       });

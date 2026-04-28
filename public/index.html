@@ -1548,7 +1548,10 @@ function renderHome(){
   renderProfiles('home-profiles');
   var p = PD[curP];
   document.getElementById('home-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  var avg = Math.round(Object.values(p.scores).reduce(function(a,b){return a+b;},0)/Object.keys(p.scores).length);
+  // use dynamic scores for display if available
+  var dynS = null; try{ dynS = calcDynamicScores(curP); }catch(e){}
+  var scores = dynS || p.scores;
+  var avg = scores ? Math.round((scores.Saude+scores.Fitness+scores.Sono+scores.Nutricao)/4) : 0;
   var h = '';
   // Setup CTA banner
   if(!profileComplete){
@@ -3587,18 +3590,6 @@ function snapshotHistory(idx){
   var p = PD[idx];
   if(!p || !p.weight) return;
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-  // calculate dynamic scores safely
-  var dynScores = null;
-  try{ dynScores = calcDynamicScores(idx); }catch(e){}
-  if(dynScores && dynScores.Geral>0){
-    if(!p.scores) p.scores = {Saude:70,Fitness:70,Sono:70,Nutricao:70};
-    p.scores.Saude = dynScores.Saude;
-    p.scores.Fitness = dynScores.Fitness;
-    p.scores.Sono = dynScores.Sono;
-    p.scores.Nutricao = dynScores.Nutricao;
-    if(!pdOverride[idx]) pdOverride[idx]={};
-    pdOverride[idx].scores = p.scores;
-  }
   var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
   var today = new Date();
   // use daily date format (consistent with handleDayChange)
@@ -3750,12 +3741,15 @@ function renderEvolucao(){
   } else {
     // Scores
     h+='<div class="section"><div class="sec-label">Scores de saude · meta: top 20% da sua faixa</div>';
-    var avgCur=p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0;
+    // use dynamic scores for current values, history shows saved snapshots
+    var dynScores = null; try{ dynScores = calcDynamicScores(curP); }catch(e){}
+    var curScores = dynScores || p.scores || {Saude:0,Fitness:0,Sono:0,Nutricao:0};
+    var avgCur = Math.round((curScores.Saude+curScores.Fitness+curScores.Sono+curScores.Nutricao)/4);
     h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg>0?e.avg:null;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
-    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,p.scores&&p.scores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
-    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,p.scores&&p.scores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
-    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono>0?e.scores.Sono:null;}),labels,p.scores&&p.scores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
-    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao>0?e.scores.Nutricao:null;}),labels,p.scores&&p.scores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
+    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,curScores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
+    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,curScores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
+    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono>0?e.scores.Sono:null;}),labels,curScores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
+    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao>0?e.scores.Nutricao:null;}),labels,curScores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
     h+='</div>';
     // Corpo
     h+='<div class="section"><div class="sec-label">Composicao corporal · meta: top 20%</div>';

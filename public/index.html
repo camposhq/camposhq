@@ -3563,15 +3563,20 @@ function snapshotHistory(idx){
   var existing = historyData[idx].findIndex(function(e){ return e.date===dateKey; });
   var kcalToday=kcalConsumedToday(idx); var gastoToday=getBasalKcal(p)+calcWorkoutKcalToday(idx);
   var waterMl=Math.round((waterGlasses[idx+'-water']||0)*250);
-  var sleepEntry=sleepData[idx]||{hours:p.sleep};
+  var sleepEntry=sleepData[idx]||{};
+  var sleepHours = sleepEntry.hours>0 ? sleepEntry.hours : null; // null if not logged today
+  var prev = existing>=0 ? historyData[idx][existing] : null;
   var entry = {
     date:dateKey, label:label, weight:p.weight, imc:imc,
-    fat:historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null,
-    sleep:sleepEntry.hours||p.sleep||0, avg:avg,
+    fat: (prev&&prev.fat>0) ? prev.fat : (historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null),
+    // preserve existing sleep if more accurate (user logged it); only overwrite if we have real data
+    sleep: sleepHours || (prev&&prev.sleep>0 ? prev.sleep : p.sleep||0),
+    avg:avg,
     scores:{Saude:p.scores.Saude,Fitness:p.scores.Fitness,Sono:p.scores.Sono,Nutricao:p.scores.Nutricao},
-    calories:kcalToday>0?kcalToday:p.calories||0,
-    gasto:gastoToday, deficit:kcalToday>0?kcalToday-gastoToday:null,
-    water:waterMl>0?waterMl:null
+    calories:kcalToday>0?kcalToday:(prev&&prev.calories>0?prev.calories:p.calories||0),
+    gasto:gastoToday,
+    deficit:kcalToday>0?kcalToday-gastoToday:(prev&&prev.deficit!=null?prev.deficit:null),
+    water:waterMl>0?waterMl:(prev&&prev.water>0?prev.water:null)
   };
   if(existing>=0) historyData[idx][existing]=entry;
   else historyData[idx].push(entry);

@@ -3570,8 +3570,9 @@ function showExamHistory(){
 // ══════════════════════════════════════════════════════════════
 function calcDynamicScores(idx){
   var p = PD[idx]; if(!p) return null;
-  // include today's live data alongside last 6 days of history
-  var hist6 = (historyData[idx]||[]).slice(-6);
+  // use last 6 CLOSED days (exclude today) + today's live data = 7 days total
+  var todayK = todayStr();
+  var hist6 = (historyData[idx]||[]).filter(function(e){ return e.date && e.date<todayK; }).slice(-6);
   var todayKcal = kcalConsumedToday(idx);
   var todayGasto = getBasalKcal(p)+calcWorkoutKcalToday(idx);
   var todayWater = Math.round((waterGlasses[idx+'-water']||0)*250);
@@ -3751,7 +3752,7 @@ function renderEvolucao(){
   var allHist = historyData[curP]||[];
   // filter by selected period
   var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-evoPeriod);
-  var cutStr = cutoff.toISOString().slice(0,10);
+  var cutStr = cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
   var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
   if(hist.length===0) hist = allHist.slice(-2);
   // for today's point, inject live dynamic scores so chart always shows current data

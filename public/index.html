@@ -3647,7 +3647,7 @@ function snapshotHistory(idx){
     sleep: sleepHours || (prev&&prev.sleep>0 ? prev.sleep : p.sleep||0),
     avg:snapAvg,
     scores:snapScores,
-    calories:kcalToday>0?kcalToday:(prev&&prev.calories>0?prev.calories:p.calories||0),
+    calories:kcalToday>0?kcalToday:null,
     gasto:gastoToday,
     deficit:kcalToday>0?kcalToday-gastoToday:(prev&&prev.deficit!=null?prev.deficit:null),
     water:waterMl>0?waterMl:(prev&&prev.water>0?prev.water:null)
@@ -3782,7 +3782,7 @@ function renderEvolucao(){
         return Object.assign({}, e, {
           avg:dynLive.Geral,
           scores:{Saude:dynLive.Saude,Fitness:dynLive.Fitness,Sono:dynLive.Sono,Nutricao:dynLive.Nutricao},
-          calories:todayKcal>0?todayKcal:e.calories,
+          calories:todayKcal>0?todayKcal:null,
           water:todayWaterMl>0?todayWaterMl:e.water,
           sleep:todaySleepH>0?todaySleepH:e.sleep,
           gasto:todayGasto

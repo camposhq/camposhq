@@ -1133,11 +1133,22 @@ function handleDayChange(oldDate){
     var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
     var deficit=kcal>0?kcal-gasto:null;
     var waterMl=Math.round((waterGlasses[pi+'-water']||0)*250);
+    var lastDateStr = datesToFill[datesToFill.length-1];
     datesToFill.forEach(function(dateStr){
-      var existing=historyData[pi].find(function(e){return e.date===dateStr;});
-      if(!existing){
-        var d=new Date(dateStr+'T12:00:00');
-        var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+      var existingIdx=historyData[pi].findIndex(function(e){return e.date===dateStr;});
+      var d=new Date(dateStr+'T12:00:00');
+      var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+      if(existingIdx>=0 && dateStr===lastDateStr){
+        // always overwrite the most recently closed day with the final values
+        var prev=historyData[pi][existingIdx];
+        historyData[pi][existingIdx]=Object.assign({},prev,{
+          calories:kcal>0?kcal:prev.calories,
+          gasto:gasto,
+          deficit:kcal>0?kcal-gasto:prev.deficit,
+          water:waterMl>0?waterMl:prev.water,
+          sleep:sleepEntry.hours>0?sleepEntry.hours:prev.sleep
+        });
+      } else if(existingIdx<0){
         historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit,water:waterMl>0?waterMl:null});
       }
     });

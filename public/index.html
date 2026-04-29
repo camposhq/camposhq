@@ -741,8 +741,8 @@ function getBasalKcal(p){
   var g = p.gender || (pdOverride[curP]||{}).gender||'M';
   return Math.round(g==='M' ? 10*p.weight+6.25*p.height-5*p.age+5 : 10*p.weight+6.25*p.height-5*p.age-161);
 }
-function calcWorkoutKcalToday(pi){
-  var idx = pi!=null?pi:curP; var p = PD[idx]; var day = curDay;
+function calcWorkoutKcalToday(pi, dayOverride){
+  var idx = pi!=null?pi:curP; var p = PD[idx]; var day = dayOverride!=null ? dayOverride : curDay;
   var dw = p.weekly[day]||{};
   // count muscle sets (even on rest days if user trained)
   var sets=0;
@@ -1089,10 +1089,12 @@ function handleDayChange(oldDate){
   if(datesToFill.length===0) datesToFill=[oldDate];
 
   // compute summary for the active profile before resetting
+  // use the day-of-week derived from oldDate, not curDay (which may differ if user navigated the strip)
+  var oldDow = (new Date(oldDate+'T12:00:00').getDay()+6)%7;
   var p0 = PD[curP];
   var kcal0 = kcalConsumedToday(curP);
   var basal0 = getBasalKcal(p0);
-  var treino0 = calcWorkoutKcalToday(curP);
+  var treino0 = calcWorkoutKcalToday(curP, oldDow);
   var gasto0 = basal0 + treino0;
   var deficit0 = kcal0 - gasto0;
   var sleep0 = parseFloat(((sleepData[curP]||{hours:p0.sleep}).hours||0).toFixed(1));
@@ -1100,12 +1102,12 @@ function handleDayChange(oldDate){
   var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
   var suppDone0 = p0.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
   // workout summary
-  var w0 = p0.weekly[curDay]||{};
+  var w0 = p0.weekly[oldDow]||{};
   var workout0 = null;
   if(!w0.rest && w0.exs && w0.exs.length>0){
     var totalSets0=0, doneSets0=0;
     w0.exs.forEach(function(ex,i){
-      var k=curP+'-'+curDay+'-'+i;
+      var k=curP+'-'+oldDow+'-'+i;
       var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
       totalSets0+=ns;
       for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) doneSets0++; }

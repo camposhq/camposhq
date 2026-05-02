@@ -5323,7 +5323,7 @@ function openSharePersonal(){
     document.getElementById('pro-email-section').style.display='none';
     document.getElementById('pro-share-url-section').style.display='block';
     document.getElementById('pro-auth-email').textContent = storedEmail;
-    document.getElementById('pro-share-url').textContent = window.location.origin+'/pro?token='+proToken;
+    document.getElementById('pro-share-url').textContent = window.location.origin+'/pro.html?token='+proToken;
     document.getElementById('pro-share-action').textContent = 'Copiar link';
     document.getElementById('pro-share-action').onclick = copyProLink;
   } else {
@@ -5350,7 +5350,7 @@ function generateProLink(){
   document.getElementById('pro-email-section').style.display='none';
   document.getElementById('pro-share-url-section').style.display='block';
   document.getElementById('pro-auth-email').textContent = email;
-  document.getElementById('pro-share-url').textContent = window.location.origin+'/pro?token='+proToken;
+  document.getElementById('pro-share-url').textContent = window.location.origin+'/pro.html?token='+proToken;
   document.getElementById('pro-share-action').textContent = 'Copiar link';
   document.getElementById('pro-share-action').onclick = copyProLink;
 }

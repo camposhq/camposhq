@@ -664,6 +664,31 @@ input[type=file]{display:none}
 <input type="file" id="file-meal-photo" accept="image/*" capture="environment">
 
 <div class="toast" id="toast"></div>
+
+<!-- Share Personal Modal -->
+<div class="wmodal-back" id="pro-share-back" style="z-index:70">
+  <div class="wmodal" style="width:320px;text-align:left">
+    <div class="wmodal-title" style="margin-bottom:4px">🔗 Personal Trainer</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Envie este link para seu personal. Ele poderá ver seu plano e propor mudanças para você aprovar.</div>
+    <div id="pro-share-url" style="background:var(--surface);border-radius:10px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);word-break:break-all;margin-bottom:12px;cursor:pointer"></div>
+    <div class="wmodal-btns">
+      <button class="wmodal-cancel" id="pro-share-close">Fechar</button>
+      <button class="wmodal-save" id="pro-share-copy">Copiar link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Proposal Review Modal -->
+<div class="wmodal-back" id="pro-prop-back" style="z-index:70">
+  <div class="wmodal" style="width:340px;text-align:left;max-height:80vh;overflow-y:auto">
+    <div class="wmodal-title" style="margin-bottom:4px">💪 Proposta do Personal</div>
+    <div id="pro-prop-content"></div>
+    <div class="wmodal-btns" style="margin-top:14px">
+      <button class="wmodal-cancel" id="pro-prop-reject" style="color:var(--coral)">Rejeitar</button>
+      <button class="wmodal-save" id="pro-prop-approve">✓ Aprovar</button>
+    </div>
+  </div>
+</div>
 <script>
 // ══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -1606,6 +1631,8 @@ function renderHome(){
   var pctToTgt = Math.min(100, Math.round(avg / popTgtGeral * 100));
   var gapToTgt = Math.max(0, popTgtGeral - avg);
   var atTop = avg >= popTgtGeral;
+  // proposal banner placeholder (filled by checkProposals)
+  h += '<div id="proposal-banner" style="display:none;background:var(--card);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px"></div>';
   h += '<div class="dash-hero">';
   h += '<div class="dash-hero-top">';
   h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
@@ -1891,6 +1918,10 @@ function renderHome(){
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
 
   document.getElementById('home-content').innerHTML = h;
+
+  // show proposal banner if pending
+  if(pendingProposal) renderProposalBanner();
+  else checkProposals();
 
   var sb = document.getElementById('setup-banner');
   if(sb) sb.addEventListener('click', function(){
@@ -2313,6 +2344,7 @@ function renderTreinosContent(){
   h += '<div class="section"><div class="actions">';
   h += '<button class="act-btn" id="t-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar treino</span><span class="act-sub">Cargas e series</span></button>';
   h += '<button class="act-btn" id="t-gerar"><span class="act-icon">✨</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novo plano semanal</span></button>';
+  h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">🔗</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
   h += '</div></div>';
   h += '<div class="section"><button class="btn-full" id="t-analise">Analise completa com IA ↗</button></div>';
 
@@ -2443,6 +2475,8 @@ function renderTreinosContent(){
     ctx += '\n\nHOJE: '+totalDone+' series concluidas de '+w.name+'.';
     openChatWithContext('treino', ctx, 'Perfil completo com historico, evolucao e exames carregados. Analise sua evolucao, frequencia, pontos de melhoria ou qualquer aspeto do treino.');
   });
+  var tsp = document.getElementById('t-share-personal');
+  if(tsp) tsp.addEventListener('click', openSharePersonal);
 }
 
 function openExVideo(exName){
@@ -5260,6 +5294,139 @@ document.addEventListener('touchend', function(e){
 
 
 // ══════════════════════════════════════════════════════════════
+// PERSONAL TRAINER PRO LINK
+// ══════════════════════════════════════════════════════════════
+var proToken = null;
+var pendingProposal = null;
+
+function generateToken(){
+  return Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
+}
+
+function openSharePersonal(){
+  if(!fbDb||!currentUser){ showToast('Entre com sua conta para compartilhar'); return; }
+  // reuse existing token if stored
+  var stored = pdOverride[curP]&&pdOverride[curP].proToken;
+  if(stored){ proToken=stored; }
+  else {
+    proToken = generateToken();
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    pdOverride[curP].proToken = proToken;
+    save();
+  }
+  var link = window.location.origin+'/pro?token='+proToken;
+  document.getElementById('pro-share-url').textContent = link;
+  syncSpecialistView();
+  document.getElementById('pro-share-back').classList.add('open');
+}
+
+function syncSpecialistView(){
+  if(!fbDb||!currentUser||!proToken) return;
+  var p = PD[curP];
+  fbDb.collection('specialistViews').doc(proToken).set({
+    uid: currentUser.uid,
+    type: 'personal',
+    profileIdx: curP,
+    playerName: p.name||'Atleta',
+    weeklyPlan: p.weekly||[],
+    exWeights: exWeights||{},
+    history: (historyData[curP]||[]).slice(-28),
+    active: true,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(e){ console.log('syncSpecialistView error',e); });
+}
+
+function checkProposals(){
+  if(!fbDb||!currentUser) return;
+  var uid = currentUser.uid;
+  fbDb.collection('proposals')
+    .where('uid','==',uid)
+    .where('type','==','personal')
+    .where('status','==','pending')
+    .limit(1)
+    .get()
+    .then(function(snap){
+      if(snap.empty){ pendingProposal=null; return; }
+      var doc = snap.docs[0];
+      pendingProposal = Object.assign({id:doc.id}, doc.data());
+      renderProposalBanner();
+    }).catch(function(){});
+}
+
+function renderProposalBanner(){
+  var el = document.getElementById('proposal-banner');
+  if(!el) return;
+  if(!pendingProposal){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer" id="prop-banner-tap">' +
+    '<div style="font-size:24px">💪</div>' +
+    '<div><div style="font-size:13px;font-weight:600">Proposta do Personal</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:2px">Toque para ver e aprovar</div></div>' +
+    '<div style="margin-left:auto;background:var(--coral);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:99px">1</div>' +
+    '</div>';
+  document.getElementById('prop-banner-tap').addEventListener('click', openProposalReview);
+}
+
+function openProposalReview(){
+  if(!pendingProposal) return;
+  var p = pendingProposal;
+  var h = '';
+  h += '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">'+new Date(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})+'</div>';
+  h += '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.5">'+p.message+'</div>';
+  h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Novo plano proposto</div>';
+  (p.weeklyPlan||[]).forEach(function(w,i){
+    var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    if(w.rest){ h+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+DAYS2[i]+': Descanso</div>'; return; }
+    h+='<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:600">'+DAYS2[i]+' · '+(w.name||'')+'</div>';
+    (w.exs||[]).forEach(function(ex){ h+='<div style="font-size:11px;color:var(--muted);padding-left:8px">· '+ex.n+' '+ex.s+(ex.w>0?' @ '+ex.w+'kg':'')+'</div>'; });
+    h+='</div>';
+  });
+  document.getElementById('pro-prop-content').innerHTML = h;
+  document.getElementById('pro-prop-back').classList.add('open');
+}
+
+function closeProposalModal(){ document.getElementById('pro-prop-back').classList.remove('open'); }
+
+function approveProposal(){
+  if(!pendingProposal||!fbDb) return;
+  var p = pendingProposal;
+  // apply new weekly plan
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  pdOverride[curP].weekly = p.weeklyPlan;
+  PD[curP].weekly = p.weeklyPlan;
+  // mark as approved
+  fbDb.collection('proposals').doc(p.id).update({status:'approved', reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  pendingProposal = null;
+  save();
+  syncSpecialistView();
+  closeProposalModal();
+  showToast('Plano aprovado e aplicado! 💪');
+  if(curScreen==='treinos') renderTreinos();
+}
+
+function rejectProposal(){
+  if(!pendingProposal||!fbDb) return;
+  fbDb.collection('proposals').doc(pendingProposal.id).update({status:'rejected', reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  pendingProposal = null;
+  closeProposalModal();
+  showToast('Proposta rejeitada.');
+  var el=document.getElementById('proposal-banner'); if(el) el.style.display='none';
+}
+
+// share modal controls
+document.getElementById('pro-share-close').addEventListener('click', function(){ document.getElementById('pro-share-back').classList.remove('open'); });
+document.getElementById('pro-share-copy').addEventListener('click', function(){
+  var txt = document.getElementById('pro-share-url').textContent;
+  navigator.clipboard.writeText(txt).then(function(){ showToast('Link copiado!'); }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Link copiado!');
+  });
+});
+document.getElementById('pro-share-back').addEventListener('click', function(e){ if(e.target===this) document.getElementById('pro-share-back').classList.remove('open'); });
+document.getElementById('pro-prop-approve').addEventListener('click', approveProposal);
+document.getElementById('pro-prop-reject').addEventListener('click', rejectProposal);
+document.getElementById('pro-prop-back').addEventListener('click', function(e){ if(e.target===this) closeProposalModal(); });
+
+// ══════════════════════════════════════════════════════════════
 // FIREBASE CONFIG
 // ══════════════════════════════════════════════════════════════
 var firebaseConfig = {
@@ -5293,6 +5460,9 @@ function initAuth(){
       currentUser = user;
       loadUserData(user.uid, function(){
         try{ if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); }); }catch(e){}
+        // restore pro token if exists
+        var stored = pdOverride[curP]&&pdOverride[curP].proToken;
+        if(stored){ proToken=stored; setTimeout(function(){ syncSpecialistView(); checkProposals(); },2000); }
         hideSplash();
         showScreen('home');
       });

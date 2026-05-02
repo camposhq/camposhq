@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MyHealth Pro · Personal Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500;600&family=Fraunces:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--green:#1a7a4a;--green-deep:#0f5c35;--green-light:#e8f5ee;--surface:#1a1a1a;--card:#242424;--border:#2e2e2e;--text:#f0f0f0;--muted:#888;--coral:#e05252;--amber:#c47a1a;--radius:18px;--radius-sm:12px}
+body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:40px}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-family:Fraunces,serif;font-size:20px;color:var(--green)}
+.badge{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px}
+.content{padding:16px;max-width:600px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.sec-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden}
+.day-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.day-name{font-size:14px;font-weight:600}
+.day-meta{font-size:12px;color:var(--muted)}
+.day-body{padding:0 14px 12px}
+.ex-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.ex-row:last-child{border-bottom:none}
+.ex-num{width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ex-name{font-size:13px;font-weight:500;flex:1}
+.ex-detail{font-size:12px;color:var(--muted);white-space:nowrap}
+.ex-weight{font-size:12px;font-weight:600;font-family:'DM Mono',monospace;color:var(--green);min-width:40px;text-align:right}
+.rest-badge{background:#2a2a2a;color:var(--muted);font-size:12px;padding:4px 10px;border-radius:99px;display:inline-block;margin-top:4px}
+.history-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.hist-dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+.hist-dot.done{background:var(--green-light);color:var(--green)}
+.hist-dot.miss{background:#2a2a2a;color:var(--muted)}
+.hist-dot.rest{background:#222;color:#444}
+.btn-full{width:100%;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s}
+.btn-full:hover{opacity:.9}
+.btn-sec{width:100%;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:60px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proposal-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:50;overflow-y:auto;padding:16px}
+.proposal-modal.open{display:block}
+.proposal-box{background:var(--card);border-radius:var(--radius);max-width:600px;margin:0 auto;overflow:hidden}
+.proposal-hdr{background:linear-gradient(135deg,var(--green),var(--green-deep));padding:20px;color:#fff}
+.proposal-body{padding:16px}
+.input-lbl{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block}
+textarea{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px;resize:vertical;outline:none;min-height:100px}
+textarea:focus{border-color:var(--green)}
+.ex-edit-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ex-edit-row input{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;outline:none}
+.ex-edit-row input:focus{border-color:var(--green)}
+.inp-name{flex:1}
+.inp-sets{width:72px}
+.inp-weight{width:64px}
+.del-btn{background:none;border:none;color:var(--coral);font-size:16px;cursor:pointer;padding:4px;flex-shrink:0}
+.add-ex-btn{background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:4px;font-family:'DM Sans',sans-serif}
+.toggle-rest{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.toggle-rest.active{border-color:var(--green);color:var(--green)}
+.success-box{text-align:center;padding:40px 20px}
+.err-box{text-align:center;padding:60px 20px}
+.metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric-tile{background:var(--surface);border-radius:var(--radius-sm);padding:12px;text-align:center}
+.metric-val{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)}
+.metric-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">MyHealth</div>
+  <div class="badge">Personal Trainer</div>
+  <div style="flex:1"></div>
+  <div id="athlete-name" style="font-size:13px;color:var(--muted)"></div>
+</div>
+
+<div class="content">
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="err-view" style="display:none" class="err-box">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:8px">Link inválido ou expirado</div>
+    <div style="font-size:14px;color:var(--muted)">Peça um novo link ao atleta.</div>
+  </div>
+  <div id="main-view" style="display:none"></div>
+</div>
+
+<!-- Proposal modal -->
+<div class="proposal-modal" id="proposal-modal">
+  <div class="proposal-box">
+    <div class="proposal-hdr">
+      <div style="font-size:20px;margin-bottom:4px">📋 Nova Proposta</div>
+      <div style="font-size:13px;opacity:.8">O atleta receberá uma notificação para aprovar</div>
+    </div>
+    <div class="proposal-body">
+      <label class="input-lbl">Mensagem para o atleta</label>
+      <textarea id="prop-msg" placeholder="Ex: Ajustei o treino de costas para focar em hipertrofia, aumentei volume de puxada..."></textarea>
+      <div style="margin-top:16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+        <span class="input-lbl" style="margin:0">Plano semanal proposto</span>
+        <button class="btn-sec" style="width:auto;padding:6px 12px;font-size:12px" id="copy-current-btn">Copiar atual</button>
+      </div>
+      <div id="plan-editor"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn-sec" id="cancel-prop-btn">Cancelar</button>
+        <button class="btn-full" id="submit-prop-btn">Enviar proposta ↗</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script>
+var firebaseConfig = {
+  apiKey: "AIzaSyALZguDLc-eqlQO1oq0SXFnPw-xfLIM9y8",
+  authDomain: "myhealth-app-d8acf.firebaseapp.com",
+  projectId: "myhealth-app-d8acf",
+  storageBucket: "myhealth-app-d8acf.firebasestorage.app",
+  messagingSenderId: "422827888",
+  appId: "1:422827888:web:230078ee65d4f44ee521b5"
+};
+firebase.initializeApp(firebaseConfig);
+var fbAuth = firebase.auth();
+var fbDb = firebase.firestore();
+
+var DAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+var token = new URLSearchParams(window.location.search).get('token');
+var viewData = null;
+var proposalPlan = null;
+
+function showErr(){ document.getElementById('loading').style.display='none'; document.getElementById('err-view').style.display='block'; }
+
+function showMain(data){
+  viewData = data;
+  document.getElementById('loading').style.display='none';
+  document.getElementById('athlete-name').textContent = data.playerName||'Atleta';
+
+  var history = data.history||[];
+  var weekly = data.weeklyPlan||[];
+  var weights = data.exWeights||{};
+
+  // compute consistency last 28 days
+  var now = new Date(); now.setHours(0,0,0,0);
+  var days28 = [];
+  for(var i=27;i>=0;i--){ var d=new Date(now); d.setDate(d.getDate()-i); days28.push(d.toISOString().slice(0,10)); }
+
+  var trainedDays = {};
+  history.forEach(function(e){ if(e.date) trainedDays[e.date]=e; });
+
+  // stats
+  var trainedCount = 0;
+  days28.forEach(function(ds){
+    var dow = (new Date(ds+'T12:00:00').getDay()+6)%7;
+    var isRest = weekly[dow] && weekly[dow].rest;
+    if(!isRest && trainedDays[ds]) trainedCount++;
+  });
+  var workDays = days28.filter(function(ds){ var dow=(new Date(ds+'T12:00:00').getDay()+6)%7; return weekly[dow]&&!weekly[dow].rest; }).length;
+  var consistency = workDays>0?Math.round(trainedCount/workDays*100):0;
+
+  var totalExs = weekly.filter(function(w){ return !w.rest&&w.exs; }).reduce(function(s,w){ return s+w.exs.length; },0);
+
+  var h = '';
+  // athlete card
+  h += '<div class="card" style="background:linear-gradient(135deg,var(--green),var(--green-deep));border:none;margin-bottom:16px">';
+  h += '<div style="font-size:24px;font-weight:700;margin-bottom:4px">'+(data.playerName||'Atleta')+'</div>';
+  h += '<div style="font-size:13px;opacity:.8">Plano atual · atualizado '+new Date(data.updatedAt&&data.updatedAt.seconds?data.updatedAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR')+'</div>';
+  h += '</div>';
+
+  // metrics
+  h += '<div class="metrics-row">';
+  h += '<div class="metric-tile"><div class="metric-val">'+consistency+'%</div><div class="metric-lbl">Consistência 28d</div></div>';
+  h += '<div class="metric-tile"><div class="metric-val">'+totalExs+'</div><div class="metric-lbl">Exercícios/sem</div></div>';
+  h += '</div>';
+
+  // consistency dots
+  h += '<div class="card"><div class="sec-label">Últimos 28 dias</div><div class="history-grid">';
+  days28.forEach(function(ds){
+    var dow = (new Date(ds+'T12:00:00').getDay()+6)%7;
+    var isRest = weekly[dow] && weekly[dow].rest;
+    var trained = !isRest && !!trainedDays[ds];
+    var dayLbl = new Date(ds+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}).slice(0,5);
+    if(isRest){
+      h += '<div class="hist-dot rest" title="'+dayLbl+' descanso">—</div>';
+    } else if(trained){
+      h += '<div class="hist-dot done" title="'+dayLbl+' treinou">✓</div>';
+    } else {
+      h += '<div class="hist-dot miss" title="'+dayLbl+' sem treino">·</div>';
+    }
+  });
+  h += '</div></div>';
+
+  // weekly plan
+  h += '<div style="margin-bottom:6px"><div class="sec-label">Plano semanal atual</div></div>';
+  weekly.forEach(function(w,i){
+    var dayHist = history.filter(function(e){ return e.date && (new Date(e.date+'T12:00:00').getDay()+6)%7===i; }).slice(-4);
+    h += '<div class="day-card">';
+    h += '<div class="day-hdr" data-day="'+i+'">';
+    h += '<div><div class="day-name">'+DAYS[i]+'</div>';
+    if(!w.rest) h += '<div class="day-meta">'+(w.name||'')+' · '+(w.exs?w.exs.length:0)+' exercícios</div>';
+    h += '</div>';
+    if(w.rest) h += '<span class="rest-badge">Descanso</span>';
+    else h += '<span style="font-size:18px;color:var(--muted)">∨</span>';
+    h += '</div>';
+    if(!w.rest && w.exs){
+      h += '<div class="day-body" id="day-body-'+i+'" style="display:none">';
+      w.exs.forEach(function(ex,ei){
+        var wkey = '0-'+i+'-'+ei;
+        var wval = weights[wkey]!==undefined ? weights[wkey] : ex.w;
+        h += '<div class="ex-row">';
+        h += '<div class="ex-num" style="background:'+(w.cl||'#e8f5ee')+';color:'+(w.color||'var(--green)')+'">'+(ei+1)+'</div>';
+        h += '<div class="ex-name">'+ex.n+'</div>';
+        h += '<div class="ex-detail">'+ex.s+'</div>';
+        h += '<div class="ex-weight">'+(wval>0?wval+'kg':'—')+'</div>';
+        h += '</div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+
+  h += '<div style="margin-top:20px">';
+  h += '<button class="btn-full" id="propose-btn">✏️ Propor novo plano</button>';
+  h += '</div>';
+
+  var mv = document.getElementById('main-view');
+  mv.innerHTML = h;
+  mv.style.display='block';
+
+  // toggle day bodies
+  mv.querySelectorAll('.day-hdr').forEach(function(el){
+    el.addEventListener('click', function(){
+      var body = document.getElementById('day-body-'+this.dataset.day);
+      if(body){ var open = body.style.display!=='none'; body.style.display=open?'none':'block'; }
+    });
+  });
+
+  document.getElementById('propose-btn').addEventListener('click', openProposal);
+}
+
+function openProposal(){
+  proposalPlan = JSON.parse(JSON.stringify(viewData.weeklyPlan||[]));
+  renderPlanEditor();
+  document.getElementById('proposal-modal').classList.add('open');
+}
+
+function renderPlanEditor(){
+  var h = '';
+  proposalPlan.forEach(function(w,i){
+    h += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px">';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    h += '<span style="font-size:13px;font-weight:600">'+DAYS[i]+'</span>';
+    h += '<button class="toggle-rest'+(w.rest?' active':'')+'" data-di="'+i+'">'+(w.rest?'✓ Descanso':'Marcar descanso')+'</button>';
+    h += '</div>';
+    if(!w.rest){
+      h += '<input style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none;margin-bottom:8px" placeholder="Nome do treino" value="'+(w.name||'')+'" data-wname="'+i+'">';
+      (w.exs||[]).forEach(function(ex,ei){
+        h += '<div class="ex-edit-row">';
+        h += '<input class="inp-name" placeholder="Exercício" value="'+ex.n+'" data-ei="'+i+'-'+ei+'-n">';
+        h += '<input class="inp-sets" placeholder="4x10" value="'+ex.s+'" data-ei="'+i+'-'+ei+'-s">';
+        h += '<input class="inp-weight" placeholder="kg" value="'+(ex.w||'')+'" type="number" data-ei="'+i+'-'+ei+'-w">';
+        h += '<button class="del-btn" data-rem="'+i+'-'+ei+'">✕</button>';
+        h += '</div>';
+      });
+      h += '<button class="add-ex-btn" data-addex="'+i+'">+ Exercício</button>';
+    }
+    h += '</div>';
+  });
+
+  var pe = document.getElementById('plan-editor');
+  pe.innerHTML = h;
+
+  // toggle rest
+  pe.querySelectorAll('.toggle-rest').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var di = parseInt(this.dataset.di);
+      proposalPlan[di].rest = !proposalPlan[di].rest;
+      if(proposalPlan[di].rest) proposalPlan[di].exs=[];
+      renderPlanEditor();
+    });
+  });
+  // day name
+  pe.querySelectorAll('[data-wname]').forEach(function(inp){
+    inp.addEventListener('input', function(){ proposalPlan[parseInt(this.dataset.wname)].name=this.value; });
+  });
+  // exercise fields
+  pe.querySelectorAll('[data-ei]').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var parts=this.dataset.ei.split('-'); var di=parseInt(parts[0]),ei=parseInt(parts[1]),field=parts[2];
+      if(!proposalPlan[di].exs) proposalPlan[di].exs=[];
+      if(!proposalPlan[di].exs[ei]) proposalPlan[di].exs[ei]={n:'',s:'3x12',w:0};
+      if(field==='n') proposalPlan[di].exs[ei].n=this.value;
+      else if(field==='s') proposalPlan[di].exs[ei].s=this.value;
+      else if(field==='w') proposalPlan[di].exs[ei].w=parseFloat(this.value)||0;
+    });
+  });
+  // remove exercise
+  pe.querySelectorAll('[data-rem]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var parts=this.dataset.rem.split('-'); var di=parseInt(parts[0]),ei=parseInt(parts[1]);
+      proposalPlan[di].exs.splice(ei,1);
+      renderPlanEditor();
+    });
+  });
+  // add exercise
+  pe.querySelectorAll('[data-addex]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var di=parseInt(this.dataset.addex);
+      if(!proposalPlan[di].exs) proposalPlan[di].exs=[];
+      proposalPlan[di].exs.push({n:'',s:'3x12',w:0});
+      renderPlanEditor();
+    });
+  });
+}
+
+document.getElementById('copy-current-btn').addEventListener('click', function(){
+  if(viewData) { proposalPlan = JSON.parse(JSON.stringify(viewData.weeklyPlan||[])); renderPlanEditor(); }
+});
+document.getElementById('cancel-prop-btn').addEventListener('click', function(){
+  document.getElementById('proposal-modal').classList.remove('open');
+});
+
+document.getElementById('submit-prop-btn').addEventListener('click', function(){
+  var msg = document.getElementById('prop-msg').value.trim();
+  if(!msg){ alert('Escreva uma mensagem para o atleta.'); return; }
+
+  // validate plan has at least some exercises
+  var hasExs = proposalPlan.some(function(w){ return !w.rest && w.exs && w.exs.some(function(e){ return e.n.trim(); }); });
+  if(!hasExs){ alert('Adicione pelo menos um exercício ao plano.'); return; }
+
+  // clean up plan
+  var cleanPlan = proposalPlan.map(function(w){
+    if(w.rest) return {rest:true};
+    return {
+      name: w.name||'',
+      color: w.color||'#1a7a4a',
+      cl: w.cl||'#e8f5ee',
+      exs: (w.exs||[]).filter(function(e){ return e.n.trim(); }).map(function(e){ return {n:e.n.trim(),s:e.s||'3x12',w:parseFloat(e.w)||0}; })
+    };
+  });
+
+  var btn = document.getElementById('submit-prop-btn');
+  btn.textContent = 'Enviando...'; btn.disabled = true;
+
+  fbDb.collection('proposals').add({
+    token: token,
+    uid: viewData.uid,
+    type: 'personal',
+    status: 'pending',
+    message: msg,
+    weeklyPlan: cleanPlan,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    document.getElementById('proposal-modal').classList.remove('open');
+    // show success
+    var mv = document.getElementById('main-view');
+    mv.innerHTML = '<div class="success-box">' +
+      '<div style="font-size:56px;margin-bottom:16px">✅</div>' +
+      '<div style="font-size:20px;font-weight:700;margin-bottom:8px">Proposta enviada!</div>' +
+      '<div style="font-size:14px;color:var(--muted)">'+viewData.playerName+' receberá uma notificação para aprovar o novo plano.</div>' +
+      '</div>';
+  }).catch(function(e){
+    btn.textContent = 'Enviar proposta ↗'; btn.disabled = false;
+    alert('Erro ao enviar. Tente novamente.');
+  });
+});
+
+// init
+if(!token){ showErr(); }
+else {
+  fbAuth.signInAnonymously().then(function(){
+    return fbDb.collection('specialistViews').doc(token).get();
+  }).then(function(doc){
+    if(!doc.exists || !doc.data().active){ showErr(); return; }
+    showMain(doc.data());
+  }).catch(function(){ showErr(); });
+}
+</script>
+</body>
+</html>

@@ -2192,10 +2192,16 @@ function renderTreinosContent(){
   h += '<div class="section">';
   var updatedBy = pdOverride[curP]&&pdOverride[curP].lastUpdatedBy;
   var updatedAt = pdOverride[curP]&&pdOverride[curP].lastUpdatedAt;
+  // estimate duration: sets × (45s exec + 60s rest) + 1min transition + 30min cardio
+  var estMins = 30;
+  exs.forEach(function(ex){ var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; estMins+=Math.round(ns*1.75)+1; });
+  var estH=Math.floor(estMins/60), estM=estMins%60;
+  var estStr = estH>0 ? estH+'h'+(estM>0?estM+'min':'') : estM+'min';
   h += '<div class="block-hdr" style="background:'+w.color+'">';
   h += '<div class="block-type">💪 Musculacao'+(updatedBy?' · Atualizado por '+updatedBy+(updatedAt?' em '+updatedAt:''):'')+'</div>';
   h += '<div class="block-title">'+w.name+'</div>';
   h += '<div class="block-meta"><div><div class="bmv">'+exs.length+' exercicios</div><div class="bml">Hoje</div></div>';
+  h += '<div><div class="bmv">~'+estStr+'</div><div class="bml">Estimado</div></div>';
   h += '<div><div class="bmv">'+pctMus+'%</div><div class="bml">Feito</div></div></div></div>';
   h += '<div class="ex-block">';
   exs.forEach(function(ex,i){

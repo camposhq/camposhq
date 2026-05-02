@@ -178,9 +178,24 @@ var fbDb = firebase.firestore();
 var provider = new firebase.auth.GoogleAuthProvider();
 
 var DAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+var CARDIO_OPTS = [
+  {id:'1230',icon:'🏃',label:'12/3/30'},
+  {id:'hiit',icon:'💨',label:'HIIT'},
+  {id:'bike',icon:'🚴',label:'Bike'},
+  {id:'corrida',icon:'🏃',label:'Corrida'},
+  {id:'natacao',icon:'🏊',label:'Natação'},
+  {id:'corda',icon:'⛹️',label:'Corda'},
+  {id:'onda',icon:'🌊',label:'Onda'},
+  {id:'walk',icon:'🚶',label:'Caminhada'},
+  {id:'trilha',icon:'🥾',label:'Trilha'},
+  {id:'futvoley',icon:'⚽',label:'Futvoley'},
+  {id:'beach',icon:'🎾',label:'Beach Tennis'},
+  {id:'voley',icon:'🏐',label:'Voley de Areia'}
+];
 var token = new URLSearchParams(window.location.search).get('token');
 var viewData = null;
 var proposalPlan = null;
+var proposalCardio = {}; // dayIndex → cardio id
 var authMode = 'login';
 
 function switchAuthTab(mode){
@@ -329,6 +344,9 @@ function showMain(data){
     else h+='<span style="font-size:18px;color:var(--muted)" id="arr-'+i+'">∨</span>';
     h+='</div>';
     if(!w.rest&&w.exs){
+      var curCardioKey = '0-'+i;
+      var curCardioId = data.cardioSel&&data.cardioSel[curCardioKey];
+      var curCardioOpt = curCardioId ? CARDIO_OPTS.find(function(c){return c.id===curCardioId;}) : null;
       h+='<div class="day-body" id="day-body-'+i+'" style="display:none">';
       w.exs.forEach(function(ex,ei){
         var wval=weights['0-'+i+'-'+ei]!==undefined?weights['0-'+i+'-'+ei]:ex.w;
@@ -339,6 +357,11 @@ function showMain(data){
         h+='<div class="ex-weight">'+(wval>0?wval+'kg':'—')+'</div>';
         h+='</div>';
       });
+      // cardio atual
+      h+='<div style="padding:10px 0 4px;border-top:1px solid var(--border);margin-top:4px">';
+      h+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🏃 Cardio atual</div>';
+      h+='<div style="font-size:13px;color:'+(curCardioOpt?'var(--green)':'var(--muted)')+'">'+(curCardioOpt?curCardioOpt.icon+' '+curCardioOpt.label:'Nenhum selecionado')+'</div>';
+      h+='</div>';
       h+='</div>';
     }
     h+='</div>';
@@ -361,6 +384,7 @@ function showMain(data){
 
 function openProposal(){
   proposalPlan=JSON.parse(JSON.stringify(viewData.weeklyPlan||[]));
+  proposalCardio = JSON.parse(JSON.stringify(viewData.cardioSel||{}));
   renderPlanEditor();
   document.getElementById('proposal-modal').classList.add('open');
 }
@@ -384,6 +408,17 @@ function renderPlanEditor(){
         h+='</div>';
       });
       h+='<button class="add-ex-btn" data-addex="'+i+'">+ Exercício</button>';
+      // cardio picker
+      var selCardio = proposalCardio['0-'+i]||null;
+      h+='<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">';
+      h+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🏃 Cardio</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      CARDIO_OPTS.forEach(function(co){
+        var isSel = selCardio===co.id;
+        h+='<button data-cardio="'+i+'" data-cid="'+co.id+'" style="padding:5px 10px;border-radius:99px;border:1.5px solid '+(isSel?'var(--green)':'var(--border)')+';background:'+(isSel?'var(--green)':'var(--surface)')+';color:'+(isSel?'#fff':'var(--muted)')+';font-size:12px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif">'+co.icon+' '+co.label+'</button>';
+      });
+      h+='<button data-cardio="'+i+'" data-cid="" style="padding:5px 10px;border-radius:99px;border:1.5px solid '+(selCardio===null||selCardio===''?'var(--coral)':'var(--border)')+';background:'+(selCardio===null||selCardio===''?'var(--coral)':'var(--surface)')+';color:'+(selCardio===null||selCardio===''?'#fff':'var(--muted)')+';font-size:12px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif">✕ Nenhum</button>';
+      h+='</div></div>';
     }
     h+='</div>';
   });
@@ -411,6 +446,13 @@ function renderPlanEditor(){
   pe.querySelectorAll('[data-addex]').forEach(function(btn){
     btn.addEventListener('click',function(){ var di=parseInt(this.dataset.addex); if(!proposalPlan[di].exs) proposalPlan[di].exs=[]; proposalPlan[di].exs.push({n:'',s:'3x12',w:0}); renderPlanEditor(); });
   });
+  pe.querySelectorAll('[data-cardio]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var di=parseInt(this.dataset.cardio); var cid=this.dataset.cid;
+      proposalCardio['0-'+di] = cid||null;
+      renderPlanEditor();
+    });
+  });
 }
 
 document.getElementById('copy-current-btn').addEventListener('click',function(){ if(viewData){ proposalPlan=JSON.parse(JSON.stringify(viewData.weeklyPlan||[])); renderPlanEditor(); } });
@@ -435,6 +477,7 @@ document.getElementById('submit-prop-btn').addEventListener('click',function(){
     status:'pending',
     message:msg,
     weeklyPlan:cleanPlan,
+    cardioSel:proposalCardio,
     specialistEmail:user?user.email:'',
     specialistName:user?(user.displayName||user.email):'',
     createdAt:firebase.firestore.FieldValue.serverTimestamp()

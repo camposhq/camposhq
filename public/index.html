@@ -5383,6 +5383,7 @@ function syncSpecialistView(emailOverride){
     playerName: p.name||'Atleta',
     weeklyPlan: p.weekly||[],
     exWeights: exWeights||{},
+    cardioSel: cardioSel||{},
     history: (historyData[curP]||[]).slice(-28),
     allowedEmail: email,
     active: true,
@@ -5428,11 +5429,14 @@ function openProposalReview(){
   h += '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">'+new Date(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})+'</div>';
   h += '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.5">'+p.message+'</div>';
   h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Novo plano proposto</div>';
+  var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  var CARDIO_LABELS={'1230':'12/3/30','hiit':'HIIT','bike':'Bike','corrida':'Corrida','natacao':'Natação','corda':'Corda','onda':'Onda','walk':'Caminhada','trilha':'Trilha','futvoley':'Futvoley','beach':'Beach Tennis','voley':'Voley de Areia'};
   (p.weeklyPlan||[]).forEach(function(w,i){
-    var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
     if(w.rest){ h+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+DAYS2[i]+': Descanso</div>'; return; }
     h+='<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:600">'+DAYS2[i]+' · '+(w.name||'')+'</div>';
     (w.exs||[]).forEach(function(ex){ h+='<div style="font-size:11px;color:var(--muted);padding-left:8px">· '+ex.n+' '+ex.s+(ex.w>0?' @ '+ex.w+'kg':'')+'</div>'; });
+    var cKey = curP+'-'+i; var cId = p.cardioSel&&p.cardioSel[cKey];
+    if(cId) h+='<div style="font-size:11px;color:var(--green);padding-left:8px;margin-top:2px">🏃 Cardio: '+(CARDIO_LABELS[cId]||cId)+'</div>';
     h+='</div>';
   });
   document.getElementById('pro-prop-content').innerHTML = h;
@@ -5448,6 +5452,8 @@ function approveProposal(){
   if(!pdOverride[curP]) pdOverride[curP]={};
   pdOverride[curP].weekly = p.weeklyPlan;
   PD[curP].weekly = p.weeklyPlan;
+  // apply proposed cardio selections if present
+  if(p.cardioSel) Object.assign(cardioSel, p.cardioSel);
   // mark as approved
   fbDb.collection('proposals').doc(p.id).update({status:'approved', reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
   pendingProposal = null;

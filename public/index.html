@@ -5529,10 +5529,11 @@ function doApproveProposal(msg){
   if(!pendingProposal||!fbDb) return;
   var p = pendingProposal;
   var pName = p.specialistName || p.specialistEmail || 'Personal';
+  var nowDate = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   if(!pdOverride[curP]) pdOverride[curP]={};
   pdOverride[curP].weekly = p.weeklyPlan;
   pdOverride[curP].lastUpdatedBy = pName;
-  pdOverride[curP].lastUpdatedAt = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  pdOverride[curP].lastUpdatedAt = nowDate;
   PD[curP].weekly = p.weeklyPlan;
   if(p.cardioSel) Object.assign(cardioSel, p.cardioSel);
   fbDb.collection('proposals').doc(p.id).update({
@@ -5540,6 +5541,19 @@ function doApproveProposal(msg){
     athleteMessage: msg||'',
     reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+  // write response into specialistViews so personal trainer can read it
+  if(proToken && fbDb){
+    fbDb.collection('specialistViews').doc(proToken).set({
+      athleteResponse: {
+        status: 'approved',
+        message: msg||'',
+        date: nowDate,
+        athleteName: PD[curP].name||''
+      },
+      weeklyPlan: p.weeklyPlan,
+      cardioSel: cardioSel
+    }, {merge:true}).catch(function(){});
+  }
   pendingProposal = null;
   save();
   syncSpecialistView();
@@ -5551,11 +5565,23 @@ function doApproveProposal(msg){
 
 function doRejectProposal(msg){
   if(!pendingProposal||!fbDb) return;
+  var nowDate = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   fbDb.collection('proposals').doc(pendingProposal.id).update({
     status:'rejected',
     athleteMessage: msg||'',
     reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+  // write rejection into specialistViews so personal trainer can read it
+  if(proToken && fbDb){
+    fbDb.collection('specialistViews').doc(proToken).set({
+      athleteResponse: {
+        status: 'rejected',
+        message: msg||'',
+        date: nowDate,
+        athleteName: PD[curP].name||''
+      }
+    }, {merge:true}).catch(function(){});
+  }
   pendingProposal = null;
   closeProposalModal();
   showToast('Proposta rejeitada.');

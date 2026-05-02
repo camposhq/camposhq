@@ -298,24 +298,8 @@ function loadData(user){
     var loggedEmail = (user.email||'').toLowerCase().trim();
     if(allowed && allowed !== loggedEmail){ showDenied(user.email||''); return; }
     viewData = data;
-    // load latest proposal — query by token only to avoid needing composite index
-    // then filter client-side by email and pick the most recent
-    fbDb.collection('proposals')
-      .where('token','==',token)
-      .get()
-      .then(function(snap){
-        var myEmail = (user.email||'').toLowerCase();
-        var mine = snap.docs
-          .map(function(d){ return d.data(); })
-          .filter(function(d){ return (d.specialistEmail||'').toLowerCase()===myEmail; })
-          .sort(function(a,b){
-            var ta=a.createdAt&&a.createdAt.seconds?a.createdAt.seconds:0;
-            var tb=b.createdAt&&b.createdAt.seconds?b.createdAt.seconds:0;
-            return tb-ta;
-          });
-        viewData._lastProposal = mine.length>0 ? mine[0] : null;
-        showMain(viewData);
-      }).catch(function(){ showMain(viewData); });
+    // athleteResponse is stored directly in specialistViews — no extra query needed
+    showMain(viewData);
   }).catch(function(e){
     document.getElementById('loading').style.display='none';
     showDenied(user.email||'');
@@ -348,23 +332,21 @@ function showMain(data){
 
   var h='';
 
-  // last proposal status banner
-  var lp = data._lastProposal;
-  if(lp){
-    var lpDate = lp.createdAt&&lp.createdAt.seconds ? new Date(lp.createdAt.seconds*1000).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '';
-    if(lp.status==='approved'){
-      h+='<div style="background:#0f5c35;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
-      h+='<div style="font-size:13px;font-weight:700;color:#4ade80;margin-bottom:4px">✅ Proposta aceita em '+lpDate+'</div>';
-      if(lp.athleteMessage) h+='<div style="font-size:13px;color:rgba(255,255,255,.85);font-style:italic">"'+lp.athleteMessage+'"</div>';
+  // athlete response — stored in specialistViews.athleteResponse
+  var ar = data.athleteResponse;
+  if(ar && ar.status){
+    var arName = ar.athleteName || 'Atleta';
+    if(ar.status==='approved'){
+      h+='<div style="background:#0f5c35;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:12px">';
+      h+='<div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:6px">✅ Treino aceito por '+arName+(ar.date?' · '+ar.date:'')+'</div>';
+      if(ar.message) h+='<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px 12px;font-size:13px;color:rgba(255,255,255,.9);font-style:italic">"'+ar.message+'"</div>';
+      else h+='<div style="font-size:12px;color:rgba(255,255,255,.6)">Sem mensagem adicional</div>';
       h+='</div>';
-    } else if(lp.status==='rejected'){
-      h+='<div style="background:#3d1515;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
-      h+='<div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px">❌ Proposta rejeitada em '+lpDate+'</div>';
-      if(lp.athleteMessage) h+='<div style="font-size:13px;color:rgba(255,255,255,.85);font-style:italic">"'+lp.athleteMessage+'"</div>';
-      h+='</div>';
-    } else if(lp.status==='pending'){
-      h+='<div style="background:var(--card);border:1.5px solid var(--amber);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
-      h+='<div style="font-size:13px;font-weight:700;color:var(--amber)">⏳ Proposta enviada em '+lpDate+' — aguardando resposta</div>';
+    } else if(ar.status==='rejected'){
+      h+='<div style="background:#3d1515;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:12px">';
+      h+='<div style="font-size:14px;font-weight:700;color:#f87171;margin-bottom:6px">❌ Proposta rejeitada por '+arName+(ar.date?' · '+ar.date:'')+'</div>';
+      if(ar.message) h+='<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px 12px;font-size:13px;color:rgba(255,255,255,.9);font-style:italic">"'+ar.message+'"</div>';
+      else h+='<div style="font-size:12px;color:rgba(255,255,255,.6)">Sem mensagem adicional</div>';
       h+='</div>';
     }
   }
@@ -550,29 +532,16 @@ document.getElementById('submit-prop-btn').addEventListener('click',function(){
     fbDb.collection('proposals').doc(docRef.id).onSnapshot(function(snap){
       if(!snap.exists) return;
       var d = snap.data();
-      if(d.status==='approved'){
-        var replyBox = d.athleteMessage
-          ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin:12px 0;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">💬 Mensagem de '+(viewData.playerName||'atleta')+'</div>"'+d.athleteMessage+'"</div>' : '';
-        // reload updated plan from specialistViews
+      if(d.status==='approved'||d.status==='rejected'){
+        // reload specialistViews which now has athleteResponse + updated plan
         fbDb.collection('specialistViews').doc(token).get().then(function(svDoc){
           if(svDoc.exists){
-            viewData = Object.assign({}, svDoc.data(), {_lastProposal: d});
+            viewData = svDoc.data();
+            showMain(viewData);
+          } else {
+            location.reload();
           }
-          mv.innerHTML =
-            '<div style="background:#0f5c35;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px">' +
-              '<div style="font-size:15px;font-weight:700;color:#4ade80;margin-bottom:4px">✅ Plano aprovado!</div>' +
-              '<div style="font-size:13px;color:rgba(255,255,255,.8)">'+(viewData.playerName||'O atleta')+' aceitou o novo plano.</div>' +
-              replyBox +
-            '</div>';
-          // show updated plan below the message
-          if(svDoc.exists) showMain(viewData);
-        }).catch(function(){
-          mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">✅</div><div style="font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px">Plano aprovado!</div>'+replyBox+'</div>';
-        });
-      } else if(d.status==='rejected'){
-        var replyBox2 = d.athleteMessage
-          ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">💬 Mensagem de '+(viewData.playerName||'atleta')+'</div>"'+d.athleteMessage+'"</div>' : '';
-        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">❌</div><div style="font-size:20px;font-weight:700;color:var(--coral);margin-bottom:8px">Proposta rejeitada</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' não aceitou desta vez.</div>'+replyBox2+'<div style="margin-top:20px"><button class="btn-full" onclick="location.reload()">Ver plano atual</button></div></div>';
+        }).catch(function(){ location.reload(); });
       }
     });
   }).catch(function(){ btn.textContent='Enviar proposta ↗'; btn.disabled=false; alert('Erro ao enviar. Tente novamente.'); });

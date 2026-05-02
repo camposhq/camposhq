@@ -5866,7 +5866,18 @@ function loadUserData(uid, callback){
             expandedExam = s.expandedExam||{};
             profileComplete = s.profileComplete||false;
             if(s.pdOverride){
+              // preserve local-only fields that may not be in older Firestore snapshots
+              var localPdOverride = pdOverride;
               pdOverride = s.pdOverride;
+              Object.keys(localPdOverride).forEach(function(idx){
+                var local = localPdOverride[idx]||{};
+                if(!pdOverride[idx]) pdOverride[idx]={};
+                var cloud = pdOverride[idx];
+                if(!cloud.proToken && local.proToken) cloud.proToken = local.proToken;
+                if(!cloud.proEmail && local.proEmail) cloud.proEmail = local.proEmail;
+                if(!cloud.lastUpdatedBy && local.lastUpdatedBy) cloud.lastUpdatedBy = local.lastUpdatedBy;
+                if(!cloud.lastUpdatedAt && local.lastUpdatedAt) cloud.lastUpdatedAt = local.lastUpdatedAt;
+              });
               Object.keys(pdOverride).forEach(function(idx){
                 var i = parseInt(idx); if(!PD[i]) return;
                 var o = pdOverride[idx];

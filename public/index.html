@@ -1558,7 +1558,15 @@ document.querySelectorAll('.nav-item').forEach(function(btn){
 // ══════════════════════════════════════════════════════════════
 // PROFILES STRIP
 // ══════════════════════════════════════════════════════════════
+var ADMIN_EMAIL = 'walter@camposhq.com';
+function isAdmin(){ return !!(currentUser && currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL); }
+
 function renderProfiles(containerId){
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  // non-admin users only have their own profile — hide the strip
+  if(!isAdmin()){ el.style.display='none'; curP=0; return; }
+  el.style.display='';
   var h = '';
   PD.forEach(function(p,i){
     h += '<button class="profile-btn" data-pi="'+i+'">';
@@ -1568,8 +1576,6 @@ function renderProfiles(containerId){
     h += '</div>';
     h += '<span class="pname">'+p.name+'</span></button>';
   });
-  var el = document.getElementById(containerId);
-  if(!el) return;
   el.innerHTML = h;
   el.querySelectorAll('.profile-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -1938,11 +1944,23 @@ function renderHome(){
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise do dia</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
 
+  // Admin button — only for admin
+  if(isAdmin()){
+    h += '<div class="section"><a href="/admin.html" style="display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:14px 16px;text-decoration:none">';
+    h += '<span style="font-size:22px">🛡️</span>';
+    h += '<div><div style="font-size:14px;font-weight:600;color:var(--green)">Painel Admin</div>';
+    h += '<div style="font-size:12px;color:var(--muted)">Usuários, bloqueios e mensagens</div></div>';
+    h += '<span style="margin-left:auto;color:var(--muted)">›</span>';
+    h += '</a></div>';
+  }
+
   document.getElementById('home-content').innerHTML = h;
 
   // show proposal banner if pending
   if(pendingProposal) renderProposalBanner();
   else checkProposals();
+  // check admin messages
+  checkAdminMessages();
 
   var sb = document.getElementById('setup-banner');
   if(sb) sb.addEventListener('click', function(){
@@ -5620,6 +5638,38 @@ document.getElementById('pro-reply-confirm').addEventListener('click', confirmPr
 document.getElementById('pro-prop-back').addEventListener('click', function(e){ if(e.target===this) closeProposalModal(); });
 
 // ══════════════════════════════════════════════════════════════
+// ADMIN MESSAGES
+// ══════════════════════════════════════════════════════════════
+function checkAdminMessages(){
+  if(!fbDb||!currentUser) return;
+  var uid = currentUser.uid;
+  fbDb.collection('messages')
+    .where('toUid','in',[uid,'all'])
+    .where('read','==',false)
+    .limit(5)
+    .get()
+    .then(function(snap){
+      if(snap.empty) return;
+      snap.docs.forEach(function(doc){
+        var m = doc.data();
+        var el = document.getElementById('proposal-banner');
+        if(!el) return;
+        // show above any proposal banner
+        var msgDiv = document.createElement('div');
+        msgDiv.style.cssText='background:var(--card);border:1.5px solid var(--amber);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;cursor:pointer';
+        msgDiv.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:4px">📢 '+m.subject+'</div>'+
+          '<div style="font-size:12px;color:var(--muted)">'+m.body+'</div>';
+        msgDiv.addEventListener('click', function(){
+          // mark as read
+          fbDb.collection('messages').doc(doc.id).update({read:true}).catch(function(){});
+          msgDiv.remove();
+        });
+        el.parentNode.insertBefore(msgDiv, el);
+      });
+    }).catch(function(){});
+}
+
+// ══════════════════════════════════════════════════════════════
 // FIREBASE CONFIG
 // ══════════════════════════════════════════════════════════════
 var firebaseConfig = {
@@ -5651,14 +5701,35 @@ function initAuth(){
   fbAuth.onAuthStateChanged(function(user){
     if(user){
       currentUser = user;
-      loadUserData(user.uid, function(){
-        try{ if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); }); }catch(e){}
-        // restore pro token if exists
-        var stored = pdOverride[curP]&&pdOverride[curP].proToken;
-        if(stored){ proToken=stored; setTimeout(function(){ syncSpecialistView(); checkProposals(); },2000); }
-        hideSplash();
-        showScreen('home');
-      });
+      // check if user is blocked before loading
+      if(fbDb){
+        fbDb.collection('users').doc(user.uid).get().then(function(doc){
+          if(doc.exists && doc.data().blocked){
+            fbAuth.signOut();
+            hideSplash();
+            showBlockedScreen();
+            return;
+          }
+          // save user info for admin panel
+          fbDb.collection('users').doc(user.uid).set({
+            name: user.displayName || '',
+            email: user.email || '',
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          }, {merge:true}).catch(function(){});
+          loadAfterAuth(user);
+        }).catch(function(){ loadAfterAuth(user); });
+      } else { loadAfterAuth(user); }
+
+      function loadAfterAuth(user){
+        loadUserData(user.uid, function(){
+          try{ if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); }); }catch(e){}
+          if(!isAdmin()) curP = 0; // non-admin always on own profile
+          var stored = pdOverride[curP]&&pdOverride[curP].proToken;
+          if(stored){ proToken=stored; setTimeout(function(){ syncSpecialistView(); checkProposals(); },2000); }
+          hideSplash();
+          showScreen('home');
+        });
+      }
     } else {
       currentUser = null;
       hideSplash();
@@ -5670,6 +5741,15 @@ function initAuth(){
 function hideSplash(){
   var sp = document.getElementById('screen-splash');
   if(sp) sp.remove();
+}
+
+function showBlockedScreen(){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); s.style.display='none'; });
+  document.getElementById('bottom-nav').style.display='none';
+  var d = document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;z-index:200';
+  d.innerHTML='<div style="font-size:56px;margin-bottom:16px">🔒</div><div style="font-size:22px;font-weight:700;margin-bottom:8px;color:var(--text)">Conta suspensa</div><div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">Sua conta foi suspensa pelo administrador.<br>Entre em contato para mais informações.</div><button onclick="fbAuth.signOut()" style="background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Sair</button>';
+  document.body.appendChild(d);
 }
 
 function showLoginScreen(){

@@ -289,18 +289,17 @@ function loadData(user){
   document.getElementById('topbar-email').textContent=user.email||'';
   document.getElementById('logout-btn').style.display='block';
 
-  fbDb.collection('specialistViews').doc(token).get().then(function(doc){
+  var loggedEmail = (user.email||'').toLowerCase().trim();
+  // use onSnapshot for real-time updates — always fresh from server
+  fbDb.collection('specialistViews').doc(token).onSnapshot({includeMetadataChanges:false}, function(doc){
     document.getElementById('loading').style.display='none';
     if(!doc.exists||!doc.data().active){ showDenied(user.email||''); return; }
     var data = doc.data();
-    // verify email matches
     var allowed = (data.allowedEmail||'').toLowerCase().trim();
-    var loggedEmail = (user.email||'').toLowerCase().trim();
     if(allowed && allowed !== loggedEmail){ showDenied(user.email||''); return; }
     viewData = data;
-    // athleteResponse is stored directly in specialistViews — no extra query needed
     showMain(viewData);
-  }).catch(function(e){
+  }, function(e){
     document.getElementById('loading').style.display='none';
     showDenied(user.email||'');
   });

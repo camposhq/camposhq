@@ -5433,7 +5433,7 @@ function checkProposals(){
       } else {
         pendingProposal = null;
       }
-      // find last approved proposal for trainer name
+      // find last approved proposal for trainer name + sync to specialistViews
       var approved = docs.filter(function(d){ return d.type==='personal' && d.status==='approved'; });
       if(approved.length > 0){
         approved.sort(function(a,b){
@@ -5448,6 +5448,20 @@ function checkProposals(){
           pdOverride[curP].lastUpdatedAt = pDate;
           save();
           if(curScreen==='treinos') renderTreinosContent();
+        }
+        // retroactively write athleteResponse to specialistViews so personal trainer sees it
+        if(proToken && fbDb){
+          fbDb.collection('specialistViews').doc(proToken).get().then(function(sv){
+            if(sv.exists && sv.data().athleteResponse) return; // already set
+            fbDb.collection('specialistViews').doc(proToken).set({
+              athleteResponse: {
+                status: 'approved',
+                message: last.athleteMessage||'',
+                date: pDate,
+                athleteName: PD[curP].name||''
+              }
+            }, {merge:true}).catch(function(){});
+          }).catch(function(){});
         }
       }
     }).catch(function(){});

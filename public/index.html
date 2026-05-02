@@ -5542,6 +5542,8 @@ function confirmProposalAction(){
 function doApproveProposal(msg){
   if(!pendingProposal||!fbDb) return;
   var p = pendingProposal;
+  // use token from the proposal itself — doesn't depend on proToken global being set
+  var svToken = p.token || proToken;
   var pName = p.specialistName || p.specialistEmail || 'Personal';
   var nowDate = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   if(!pdOverride[curP]) pdOverride[curP]={};
@@ -5555,9 +5557,9 @@ function doApproveProposal(msg){
     athleteMessage: msg||'',
     reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-  // write response into specialistViews so personal trainer can read it
-  if(proToken && fbDb){
-    fbDb.collection('specialistViews').doc(proToken).set({
+  // write response into specialistViews using token from proposal
+  if(svToken && fbDb){
+    fbDb.collection('specialistViews').doc(svToken).set({
       athleteResponse: {
         status: 'approved',
         message: msg||'',
@@ -5565,10 +5567,11 @@ function doApproveProposal(msg){
         athleteName: PD[curP].name||''
       },
       weeklyPlan: p.weeklyPlan,
-      cardioSel: cardioSel
-    }, {merge:true}).catch(function(){});
+      cardioSel: Object.assign({}, cardioSel)
+    }, {merge:true}).catch(function(e){ console.log('specialistViews update error:', e); });
   }
   pendingProposal = null;
+  if(svToken) proToken = svToken; // ensure proToken is set for syncSpecialistView
   save();
   syncSpecialistView();
   closeProposalModal();
@@ -5579,15 +5582,15 @@ function doApproveProposal(msg){
 
 function doRejectProposal(msg){
   if(!pendingProposal||!fbDb) return;
+  var svToken = pendingProposal.token || proToken;
   var nowDate = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   fbDb.collection('proposals').doc(pendingProposal.id).update({
     status:'rejected',
     athleteMessage: msg||'',
     reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-  // write rejection into specialistViews so personal trainer can read it
-  if(proToken && fbDb){
-    fbDb.collection('specialistViews').doc(proToken).set({
+  if(svToken && fbDb){
+    fbDb.collection('specialistViews').doc(svToken).set({
       athleteResponse: {
         status: 'rejected',
         message: msg||'',

@@ -5387,7 +5387,7 @@ function syncSpecialistView(emailOverride){
   if(!fbDb||!currentUser||!proToken) return;
   var p = PD[curP];
   var email = emailOverride || (pdOverride[curP]&&pdOverride[curP].proEmail) || '';
-  fbDb.collection('specialistViews').doc(proToken).set({
+  var data = {
     uid: currentUser.uid,
     type: 'personal',
     profileIdx: curP,
@@ -5396,10 +5396,13 @@ function syncSpecialistView(emailOverride){
     exWeights: exWeights||{},
     cardioSel: cardioSel||{},
     history: (historyData[curP]||[]).slice(-28),
-    allowedEmail: email,
     active: true,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(function(e){ console.log('syncSpecialistView error',e); });
+  };
+  // only set allowedEmail when we have a valid value — never overwrite with empty
+  if(email) data.allowedEmail = email;
+  fbDb.collection('specialistViews').doc(proToken).set(data, {merge:true})
+    .catch(function(e){ console.log('syncSpecialistView error',e); });
 }
 
 function checkProposals(){

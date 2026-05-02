@@ -690,12 +690,23 @@ input[type=file]{display:none}
 
 <!-- Proposal Review Modal -->
 <div class="wmodal-back" id="pro-prop-back" style="z-index:70">
-  <div class="wmodal" style="width:340px;text-align:left;max-height:80vh;overflow-y:auto">
-    <div class="wmodal-title" style="margin-bottom:4px">💪 Proposta do Personal</div>
-    <div id="pro-prop-content"></div>
-    <div class="wmodal-btns" style="margin-top:14px">
-      <button class="wmodal-cancel" id="pro-prop-reject" style="color:var(--coral)">Rejeitar</button>
-      <button class="wmodal-save" id="pro-prop-approve">✓ Aprovar</button>
+  <div class="wmodal" style="width:340px;text-align:left;max-height:85vh;overflow-y:auto">
+    <div id="pro-prop-view">
+      <div class="wmodal-title" style="margin-bottom:4px">💪 Proposta do Personal</div>
+      <div id="pro-prop-content"></div>
+      <div class="wmodal-btns" style="margin-top:14px">
+        <button class="wmodal-cancel" id="pro-prop-reject" style="color:var(--coral)">Rejeitar</button>
+        <button class="wmodal-save" id="pro-prop-approve">✓ Aprovar</button>
+      </div>
+    </div>
+    <div id="pro-prop-reply" style="display:none">
+      <div id="pro-prop-reply-header" style="margin-bottom:12px"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Sua mensagem para o personal</div>
+      <textarea id="pro-reply-msg" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px;resize:none;outline:none;min-height:90px;border-radius:10px" placeholder="Opcional — ex: Gostei das mudanças, vamos testar esta semana..."></textarea>
+      <div class="wmodal-btns" style="margin-top:12px">
+        <button class="wmodal-cancel" id="pro-reply-back">Voltar</button>
+        <button class="wmodal-save" id="pro-reply-confirm">Confirmar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5443,19 +5454,50 @@ function openProposalReview(){
   document.getElementById('pro-prop-back').classList.add('open');
 }
 
-function closeProposalModal(){ document.getElementById('pro-prop-back').classList.remove('open'); }
+function closeProposalModal(){
+  document.getElementById('pro-prop-back').classList.remove('open');
+  document.getElementById('pro-prop-view').style.display='block';
+  document.getElementById('pro-prop-reply').style.display='none';
+  pendingReplyAction=null;
+}
 
-function approveProposal(){
+var pendingReplyAction = null; // 'approve' or 'reject'
+
+function showReplyScreen(action){
+  pendingReplyAction = action;
+  document.getElementById('pro-prop-view').style.display='none';
+  document.getElementById('pro-reply-msg').value='';
+  var hdr = document.getElementById('pro-prop-reply-header');
+  if(action==='approve'){
+    hdr.innerHTML='<div style="font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px">✓ Aprovar proposta</div><div style="font-size:12px;color:var(--muted)">Deixe uma mensagem para o personal (opcional)</div>';
+    document.getElementById('pro-reply-confirm').style.background='var(--green)';
+    document.getElementById('pro-reply-confirm').textContent='Aprovar e enviar';
+  } else {
+    hdr.innerHTML='<div style="font-size:16px;font-weight:700;color:var(--coral);margin-bottom:4px">✕ Rejeitar proposta</div><div style="font-size:12px;color:var(--muted)">Explique o motivo para o personal (opcional)</div>';
+    document.getElementById('pro-reply-confirm').style.background='var(--coral)';
+    document.getElementById('pro-reply-confirm').textContent='Rejeitar e enviar';
+  }
+  document.getElementById('pro-prop-reply').style.display='block';
+}
+
+function confirmProposalAction(){
+  var msg = document.getElementById('pro-reply-msg').value.trim();
+  if(pendingReplyAction==='approve') doApproveProposal(msg);
+  else doRejectProposal(msg);
+}
+
+function doApproveProposal(msg){
   if(!pendingProposal||!fbDb) return;
   var p = pendingProposal;
-  // apply new weekly plan
   if(!pdOverride[curP]) pdOverride[curP]={};
   pdOverride[curP].weekly = p.weeklyPlan;
   PD[curP].weekly = p.weeklyPlan;
-  // apply proposed cardio selections if present
   if(p.cardioSel) Object.assign(cardioSel, p.cardioSel);
-  // mark as approved
-  fbDb.collection('proposals').doc(p.id).update({status:'approved', reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  fbDb.collection('proposals').doc(p.id).update({
+    status:'approved',
+    athleteMessage: msg||'',
+    reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
   pendingProposal = null;
   save();
   syncSpecialistView();
@@ -5464,9 +5506,13 @@ function approveProposal(){
   if(curScreen==='treinos') renderTreinos();
 }
 
-function rejectProposal(){
+function doRejectProposal(msg){
   if(!pendingProposal||!fbDb) return;
-  fbDb.collection('proposals').doc(pendingProposal.id).update({status:'rejected', reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  fbDb.collection('proposals').doc(pendingProposal.id).update({
+    status:'rejected',
+    athleteMessage: msg||'',
+    reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
   pendingProposal = null;
   closeProposalModal();
   showToast('Proposta rejeitada.');
@@ -5478,8 +5524,13 @@ document.getElementById('pro-share-close').addEventListener('click', function(){
 document.getElementById('pro-share-action').addEventListener('click', generateProLink);
 document.getElementById('pro-revoke-btn').addEventListener('click', revokeProAccess);
 document.getElementById('pro-share-back').addEventListener('click', function(e){ if(e.target===this) document.getElementById('pro-share-back').classList.remove('open'); });
-document.getElementById('pro-prop-approve').addEventListener('click', approveProposal);
-document.getElementById('pro-prop-reject').addEventListener('click', rejectProposal);
+document.getElementById('pro-prop-approve').addEventListener('click', function(){ showReplyScreen('approve'); });
+document.getElementById('pro-prop-reject').addEventListener('click', function(){ showReplyScreen('reject'); });
+document.getElementById('pro-reply-back').addEventListener('click', function(){
+  document.getElementById('pro-prop-reply').style.display='none';
+  document.getElementById('pro-prop-view').style.display='block';
+});
+document.getElementById('pro-reply-confirm').addEventListener('click', confirmProposalAction);
 document.getElementById('pro-prop-back').addEventListener('click', function(e){ if(e.target===this) closeProposalModal(); });
 
 // ══════════════════════════════════════════════════════════════

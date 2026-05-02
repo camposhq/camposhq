@@ -500,9 +500,22 @@ document.getElementById('submit-prop-btn').addEventListener('click',function(){
     specialistEmail:user?user.email:'',
     specialistName:user?(user.displayName||user.email):'',
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  }).then(function(){
+  }).then(function(docRef){
     document.getElementById('proposal-modal').classList.remove('open');
-    document.getElementById('main-view').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:56px;margin-bottom:16px">✅</div><div style="font-size:20px;font-weight:700;margin-bottom:8px">Proposta enviada!</div><div style="font-size:14px;color:var(--muted)">'+viewData.playerName+' receberá notificação para aprovar.</div></div>';
+    var mv = document.getElementById('main-view');
+    mv.innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:56px;margin-bottom:16px">⏳</div><div style="font-size:20px;font-weight:700;margin-bottom:8px">Proposta enviada!</div><div style="font-size:14px;color:var(--muted)">Aguardando '+(viewData.playerName||'o atleta')+' revisar...</div></div>';
+    // listen for athlete response
+    fbDb.collection('proposals').doc(docRef.id).onSnapshot(function(snap){
+      if(!snap.exists) return;
+      var d = snap.data();
+      if(d.status==='approved'){
+        var replyMsg = d.athleteMessage ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mensagem do atleta</div>'+d.athleteMessage+'</div>' : '';
+        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">✅</div><div style="font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px">Plano aprovado!</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' aceitou o novo plano.</div>'+replyMsg+'</div>';
+      } else if(d.status==='rejected'){
+        var replyMsg2 = d.athleteMessage ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mensagem do atleta</div>'+d.athleteMessage+'</div>' : '';
+        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">❌</div><div style="font-size:20px;font-weight:700;color:var(--coral);margin-bottom:8px">Proposta rejeitada</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' não aceitou desta vez.</div>'+replyMsg2+'</div>';
+      }
+    });
   }).catch(function(){ btn.textContent='Enviar proposta ↗'; btn.disabled=false; alert('Erro ao enviar. Tente novamente.'); });
 });
 </script>

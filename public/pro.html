@@ -298,13 +298,22 @@ function loadData(user){
     var loggedEmail = (user.email||'').toLowerCase().trim();
     if(allowed && allowed !== loggedEmail){ showDenied(user.email||''); return; }
     viewData = data;
-    // load latest proposal status before showing main view
+    // load latest proposal — query by token only to avoid needing composite index
+    // then filter client-side by email and pick the most recent
     fbDb.collection('proposals')
       .where('token','==',token)
-      .where('specialistEmail','==',user.email||'')
-      .orderBy('createdAt','desc').limit(1).get()
+      .get()
       .then(function(snap){
-        viewData._lastProposal = snap.empty ? null : snap.docs[0].data();
+        var myEmail = (user.email||'').toLowerCase();
+        var mine = snap.docs
+          .map(function(d){ return d.data(); })
+          .filter(function(d){ return (d.specialistEmail||'').toLowerCase()===myEmail; })
+          .sort(function(a,b){
+            var ta=a.createdAt&&a.createdAt.seconds?a.createdAt.seconds:0;
+            var tb=b.createdAt&&b.createdAt.seconds?b.createdAt.seconds:0;
+            return tb-ta;
+          });
+        viewData._lastProposal = mine.length>0 ? mine[0] : null;
         showMain(viewData);
       }).catch(function(){ showMain(viewData); });
   }).catch(function(e){
@@ -542,11 +551,28 @@ document.getElementById('submit-prop-btn').addEventListener('click',function(){
       if(!snap.exists) return;
       var d = snap.data();
       if(d.status==='approved'){
-        var replyMsg = d.athleteMessage ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mensagem do atleta</div>'+d.athleteMessage+'</div>' : '';
-        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">✅</div><div style="font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px">Plano aprovado!</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' aceitou o novo plano.</div>'+replyMsg+'</div>';
+        var replyBox = d.athleteMessage
+          ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin:12px 0;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">💬 Mensagem de '+(viewData.playerName||'atleta')+'</div>"'+d.athleteMessage+'"</div>' : '';
+        // reload updated plan from specialistViews
+        fbDb.collection('specialistViews').doc(token).get().then(function(svDoc){
+          if(svDoc.exists){
+            viewData = Object.assign({}, svDoc.data(), {_lastProposal: d});
+          }
+          mv.innerHTML =
+            '<div style="background:#0f5c35;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px">' +
+              '<div style="font-size:15px;font-weight:700;color:#4ade80;margin-bottom:4px">✅ Plano aprovado!</div>' +
+              '<div style="font-size:13px;color:rgba(255,255,255,.8)">'+(viewData.playerName||'O atleta')+' aceitou o novo plano.</div>' +
+              replyBox +
+            '</div>';
+          // show updated plan below the message
+          if(svDoc.exists) showMain(viewData);
+        }).catch(function(){
+          mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">✅</div><div style="font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px">Plano aprovado!</div>'+replyBox+'</div>';
+        });
       } else if(d.status==='rejected'){
-        var replyMsg2 = d.athleteMessage ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mensagem do atleta</div>'+d.athleteMessage+'</div>' : '';
-        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">❌</div><div style="font-size:20px;font-weight:700;color:var(--coral);margin-bottom:8px">Proposta rejeitada</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' não aceitou desta vez.</div>'+replyMsg2+'</div>';
+        var replyBox2 = d.athleteMessage
+          ? '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--text);text-align:left"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">💬 Mensagem de '+(viewData.playerName||'atleta')+'</div>"'+d.athleteMessage+'"</div>' : '';
+        mv.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:56px;margin-bottom:16px">❌</div><div style="font-size:20px;font-weight:700;color:var(--coral);margin-bottom:8px">Proposta rejeitada</div><div style="font-size:14px;color:var(--muted)">'+(viewData.playerName||'O atleta')+' não aceitou desta vez.</div>'+replyBox2+'<div style="margin-top:20px"><button class="btn-full" onclick="location.reload()">Ver plano atual</button></div></div>';
       }
     });
   }).catch(function(){ btn.textContent='Enviar proposta ↗'; btn.disabled=false; alert('Erro ao enviar. Tente novamente.'); });

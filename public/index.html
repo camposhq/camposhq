@@ -5410,6 +5410,7 @@ function syncSpecialistView(emailOverride){
 function checkProposals(){
   if(!fbDb||!currentUser) return;
   var uid = currentUser.uid;
+  // check pending proposals
   fbDb.collection('proposals')
     .where('uid','==',uid)
     .where('type','==','personal')
@@ -5417,11 +5418,37 @@ function checkProposals(){
     .limit(1)
     .get()
     .then(function(snap){
-      if(snap.empty){ pendingProposal=null; return; }
-      var doc = snap.docs[0];
-      pendingProposal = Object.assign({id:doc.id}, doc.data());
-      renderProposalBanner();
+      if(!snap.empty){
+        var doc = snap.docs[0];
+        pendingProposal = Object.assign({id:doc.id}, doc.data());
+        renderProposalBanner();
+      } else {
+        pendingProposal = null;
+      }
     }).catch(function(){});
+  // also fetch last approved proposal to show trainer name retroactively
+  if(!(pdOverride[curP]&&pdOverride[curP].lastUpdatedBy)){
+    fbDb.collection('proposals')
+      .where('uid','==',uid)
+      .where('type','==','personal')
+      .where('status','==','approved')
+      .orderBy('reviewedAt','desc')
+      .limit(1)
+      .get()
+      .then(function(snap){
+        if(snap.empty) return;
+        var d = snap.docs[0].data();
+        var pName = d.specialistName || d.specialistEmail || '';
+        var pDate = d.reviewedAt&&d.reviewedAt.seconds ? new Date(d.reviewedAt.seconds*1000).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}) : '';
+        if(pName){
+          if(!pdOverride[curP]) pdOverride[curP]={};
+          pdOverride[curP].lastUpdatedBy = pName;
+          pdOverride[curP].lastUpdatedAt = pDate;
+          save();
+          if(curScreen==='treinos') renderTreinosContent();
+        }
+      }).catch(function(){});
+  }
 }
 
 function renderProposalBanner(){

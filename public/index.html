@@ -2198,8 +2198,9 @@ function renderTreinosContent(){
   var estH=Math.floor(estMins/60), estM=estMins%60;
   var estStr = estH>0 ? estH+'h'+(estM>0?estM+'min':'') : estM+'min';
   h += '<div class="block-hdr" style="background:'+w.color+'">';
-  h += '<div class="block-type">💪 Musculacao'+(updatedBy?' · Atualizado por '+updatedBy+(updatedAt?' em '+updatedAt:''):'')+'</div>';
+  h += '<div class="block-type">💪 Musculacao</div>';
   h += '<div class="block-title">'+w.name+'</div>';
+  if(updatedBy) h += '<div style="font-size:11px;opacity:.85;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px">✏️ Atualizado por '+updatedBy+(updatedAt?' · '+updatedAt:'')+'</span></div>';
   h += '<div class="block-meta"><div><div class="bmv">'+exs.length+' exercicios</div><div class="bml">Hoje</div></div>';
   h += '<div><div class="bmv">~'+estStr+'</div><div class="bml">Estimado</div></div>';
   h += '<div><div class="bmv">'+pctMus+'%</div><div class="bml">Feito</div></div></div></div>';

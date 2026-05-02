@@ -211,6 +211,7 @@ var token = new URLSearchParams(window.location.search).get('token');
 var viewData = null;
 var proposalPlan = null;
 var proposalCardio = {}; // dayIndex → cardio id
+var currentPidx = 0; // profile index of current athlete
 var authMode = 'login';
 
 function switchAuthTab(mode){
@@ -297,7 +298,15 @@ function loadData(user){
     var loggedEmail = (user.email||'').toLowerCase().trim();
     if(allowed && allowed !== loggedEmail){ showDenied(user.email||''); return; }
     viewData = data;
-    showMain(data);
+    // load latest proposal status before showing main view
+    fbDb.collection('proposals')
+      .where('token','==',token)
+      .where('specialistEmail','==',user.email||'')
+      .orderBy('createdAt','desc').limit(1).get()
+      .then(function(snap){
+        viewData._lastProposal = snap.empty ? null : snap.docs[0].data();
+        showMain(viewData);
+      }).catch(function(){ showMain(viewData); });
   }).catch(function(e){
     document.getElementById('loading').style.display='none';
     showDenied(user.email||'');
@@ -315,6 +324,8 @@ function showMain(data){
   var history = data.history||[];
   var weekly = data.weeklyPlan||[];
   var weights = data.exWeights||{};
+  var pidx = data.profileIdx!=null ? data.profileIdx : 0;
+  currentPidx = pidx; // store globally for use in proposal editor
   var now = new Date(); now.setHours(0,0,0,0);
   var days28=[];
   for(var i=27;i>=0;i--){ var d=new Date(now); d.setDate(d.getDate()-i); days28.push(d.toISOString().slice(0,10)); }
@@ -327,9 +338,31 @@ function showMain(data){
   var totalExs=weekly.filter(function(w){return !w.rest&&w.exs;}).reduce(function(s,w){return s+w.exs.length;},0);
 
   var h='';
+
+  // last proposal status banner
+  var lp = data._lastProposal;
+  if(lp){
+    var lpDate = lp.createdAt&&lp.createdAt.seconds ? new Date(lp.createdAt.seconds*1000).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '';
+    if(lp.status==='approved'){
+      h+='<div style="background:#0f5c35;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
+      h+='<div style="font-size:13px;font-weight:700;color:#4ade80;margin-bottom:4px">✅ Proposta aceita em '+lpDate+'</div>';
+      if(lp.athleteMessage) h+='<div style="font-size:13px;color:rgba(255,255,255,.85);font-style:italic">"'+lp.athleteMessage+'"</div>';
+      h+='</div>';
+    } else if(lp.status==='rejected'){
+      h+='<div style="background:#3d1515;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
+      h+='<div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px">❌ Proposta rejeitada em '+lpDate+'</div>';
+      if(lp.athleteMessage) h+='<div style="font-size:13px;color:rgba(255,255,255,.85);font-style:italic">"'+lp.athleteMessage+'"</div>';
+      h+='</div>';
+    } else if(lp.status==='pending'){
+      h+='<div style="background:var(--card);border:1.5px solid var(--amber);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">';
+      h+='<div style="font-size:13px;font-weight:700;color:var(--amber)">⏳ Proposta enviada em '+lpDate+' — aguardando resposta</div>';
+      h+='</div>';
+    }
+  }
+
   h+='<div class="card" style="background:linear-gradient(135deg,var(--green),var(--green-deep));border:none;margin-bottom:16px">';
   h+='<div style="font-size:24px;font-weight:700;margin-bottom:4px">'+(data.playerName||'Atleta')+'</div>';
-  h+='<div style="font-size:13px;opacity:.8">Atualizado '+new Date(data.updatedAt&&data.updatedAt.seconds?data.updatedAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR')+'</div>';
+  h+='<div style="font-size:13px;opacity:.8">Plano atualizado '+new Date(data.updatedAt&&data.updatedAt.seconds?data.updatedAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR')+'</div>';
   h+='</div>';
 
   h+='<div class="metrics-row">';
@@ -352,7 +385,7 @@ function showMain(data){
   h+='<div class="sec-label">Plano semanal atual</div>';
   weekly.forEach(function(w,i){
     h+='<div class="day-card">';
-    var curCardioKey2 = '0-'+i;
+    var curCardioKey2 = pidx+'-'+i;
     var curCardioId2 = data.cardioSel&&data.cardioSel[curCardioKey2];
     var dur = estimateDuration(w, curCardioId2);
     h+='<div class="day-hdr" data-day="'+i+'"><div><div class="day-name">'+DAYS[i]+(dur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+dur+'</span>':'')+'</div>';
@@ -362,12 +395,12 @@ function showMain(data){
     else h+='<span style="font-size:18px;color:var(--muted)" id="arr-'+i+'">∨</span>';
     h+='</div>';
     if(!w.rest&&w.exs){
-      var curCardioKey = '0-'+i;
+      var curCardioKey = pidx+'-'+i;
       var curCardioId = data.cardioSel&&data.cardioSel[curCardioKey];
       var curCardioOpt = curCardioId ? CARDIO_OPTS.find(function(c){return c.id===curCardioId;}) : null;
       h+='<div class="day-body" id="day-body-'+i+'" style="display:none">';
       w.exs.forEach(function(ex,ei){
-        var wval=weights['0-'+i+'-'+ei]!==undefined?weights['0-'+i+'-'+ei]:ex.w;
+        var wval=weights[pidx+'-'+i+'-'+ei]!==undefined?weights[pidx+'-'+i+'-'+ei]:ex.w;
         h+='<div class="ex-row">';
         h+='<div class="ex-num" style="background:'+(w.cl||'#e8f5ee')+';color:'+(w.color||'var(--green)')+'">'+(ei+1)+'</div>';
         h+='<div class="ex-name">'+ex.n+'</div>';
@@ -411,7 +444,7 @@ function renderPlanEditor(){
   var h='';
   proposalPlan.forEach(function(w,i){
     h+='<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px">';
-    var edDur = estimateDuration(w, proposalCardio['0-'+i]);
+    var edDur = estimateDuration(w, proposalCardio[currentPidx+'-'+i]);
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
     h+='<div><span style="font-size:13px;font-weight:600">'+DAYS[i]+'</span>'+(edDur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+edDur+'</span>':'')+'</div>';
     h+='<button class="toggle-rest'+(w.rest?' active':'')+'" data-di="'+i+'">'+(w.rest?'✓ Descanso':'Marcar descanso')+'</button>';
@@ -428,7 +461,7 @@ function renderPlanEditor(){
       });
       h+='<button class="add-ex-btn" data-addex="'+i+'">+ Exercício</button>';
       // cardio picker
-      var selCardio = proposalCardio['0-'+i]||null;
+      var selCardio = proposalCardio[currentPidx+'-'+i]||null;
       h+='<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">';
       h+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🏃 Cardio</div>';
       h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';

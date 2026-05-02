@@ -179,19 +179,38 @@ var provider = new firebase.auth.GoogleAuthProvider();
 
 var DAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 var CARDIO_OPTS = [
-  {id:'1230',icon:'🏃',label:'12/3/30'},
-  {id:'hiit',icon:'💨',label:'HIIT'},
-  {id:'bike',icon:'🚴',label:'Bike'},
-  {id:'corrida',icon:'🏃',label:'Corrida'},
-  {id:'natacao',icon:'🏊',label:'Natação'},
-  {id:'corda',icon:'⛹️',label:'Corda'},
-  {id:'onda',icon:'🌊',label:'Onda'},
-  {id:'walk',icon:'🚶',label:'Caminhada'},
-  {id:'trilha',icon:'🥾',label:'Trilha'},
-  {id:'futvoley',icon:'⚽',label:'Futvoley'},
-  {id:'beach',icon:'🎾',label:'Beach Tennis'},
-  {id:'voley',icon:'🏐',label:'Voley de Areia'}
+  {id:'1230',icon:'🏃',label:'12/3/30',mins:43},
+  {id:'hiit',icon:'💨',label:'HIIT',mins:25},
+  {id:'bike',icon:'🚴',label:'Bike',mins:35},
+  {id:'corrida',icon:'🏃',label:'Corrida',mins:35},
+  {id:'natacao',icon:'🏊',label:'Natação',mins:40},
+  {id:'corda',icon:'⛹️',label:'Corda',mins:20},
+  {id:'onda',icon:'🌊',label:'Onda',mins:25},
+  {id:'walk',icon:'🚶',label:'Caminhada',mins:30},
+  {id:'trilha',icon:'🥾',label:'Trilha',mins:60},
+  {id:'futvoley',icon:'⚽',label:'Futvoley',mins:60},
+  {id:'beach',icon:'🎾',label:'Beach Tennis',mins:60},
+  {id:'voley',icon:'🏐',label:'Voley de Areia',mins:60}
 ];
+
+function estimateDuration(w, cardioId){
+  if(!w || w.rest) return null;
+  var mins = 0;
+  if(w.exs && w.exs.length > 0){
+    mins += 5; // aquecimento
+    w.exs.forEach(function(ex){
+      var sets = parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      mins += sets * 2 + 2; // ~2min/série + 2min transição
+    });
+  }
+  if(cardioId){
+    var co = CARDIO_OPTS.find(function(c){ return c.id===cardioId; });
+    if(co) mins += co.mins;
+  }
+  if(mins === 0) return null;
+  var h = Math.floor(mins/60), m = mins%60;
+  return h>0 ? h+'h'+(m>0?m+'min':'') : m+'min';
+}
 var token = new URLSearchParams(window.location.search).get('token');
 var viewData = null;
 var proposalPlan = null;
@@ -337,7 +356,10 @@ function showMain(data){
   h+='<div class="sec-label">Plano semanal atual</div>';
   weekly.forEach(function(w,i){
     h+='<div class="day-card">';
-    h+='<div class="day-hdr" data-day="'+i+'"><div><div class="day-name">'+DAYS[i]+'</div>';
+    var curCardioKey2 = '0-'+i;
+    var curCardioId2 = data.cardioSel&&data.cardioSel[curCardioKey2];
+    var dur = estimateDuration(w, curCardioId2);
+    h+='<div class="day-hdr" data-day="'+i+'"><div><div class="day-name">'+DAYS[i]+(dur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+dur+'</span>':'')+'</div>';
     if(!w.rest) h+='<div class="day-meta">'+(w.name||'')+' · '+(w.exs?w.exs.length:0)+' exs</div>';
     h+='</div>';
     if(w.rest) h+='<span class="rest-badge">Descanso</span>';
@@ -393,8 +415,9 @@ function renderPlanEditor(){
   var h='';
   proposalPlan.forEach(function(w,i){
     h+='<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px">';
+    var edDur = estimateDuration(w, proposalCardio['0-'+i]);
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-    h+='<span style="font-size:13px;font-weight:600">'+DAYS[i]+'</span>';
+    h+='<div><span style="font-size:13px;font-weight:600">'+DAYS[i]+'</span>'+(edDur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+edDur+'</span>':'')+'</div>';
     h+='<button class="toggle-rest'+(w.rest?' active':'')+'" data-di="'+i+'">'+(w.rest?'✓ Descanso':'Marcar descanso')+'</button>';
     h+='</div>';
     if(!w.rest){

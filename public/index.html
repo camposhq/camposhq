@@ -669,11 +669,21 @@ input[type=file]{display:none}
 <div class="wmodal-back" id="pro-share-back" style="z-index:70">
   <div class="wmodal" style="width:320px;text-align:left">
     <div class="wmodal-title" style="margin-bottom:4px">🔗 Personal Trainer</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Envie este link para seu personal. Ele poderá ver seu plano e propor mudanças para você aprovar.</div>
-    <div id="pro-share-url" style="background:var(--surface);border-radius:10px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);word-break:break-all;margin-bottom:12px;cursor:pointer"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Só o personal com este email conseguirá acessar seus dados.</div>
+    <div id="pro-email-section">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Email do personal</div>
+      <input id="pro-email-input" type="email" placeholder="personal@email.com" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;margin-bottom:12px">
+      <div id="pro-email-err" style="font-size:12px;color:var(--coral);margin-bottom:8px;display:none"></div>
+    </div>
+    <div id="pro-share-url-section" style="display:none">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Autorizado para: <strong id="pro-auth-email" style="color:var(--green)"></strong></div>
+      <div id="pro-share-url" style="background:var(--surface);border-radius:10px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);word-break:break-all;margin-bottom:8px;cursor:pointer"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Qualquer um com o link só entra se logar com o email autorizado.</div>
+      <button id="pro-revoke-btn" style="background:none;border:none;color:var(--coral);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;padding:0">🚫 Revogar acesso</button>
+    </div>
     <div class="wmodal-btns">
       <button class="wmodal-cancel" id="pro-share-close">Fechar</button>
-      <button class="wmodal-save" id="pro-share-copy">Copiar link</button>
+      <button class="wmodal-save" id="pro-share-action">Gerar link</button>
     </div>
   </div>
 </div>
@@ -5305,24 +5315,67 @@ function generateToken(){
 
 function openSharePersonal(){
   if(!fbDb||!currentUser){ showToast('Entre com sua conta para compartilhar'); return; }
-  // reuse existing token if stored
   var stored = pdOverride[curP]&&pdOverride[curP].proToken;
-  if(stored){ proToken=stored; }
-  else {
-    proToken = generateToken();
-    if(!pdOverride[curP]) pdOverride[curP]={};
-    pdOverride[curP].proToken = proToken;
-    save();
+  var storedEmail = pdOverride[curP]&&pdOverride[curP].proEmail;
+  if(stored && storedEmail){
+    // already configured — show existing link
+    proToken = stored;
+    document.getElementById('pro-email-section').style.display='none';
+    document.getElementById('pro-share-url-section').style.display='block';
+    document.getElementById('pro-auth-email').textContent = storedEmail;
+    document.getElementById('pro-share-url').textContent = window.location.origin+'/pro?token='+proToken;
+    document.getElementById('pro-share-action').textContent = 'Copiar link';
+    document.getElementById('pro-share-action').onclick = copyProLink;
+  } else {
+    // new — show email input
+    document.getElementById('pro-email-section').style.display='block';
+    document.getElementById('pro-share-url-section').style.display='none';
+    document.getElementById('pro-email-input').value = '';
+    document.getElementById('pro-email-err').style.display='none';
+    document.getElementById('pro-share-action').textContent = 'Gerar link';
+    document.getElementById('pro-share-action').onclick = generateProLink;
   }
-  var link = window.location.origin+'/pro?token='+proToken;
-  document.getElementById('pro-share-url').textContent = link;
-  syncSpecialistView();
   document.getElementById('pro-share-back').classList.add('open');
 }
 
-function syncSpecialistView(){
+function generateProLink(){
+  var email = document.getElementById('pro-email-input').value.trim().toLowerCase();
+  if(!email||!email.includes('@')){ document.getElementById('pro-email-err').textContent='Digite um email válido.'; document.getElementById('pro-email-err').style.display='block'; return; }
+  proToken = generateToken();
+  if(!pdOverride[curP]) pdOverride[curP]={};
+  pdOverride[curP].proToken = proToken;
+  pdOverride[curP].proEmail = email;
+  save();
+  syncSpecialistView(email);
+  document.getElementById('pro-email-section').style.display='none';
+  document.getElementById('pro-share-url-section').style.display='block';
+  document.getElementById('pro-auth-email').textContent = email;
+  document.getElementById('pro-share-url').textContent = window.location.origin+'/pro?token='+proToken;
+  document.getElementById('pro-share-action').textContent = 'Copiar link';
+  document.getElementById('pro-share-action').onclick = copyProLink;
+}
+
+function copyProLink(){
+  var txt = document.getElementById('pro-share-url').textContent;
+  navigator.clipboard.writeText(txt).then(function(){ showToast('Link copiado!'); }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Link copiado!');
+  });
+}
+
+function revokeProAccess(){
+  if(!confirm('Revogar acesso do personal? O link atual deixará de funcionar.')) return;
+  if(fbDb && proToken) fbDb.collection('specialistViews').doc(proToken).update({active:false}).catch(function(){});
+  if(pdOverride[curP]){ delete pdOverride[curP].proToken; delete pdOverride[curP].proEmail; }
+  proToken = null;
+  save();
+  document.getElementById('pro-share-back').classList.remove('open');
+  showToast('Acesso revogado.');
+}
+
+function syncSpecialistView(emailOverride){
   if(!fbDb||!currentUser||!proToken) return;
   var p = PD[curP];
+  var email = emailOverride || (pdOverride[curP]&&pdOverride[curP].proEmail) || '';
   fbDb.collection('specialistViews').doc(proToken).set({
     uid: currentUser.uid,
     type: 'personal',
@@ -5331,6 +5384,7 @@ function syncSpecialistView(){
     weeklyPlan: p.weekly||[],
     exWeights: exWeights||{},
     history: (historyData[curP]||[]).slice(-28),
+    allowedEmail: email,
     active: true,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(function(e){ console.log('syncSpecialistView error',e); });
@@ -5415,12 +5469,8 @@ function rejectProposal(){
 
 // share modal controls
 document.getElementById('pro-share-close').addEventListener('click', function(){ document.getElementById('pro-share-back').classList.remove('open'); });
-document.getElementById('pro-share-copy').addEventListener('click', function(){
-  var txt = document.getElementById('pro-share-url').textContent;
-  navigator.clipboard.writeText(txt).then(function(){ showToast('Link copiado!'); }).catch(function(){
-    var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Link copiado!');
-  });
-});
+document.getElementById('pro-share-action').addEventListener('click', generateProLink);
+document.getElementById('pro-revoke-btn').addEventListener('click', revokeProAccess);
 document.getElementById('pro-share-back').addEventListener('click', function(e){ if(e.target===this) document.getElementById('pro-share-back').classList.remove('open'); });
 document.getElementById('pro-prop-approve').addEventListener('click', approveProposal);
 document.getElementById('pro-prop-reject').addEventListener('click', rejectProposal);

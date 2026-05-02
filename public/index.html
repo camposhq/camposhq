@@ -2190,8 +2190,10 @@ function renderTreinosContent(){
 
   // Musculacao
   h += '<div class="section">';
+  var updatedBy = pdOverride[curP]&&pdOverride[curP].lastUpdatedBy;
+  var updatedAt = pdOverride[curP]&&pdOverride[curP].lastUpdatedAt;
   h += '<div class="block-hdr" style="background:'+w.color+'">';
-  h += '<div class="block-type">💪 Musculacao</div>';
+  h += '<div class="block-type">💪 Musculacao'+(updatedBy?' · Atualizado por '+updatedBy+(updatedAt?' em '+updatedAt:''):'')+'</div>';
   h += '<div class="block-title">'+w.name+'</div>';
   h += '<div class="block-meta"><div><div class="bmv">'+exs.length+' exercicios</div><div class="bml">Hoje</div></div>';
   h += '<div><div class="bmv">'+pctMus+'%</div><div class="bml">Feito</div></div></div></div>';
@@ -5426,10 +5428,11 @@ function renderProposalBanner(){
   var el = document.getElementById('proposal-banner');
   if(!el) return;
   if(!pendingProposal){ el.style.display='none'; return; }
+  var pName = pendingProposal.specialistName || pendingProposal.specialistEmail || 'Personal';
   el.style.display='block';
   el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer" id="prop-banner-tap">' +
     '<div style="font-size:24px">💪</div>' +
-    '<div><div style="font-size:13px;font-weight:600">Proposta do Personal</div>' +
+    '<div><div style="font-size:13px;font-weight:600">Proposta de '+pName+'</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Toque para ver e aprovar</div></div>' +
     '<div style="margin-left:auto;background:var(--coral);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:99px">1</div>' +
     '</div>';
@@ -5439,8 +5442,12 @@ function renderProposalBanner(){
 function openProposalReview(){
   if(!pendingProposal) return;
   var p = pendingProposal;
+  var pName = p.specialistName || p.specialistEmail || 'Personal';
+  var pDate = new Date(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
+  // update modal title with trainer name
+  document.getElementById('pro-prop-back').querySelector('.wmodal-title').textContent = '💪 '+pName;
   var h = '';
-  h += '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">'+new Date(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})+'</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Enviado em '+pDate+'</div>';
   h += '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.5">'+p.message+'</div>';
   h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Novo plano proposto</div>';
   var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -5492,8 +5499,11 @@ function confirmProposalAction(){
 function doApproveProposal(msg){
   if(!pendingProposal||!fbDb) return;
   var p = pendingProposal;
+  var pName = p.specialistName || p.specialistEmail || 'Personal';
   if(!pdOverride[curP]) pdOverride[curP]={};
   pdOverride[curP].weekly = p.weeklyPlan;
+  pdOverride[curP].lastUpdatedBy = pName;
+  pdOverride[curP].lastUpdatedAt = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   PD[curP].weekly = p.weeklyPlan;
   if(p.cardioSel) Object.assign(cardioSel, p.cardioSel);
   fbDb.collection('proposals').doc(p.id).update({
@@ -5505,8 +5515,9 @@ function doApproveProposal(msg){
   save();
   syncSpecialistView();
   closeProposalModal();
-  showToast('Plano aprovado e aplicado! 💪');
+  showToast('Plano de '+pName+' aprovado! 💪');
   if(curScreen==='treinos') renderTreinos();
+  else if(curScreen==='home') renderHome();
 }
 
 function doRejectProposal(msg){

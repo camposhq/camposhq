@@ -197,17 +197,13 @@ function estimateDuration(w, cardioId){
   if(!w || w.rest) return null;
   var mins = 0;
   if(w.exs && w.exs.length > 0){
-    mins += 5; // aquecimento
     w.exs.forEach(function(ex){
       var sets = parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-      mins += sets * 2 + 2; // ~2min/série + 2min transição
+      // 45s execução + 60s descanso por série + 1min transição entre exercícios
+      mins += Math.round(sets * 1.75) + 1;
     });
   }
-  if(cardioId){
-    var co = CARDIO_OPTS.find(function(c){ return c.id===cardioId; });
-    if(co) mins += co.mins;
-  }
-  if(mins === 0) return null;
+  mins += 30; // cardio diário fixo de 30min
   var h = Math.floor(mins/60), m = mins%60;
   return h>0 ? h+'h'+(m>0?m+'min':'') : m+'min';
 }

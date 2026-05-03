@@ -3087,14 +3087,17 @@ function substituirSuplemento(idx){
     fetch('/api/claude',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'claude-haiku-4-5-20251001', max_tokens:200,
-        system:'Voce e um especialista em suplementacao esportiva e saude. Retorne apenas JSON valido conforme solicitado.',
+        model:'claude-sonnet-4-6', max_tokens:300,
+        system:'Voce e um especialista em suplementacao esportiva e saude. Retorne apenas JSON valido conforme solicitado, sem texto adicional.',
         messages:[{role:'user', content:instrucao}]
       })
     }).then(function(r){ return r.json(); }).then(function(data){
-      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error();
-      var txt = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-      var parsed = JSON.parse(txt);
+      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error('sem conteudo');
+      var txt = data.content[0].text.trim();
+      // extract JSON from response (handle markdown code blocks)
+      var match = txt.match(/\{[\s\S]*\}/);
+      if(!match) throw new Error('json nao encontrado');
+      var parsed = JSON.parse(match[0]);
       if(!parsed.n) throw new Error();
       var newSupp = {
         n: parsed.n,

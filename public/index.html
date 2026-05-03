@@ -783,6 +783,40 @@ const CARDIO_OPTS = [
    params:[{v:'60',l:'Min'},{v:'Mod-Alta',l:'Intensidade'},{v:'78%',l:'FC max'},{v:'~480',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Passes e movimentacao',t:'10 min'},{n:'Jogo',d:'Sets de voley na areia',t:'45 min'},{n:'Volta a calma',d:'Alongamento leve',t:'5 min'}]},
 ];
+// helpers for multi-cardio support
+function getCardioIds(key){
+  var v = cardioSel[key];
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  return [v]; // backward compat: string → array
+}
+function toggleCardioId(key, id){
+  var ids = getCardioIds(key).slice();
+  var i = ids.indexOf(id);
+  if(i >= 0) ids.splice(i, 1); else ids.push(id);
+  cardioSel[key] = ids.length > 0 ? ids : null;
+}
+function calcCardioKcalFromIds(ids, weight, cselKey){
+  var total = 0;
+  ids.forEach(function(selId){
+    var wp2 = walkParams[cselKey]||{inc:5, spd:5.5, mins:30};
+    if(selId === 'walk'){
+      total += calcWalkKcal(weight, wp2.spd, wp2.inc, wp2.mins);
+    } else if(selId === 'onda'){
+      var ondaSteps=[{spd:3.5,inc:5},{spd:3.8,inc:7},{spd:4.0,inc:9},{spd:3.6,inc:11},{spd:3.4,inc:6}];
+      total += ondaSteps.reduce(function(s,st){ return s+calcWalkKcal(weight,st.spd,st.inc,5); },0);
+    } else if(selId === 'trilha'){
+      var tp2=walkParams[cselKey]||{mins:60,km:5,dif:'moderada'};
+      var met2=tp2.dif==='facil'?4:tp2.dif==='dificil'?7.5:5.5;
+      total += Math.round(met2*weight*(tp2.mins/60));
+    } else {
+      var co2=CARDIO_OPTS.find(function(o){return o.id===selId;});
+      if(co2){ var pm2=co2.params.find(function(x){return x.l==='Kcal';}); if(pm2) total+=parseInt((pm2.v||'0').replace('~',''))||0; }
+    }
+  });
+  return total;
+}
+
 function calcWalkKcal(weight, speedKmh, incPct, mins){
   var met = 2.8 + Math.max(0,(speedKmh-3.2)*0.5) + incPct*0.35;
   return Math.round(met * weight * (mins/60));
@@ -808,25 +842,9 @@ function calcWorkoutKcalToday(pi, dayOverride){
     });
   }
   var musK = calcMusKcal(p.weight, sets);
-  // always count cardio regardless of rest day
-  var cardK = 0;
   var cselKey = idx+'-'+day;
-  var selId = cardioSel[cselKey] || null;
-  if(selId === 'walk'){
-    var wp = walkParams[cselKey]||{inc:5, spd:5.5, mins:30};
-    cardK = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
-  } else if(selId === 'onda'){
-    // Protocol Onda: 5 steps of 5min each
-    var ondaSteps = [{spd:3.5,inc:5},{spd:3.8,inc:7},{spd:4.0,inc:9},{spd:3.6,inc:11},{spd:3.4,inc:6}];
-    cardK = ondaSteps.reduce(function(s,st){ return s+calcWalkKcal(p.weight,st.spd,st.inc,5); },0);
-  } else if(selId === 'trilha'){
-    var tp = walkParams[cselKey]||{mins:60, km:5, dif:'moderada'};
-    var met = tp.dif==='facil'?4:tp.dif==='dificil'?7.5:5.5;
-    cardK = Math.round(met * p.weight * (tp.mins/60));
-  } else if(selId){
-    var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
-    if(co){ var pm = co.params.find(function(x){ return x.l==='Kcal'; }); if(pm) cardK = parseInt((pm.v||'0').replace('~',''))||0; }
-  }
+  var selIds = getCardioIds(cselKey);
+  var cardK = calcCardioKcalFromIds(selIds, p.weight, cselKey);
   return musK + cardK;
 }
 
@@ -2266,38 +2284,39 @@ function renderTreinosContent(){
   h += '<div class="prog-bar"><div class="prog-fill" style="width:'+pctMus+'%;background:var(--green)"></div></div>';
   h += '</div></div>';
 
-  // Cardio picker
+  // Cardio picker — multiple selection supported
   var cselKey = curP+'-'+curDay;
-  var selId = cardioSel[cselKey] || null;
+  var selIds = getCardioIds(cselKey);
   var wp = walkParams[cselKey] || {inc:5, spd:5.5, mins:30};
   h += '<div class="section"><div class="card">';
   h += '<div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">';
   h += '<span style="font-size:14px;font-weight:500">🏃 Cardio de hoje</span>';
-  h += '<span style="font-size:12px;color:var(--muted)">Escolha um</span></div>';
+  h += '<span style="font-size:12px;color:var(--muted)">Escolha um ou mais</span></div>';
   h += '<div style="display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap">';
   CARDIO_OPTS.forEach(function(opt){
-    var isSel = selId === opt.id;
+    var isSel = selIds.indexOf(opt.id) >= 0;
     h += '<div style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:99px;';
     h += 'border:1.5px solid '+(isSel?opt.color:'var(--border)')+';';
     h += 'background:'+(isSel?opt.cl:'var(--surface)')+';';
     h += 'font-size:12px;font-weight:500;color:'+(isSel?opt.color:'var(--muted)')+';cursor:pointer;flex-shrink:0" data-cid="'+opt.id+'">';
-    h += '<span>'+opt.icon+'</span>'+opt.label+'</div>';
+    h += (isSel?'✓ ':'')+opt.icon+' '+opt.label+'</div>';
   });
   h += '</div></div>';
 
-  if(selId){
-    var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
-    if(co){
-      // shared row builder for walk and trilha
-      function walkRow(label, id, val, unit, step, min, max){
-        return '<div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border)">'+
-          '<div style="flex:1;font-size:14px;font-weight:500">'+label+'</div>'+
-          '<div style="display:flex;align-items:center;gap:10px">'+
-          '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="minus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">−</button>'+
-          '<span style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;min-width:52px;text-align:center" id="wv-'+id+'">'+val+unit+'</span>'+
-          '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="plus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">+</button>'+
-          '</div></div>';
-      }
+  if(selIds.length > 0){
+    // shared row builder for walk and trilha
+    function walkRow(label, id, val, unit, step, min, max){
+      return '<div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border)">'+
+        '<div style="flex:1;font-size:14px;font-weight:500">'+label+'</div>'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+        '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="minus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">−</button>'+
+        '<span style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;min-width:52px;text-align:center" id="wv-'+id+'">'+val+unit+'</span>'+
+        '<button style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:18px;cursor:pointer" data-wact="plus" data-wid="'+id+'" data-step="'+step+'" data-min="'+min+'" data-max="'+max+'">+</button>'+
+        '</div></div>';
+    }
+    selIds.forEach(function(selId){
+      var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
+      if(!co) return;
       if(co.trilha){
         // ── Trilha editável ──
         var tp = walkParams[cselKey]||{mins:60, km:5, dif:'moderada'};
@@ -2318,11 +2337,10 @@ function renderTreinosContent(){
         h += walkRow('Tempo','mins', tp.mins, ' min', 5, 5, 300);
         h += '</div>';
       } else if(co.editable){
-        // ── Caminhada editável ──
         var wKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins);
         h += '<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
         h += '<div style="background:'+co.color+';padding:13px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between">';
-        h += '<div><div style="font-size:15px;font-weight:500">'+co.title+'</div><div style="font-size:12px;opacity:.8;margin-top:2px">Personalize abaixo</div></div>';
+        h += '<div><div style="font-size:15px;font-weight:500">'+co.title+'</div></div>';
         h += '<div style="text-align:right"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace" id="walk-kcal">~'+wKcal+'</div><div style="font-size:10px;opacity:.8">kcal</div></div></div>';
         h += walkRow('Inclinação','inc', wp.inc, '%', 0.5, 0, 20);
         h += walkRow('Velocidade','spd', wp.spd, ' km/h', 0.1, 2, 12);
@@ -2330,20 +2348,20 @@ function renderTreinosContent(){
         h += '</div>';
       } else {
         var doneC = 0;
-        co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curDay+'-'+selId+'-'+i]) doneC++; });
+        co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curDay+'-'+co.id+'-'+i]) doneC++; });
         h += '<div style="margin-top:10px"><div style="background:'+co.color+';border-radius:var(--radius) var(--radius) 0 0;padding:13px 16px;color:#fff">';
         h += '<div style="font-size:15px;font-weight:500">'+co.title+'</div>';
         h += '<div style="font-size:12px;opacity:.8;margin-top:2px">'+co.sub+' · '+co.dur+'</div></div>';
         h += '<div style="display:flex;background:rgba(0,0,0,.12);border-left:1px solid '+co.color+';border-right:1px solid '+co.color+'">';
         co.params.forEach(function(pm){
-          h += '<div style="flex:1;padding:10px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.15)">';
+          h += '<div style="flex:1;padding:10px 8px;text-align:center">';
           h += '<div style="font-size:17px;font-weight:700;font-family:DM Mono,monospace;color:'+co.color+'">'+pm.v+'</div>';
           h += '<div style="font-size:10px;color:var(--muted);margin-top:2px">'+pm.l+'</div></div>';
         });
         h += '</div>';
         h += '<div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius)">';
         co.steps.forEach(function(st,i){
-          var ckey = 'c'+curP+'-'+curDay+'-'+selId+'-'+i;
+          var ckey = 'c'+curP+'-'+curDay+'-'+co.id+'-'+i;
           var cdone = !!cardioChecked[ckey];
           h += '<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer" data-ckey="'+ckey+'">';
           h += '<div style="width:24px;height:24px;border-radius:6px;background:'+co.cl+';color:'+co.color+';font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>';
@@ -2355,7 +2373,7 @@ function renderTreinosContent(){
         });
         h += '</div></div>';
       }
-    }
+    });
   }
   h += '</div>';
 
@@ -2367,11 +2385,7 @@ function renderTreinosContent(){
     for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) totalSetsDone++; }
   });
   var musKcal = calcMusKcal(p.weight, totalSetsDone);
-  var cardioKcal = 0;
-  if(selId==='walk'){ cardioKcal = calcWalkKcal(p.weight, wp.spd, wp.inc, wp.mins); }
-  else if(selId==='onda'){ var ondaS=[{spd:3.5,inc:5},{spd:3.8,inc:7},{spd:4.0,inc:9},{spd:3.6,inc:11},{spd:3.4,inc:6}]; cardioKcal=ondaS.reduce(function(s,st){return s+calcWalkKcal(p.weight,st.spd,st.inc,5);},0); }
-  else if(selId==='trilha'){ var tp2=walkParams[cselKey]||{mins:60,dif:'moderada'}; var tMet2=tp2.dif==='facil'?4:tp2.dif==='dificil'?7.5:5.5; cardioKcal=Math.round(tMet2*p.weight*(tp2.mins/60)); }
-  else if(selId){ var coK=CARDIO_OPTS.find(function(o){return o.id===selId;}); if(coK){ var pm=coK.params.find(function(x){return x.l==='Kcal';}); if(pm) cardioKcal=parseInt(pm.v.replace('~',''))||0; } }
+  var cardioKcal = calcCardioKcalFromIds(selIds, p.weight, cselKey);
   var totalKcal = musKcal + cardioKcal;
   h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
   h += '<div style="padding:11px 16px;background:var(--green-light);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">';
@@ -2395,7 +2409,7 @@ function renderTreinosContent(){
   h += '<div class="section"><div class="stats">';
   h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+weekDone+'</div><div class="stat-lbl">Treinos feitos</div></div>';
   h += '<div class="stat-card"><div class="stat-val">'+PD[curP].weekly.filter(function(d){return !d.rest;}).length+'</div><div class="stat-lbl">Planejados</div></div>';
-  h += '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+(selId?'1':'0')+'</div><div class="stat-lbl">Cardio hoje</div></div>';
+  h += '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+selIds.length+'</div><div class="stat-lbl">Cardio hoje</div></div>';
   h += '</div></div>';
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise IA</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
@@ -2440,7 +2454,7 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){ openExVideo(this.dataset.vid); });
   });
   document.querySelectorAll('[data-cid]').forEach(function(el){
-    el.addEventListener('click', function(){ var k=curP+'-'+curDay; cardioSel[k]=cardioSel[k]===this.dataset.cid?null:this.dataset.cid; save(); renderTreinosContent(); });
+    el.addEventListener('click', function(){ var k=curP+'-'+curDay; toggleCardioId(k, this.dataset.cid); save(); renderTreinosContent(); });
   });
   // Walk param buttons
   document.querySelectorAll('[data-wact]').forEach(function(el){
@@ -2740,6 +2754,9 @@ function renderDietaContent(){
       h += '<button class="food-swap" data-supprem="'+i+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>';
       h += '<div class="scheck'+(done?' done':'')+'"></div></div>';
     });
+    h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
+    h += '<button id="btn-add-supp" style="background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;font-family:DM Sans,sans-serif">+ Adicionar suplemento</button>';
+    h += '</div>';
     h += '</div></div>';
   }
 
@@ -2811,6 +2828,8 @@ function renderDietaContent(){
       removerSuplemento(parseInt(this.dataset.supprem));
     });
   });
+  var bas = document.getElementById('btn-add-supp');
+  if(bas) bas.addEventListener('click', openAddSupp);
   var bmph = document.getElementById('btn-meal-photo');
   if(bmph) bmph.addEventListener('click', function(){ mealPhotoCtx='geral'; document.getElementById('file-meal-photo').click(); });
   var btnGoal = document.getElementById('btn-edit-kcal-goal');
@@ -5465,6 +5484,81 @@ document.addEventListener('touchend', function(e){
 
 
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// ADD SUPPLEMENT
+// ══════════════════════════════════════════════════════════════
+function openAddSupp(){
+  var SUPP_ICONS = ['💊','💉','🧪','⚗️','🌿','🍋','🫐','🥛','💪','🔬','🧬','⚡'];
+  var SUPP_TIMES = ['Manhã','Pré-treino','Pós-treino','Almoço','Jantar','Noite','Com refeição'];
+  var selectedIcon = '💊';
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;display:flex;align-items:flex-end;padding:0';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:80dvh;overflow-y:auto">'+
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1">'+
+        '<div style="font-size:16px;font-weight:700">+ Novo Suplemento</div>'+
+        '<button id="as-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div style="padding:16px">'+
+        '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
+        '<div id="as-icons" style="display:flex;flex-wrap:wrap;gap:8px">'+
+          SUPP_ICONS.map(function(ic){ return '<button data-icon="'+ic+'" style="width:40px;height:40px;border-radius:10px;border:2px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer">'+ ic+'</button>'; }).join('')+
+        '</div></div>'+
+        '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>'+
+        '<input id="as-name" type="text" placeholder="Ex: Whey Protein" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
+        '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Dose</div>'+
+        '<input id="as-dose" type="text" placeholder="Ex: 30g" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
+        '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Horário</div>'+
+        '<div id="as-times" style="display:flex;flex-wrap:wrap;gap:6px">'+
+          SUPP_TIMES.map(function(t,i){ return '<button data-time="'+t+'" style="padding:7px 12px;border-radius:99px;border:1.5px solid '+(i===0?'var(--green)':'var(--border)')+';background:'+(i===0?'var(--green-light)':'var(--surface)')+';color:'+(i===0?'var(--green)':'var(--muted)')+';font-size:12px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif">'+t+'</button>'; }).join('')+
+        '</div></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button id="as-cancel" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+          '<button id="as-save" style="flex:2;padding:12px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Adicionar ✓</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+
+  var selTime = SUPP_TIMES[0];
+
+  // icon selection
+  overlay.querySelectorAll('[data-icon]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      selectedIcon = this.dataset.icon;
+      overlay.querySelectorAll('[data-icon]').forEach(function(b){ b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; });
+      this.style.borderColor='var(--green)'; this.style.background='var(--green-light)';
+    });
+  });
+  // time selection
+  overlay.querySelectorAll('[data-time]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      selTime = this.dataset.time;
+      overlay.querySelectorAll('[data-time]').forEach(function(b){ b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; b.style.color='var(--muted)'; });
+      this.style.borderColor='var(--green)'; this.style.background='var(--green-light)'; this.style.color='var(--green)';
+    });
+  });
+
+  function closeAS(){ overlay.remove(); }
+  document.getElementById('as-close').addEventListener('click', closeAS);
+  document.getElementById('as-cancel').addEventListener('click', closeAS);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeAS(); });
+  document.getElementById('as-save').addEventListener('click', function(){
+    var name = document.getElementById('as-name').value.trim();
+    var dose = document.getElementById('as-dose').value.trim();
+    if(!name){ showToast('Digite o nome do suplemento.'); return; }
+    var newSupp = {n:name, dose:dose||'conforme indicação', time:selTime, tBg:'#e8f5ee', tCl:'#1a7a4a', icon:selectedIcon};
+    var p = PD[curP];
+    p.supps.push(newSupp);
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    pdOverride[curP].supps = p.supps.slice();
+    save();
+    closeAS();
+    renderDietaContent();
+    showToast('Suplemento adicionado!');
+  });
+}
+
 // ══════════════════════════════════════════════════════════════
 // MANUAL EDIT — TREINO DO DIA
 // ══════════════════════════════════════════════════════════════

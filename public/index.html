@@ -1570,9 +1570,6 @@ function isAdmin(){
 function renderProfiles(containerId){
   var el = document.getElementById(containerId);
   if(!el) return;
-  // non-admin users only have their own profile — hide the strip
-  var admin = isAdmin();
-  if(!admin){ el.style.display='none'; curP=0; return; }
   el.style.display='';
   var h = '';
   PD.forEach(function(p,i){
@@ -5739,7 +5736,8 @@ function initAuth(){
       function loadAfterAuth(user){
         loadUserData(user.uid, function(){
           try{ if(profileComplete) PD.forEach(function(_,i){ snapshotHistory(i); }); }catch(e){}
-          if(!isAdmin()) curP = 0; // non-admin always on own profile
+          // non-admin stays on profile 0 always
+          if(!isAdmin()) curP = 0;
           var stored = pdOverride[curP]&&pdOverride[curP].proToken;
           if(stored){ proToken=stored; setTimeout(function(){ syncSpecialistView(); checkProposals(); },2000); }
           hideSplash();

@@ -2270,7 +2270,8 @@ function renderTreinosContent(){
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
-    h += '<button class="food-swap" data-day="'+curDay+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:4px">🔄</button>';
+    h += '<button class="food-swap" data-exedit-day="'+curDay+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">✏️</button>';
+    h += '<button class="food-swap" data-day="'+curDay+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">🔄</button>';
     h += '<button class="food-swap" data-exrem-day="'+curDay+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
@@ -2440,6 +2441,9 @@ function renderTreinosContent(){
   });
   document.querySelectorAll('.ex-wbtn').forEach(function(el){
     el.addEventListener('click', function(){ openWeight(this.dataset.wkey, this.dataset.wname, parseFloat(this.dataset.wcur)); });
+  });
+  document.querySelectorAll('.food-swap[data-exedit-day]').forEach(function(el){
+    el.addEventListener('click', function(){ editarExercicio(parseInt(this.dataset.exeditDay), parseInt(this.dataset.exeditIdx)); });
   });
   document.querySelectorAll('.food-swap[data-exidx]').forEach(function(el){
     el.addEventListener('click', function(){ substituirExercicio(parseInt(this.dataset.day), parseInt(this.dataset.exidx)); });
@@ -2729,6 +2733,7 @@ function renderDietaContent(){
           '<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(featen?'var(--green)':'var(--border)')+';background:'+(featen?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px">'+(featen?'<span style="color:#fff;font-size:10px">✓</span>':'')+'</div>'+
           '<div style="flex:1;min-width:0"><div class="food-name" style="'+(featen?'color:var(--green)':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
           '<div class="food-kcal" style="'+(featen?'color:var(--green);font-weight:600':'')+'">'+f.k+' kcal</div>'+
+          '<button class="food-swap" data-foodedit-mi="'+mi+'" data-foodedit-fi="'+fi+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">✏️</button>'+
           '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
           '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>'+
         '</div>';
@@ -2750,6 +2755,7 @@ function renderDietaContent(){
       h += '<div class="supp-icon-wrap" style="background:'+s.tBg+'">'+s.icon+'</div>';
       h += '<div class="supp-info"><div class="supp-name" style="'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+s.n+'</div><div class="supp-detail">'+s.dose+'</div></div>';
       h += '<div class="supp-time" style="background:'+s.tBg+';color:'+s.tCl+'">'+s.time+'</div>';
+      h += '<button class="food-swap" data-suppedit="'+i+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">✏️</button>';
       h += '<button class="food-swap" data-suppidx="'+i+'" title="Trocar" onclick="event.stopPropagation()">🔄</button>';
       h += '<button class="food-swap" data-supprem="'+i+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>';
       h += '<div class="scheck'+(done?' done':'')+'"></div></div>';
@@ -2789,6 +2795,9 @@ function renderDietaContent(){
       save(); renderDietaContent();
     });
   });
+  document.querySelectorAll('.food-swap[data-foodedit-mi]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); editarAlimento(parseInt(this.dataset.foodeditMi), parseInt(this.dataset.foodeditFi)); });
+  });
   document.querySelectorAll('.food-swap[data-additem-mi]').forEach(function(el){
     el.addEventListener('click', function(e){
       e.stopPropagation();
@@ -2815,6 +2824,9 @@ function renderDietaContent(){
       e.stopPropagation();
       removerAlimento(parseInt(this.dataset.foodremMi), parseInt(this.dataset.foodremFi));
     });
+  });
+  document.querySelectorAll('.food-swap[data-suppedit]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); editarSuplemento(parseInt(this.dataset.suppedit)); });
   });
   document.querySelectorAll('.food-swap[data-suppidx]').forEach(function(el){
     el.addEventListener('click', function(e){
@@ -5491,8 +5503,173 @@ document.addEventListener('touchend', function(e){
 
 // ══════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════
+// EDIT INDIVIDUAL EXERCISE
+// ══════════════════════════════════════════════════════════════
+function editarExercicio(dayIdx, exIdx){
+  var p = PD[curP];
+  if(!p.weekly[dayIdx]||!p.weekly[dayIdx].exs||!p.weekly[dayIdx].exs[exIdx]) return;
+  var ex = p.weekly[dayIdx].exs[exIdx];
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
+      '<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:15px;font-weight:700">✏️ Editar exercício</div>'+
+        '<button id="ee-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div style="padding:16px">'+
+        '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Nome</div>'+
+        '<input id="ee-name" value="'+ex.n.replace(/"/g,'&quot;')+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px;outline:none"></div>'+
+        '<div style="display:flex;gap:8px;margin-bottom:10px">'+
+          '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Séries</div>'+
+          '<input id="ee-sets" value="'+ex.s+'" placeholder="4x10" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:14px;padding:10px;outline:none"></div>'+
+          '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Peso (kg)</div>'+
+          '<input id="ee-weight" type="number" value="'+(ex.w||0)+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:14px;padding:10px;outline:none"></div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button id="ee-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+          '<button id="ee-save" style="flex:2;padding:11px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ document.getElementById('ee-name').focus(); }, 100);
+  function closeEE(){ overlay.remove(); }
+  document.getElementById('ee-close').addEventListener('click', closeEE);
+  document.getElementById('ee-cancel').addEventListener('click', closeEE);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeEE(); });
+  document.getElementById('ee-save').addEventListener('click', function(){
+    var name = document.getElementById('ee-name').value.trim();
+    var sets = document.getElementById('ee-sets').value.trim();
+    var weight = parseFloat(document.getElementById('ee-weight').value)||0;
+    if(!name){ showToast('Digite o nome do exercício.'); return; }
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(!pdOverride[curP].weekly) pdOverride[curP].weekly = JSON.parse(JSON.stringify(PD[curP].weekly));
+    pdOverride[curP].weekly[dayIdx].exs[exIdx] = {n:name, s:sets||ex.s, w:weight};
+    PD[curP].weekly[dayIdx].exs[exIdx] = {n:name, s:sets||ex.s, w:weight};
+    // update weight in exWeights
+    var wkey = curP+'-'+dayIdx+'-'+exIdx;
+    if(weight > 0) exWeights[wkey] = weight;
+    save();
+    closeEE();
+    renderTreinosContent();
+    showToast('Exercício atualizado!');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
 // ADD SUPPLEMENT
 // ══════════════════════════════════════════════════════════════
+function editarAlimento(mi, fi){
+  var p = PD[curP];
+  if(!p.meals||!p.meals[mi]||!p.meals[mi].foods||!p.meals[mi].foods[fi]) return;
+  var f = p.meals[mi].foods[fi];
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px">'+
+      '<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:15px;font-weight:700">✏️ Editar alimento</div>'+
+        '<button id="ef-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div style="padding:16px">'+
+        '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Nome</div>'+
+        '<input id="ef-name" value="'+f.n.replace(/"/g,'&quot;')+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px;outline:none"></div>'+
+        '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Porção</div>'+
+        '<input id="ef-portion" value="'+(f.p||'').replace(/"/g,'&quot;')+'" placeholder="Ex: 30g, 1 unidade" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px;outline:none"></div>'+
+        '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Calorias (kcal)</div>'+
+        '<input id="ef-kcal" type="number" value="'+(f.k||0)+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:18px;font-weight:700;padding:10px;outline:none;text-align:center"></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button id="ef-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+          '<button id="ef-save" style="flex:2;padding:11px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ document.getElementById('ef-name').focus(); }, 100);
+  function closeEF(){ overlay.remove(); }
+  document.getElementById('ef-close').addEventListener('click', closeEF);
+  document.getElementById('ef-cancel').addEventListener('click', closeEF);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeEF(); });
+  document.getElementById('ef-save').addEventListener('click', function(){
+    var name=document.getElementById('ef-name').value.trim();
+    var portion=document.getElementById('ef-portion').value.trim();
+    var kcal=parseInt(document.getElementById('ef-kcal').value)||0;
+    if(!name){ showToast('Digite o nome do alimento.'); return; }
+    p.meals[mi].foods[fi]={n:name, p:portion||f.p, k:kcal};
+    // recalculate meal kcal
+    p.meals[mi].kcal = p.meals[mi].foods.reduce(function(s,fd){ return s+(fd.k||0); },0);
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    pdOverride[curP].meals = p.meals.slice();
+    save(); closeEF(); renderDietaContent(); showToast('Alimento atualizado!');
+  });
+}
+
+function editarSuplemento(idx){
+  var p = PD[curP];
+  if(!p.supps||!p.supps[idx]) return;
+  var s = p.supps[idx];
+  var SUPP_ICONS=['💊','💉','🧪','⚗️','🌿','🍋','🫐','🥛','💪','🔬','🧬','⚡'];
+  var SUPP_TIMES=['Manhã','Pré-treino','Pós-treino','Almoço','Jantar','Noite','Com refeição'];
+  var selIcon = s.icon||'💊';
+  var selTime = s.time||'Manhã';
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;display:flex;align-items:flex-end;padding:0';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:80dvh;overflow-y:auto">'+
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1">'+
+        '<div style="font-size:16px;font-weight:700">✏️ Editar suplemento</div>'+
+        '<button id="es-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div style="padding:16px">'+
+        '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
+        '<div id="es-icons" style="display:flex;flex-wrap:wrap;gap:8px">'+
+          SUPP_ICONS.map(function(ic){ return '<button data-icon="'+ic+'" style="width:40px;height:40px;border-radius:10px;border:2px solid '+(ic===selIcon?'var(--green)':'var(--border)')+';background:'+(ic===selIcon?'var(--green-light)':'var(--surface)')+';font-size:20px;cursor:pointer">'+ic+'</button>'; }).join('')+
+        '</div></div>'+
+        '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>'+
+        '<input id="es-name" value="'+s.n.replace(/"/g,'&quot;')+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
+        '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Dose</div>'+
+        '<input id="es-dose" value="'+(s.dose||'')+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
+        '<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Horário</div>'+
+        '<div id="es-times" style="display:flex;flex-wrap:wrap;gap:6px">'+
+          SUPP_TIMES.map(function(t){ return '<button data-time="'+t+'" style="padding:7px 12px;border-radius:99px;border:1.5px solid '+(t===selTime?'var(--green)':'var(--border)')+';background:'+(t===selTime?'var(--green-light)':'var(--surface)')+';color:'+(t===selTime?'var(--green)':'var(--muted)')+';font-size:12px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif">'+t+'</button>'; }).join('')+
+        '</div></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button id="es-cancel" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+          '<button id="es-save" style="flex:2;padding:12px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll('[data-icon]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      selIcon=this.dataset.icon;
+      overlay.querySelectorAll('[data-icon]').forEach(function(b){ b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; });
+      this.style.borderColor='var(--green)'; this.style.background='var(--green-light)';
+    });
+  });
+  overlay.querySelectorAll('[data-time]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      selTime=this.dataset.time;
+      overlay.querySelectorAll('[data-time]').forEach(function(b){ b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; b.style.color='var(--muted)'; });
+      this.style.borderColor='var(--green)'; this.style.background='var(--green-light)'; this.style.color='var(--green)';
+    });
+  });
+  function closeES(){ overlay.remove(); }
+  document.getElementById('es-close').addEventListener('click', closeES);
+  document.getElementById('es-cancel').addEventListener('click', closeES);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeES(); });
+  document.getElementById('es-save').addEventListener('click', function(){
+    var name=document.getElementById('es-name').value.trim();
+    var dose=document.getElementById('es-dose').value.trim();
+    if(!name){ showToast('Digite o nome.'); return; }
+    p.supps[idx]={n:name, dose:dose||s.dose, time:selTime, icon:selIcon, tBg:s.tBg, tCl:s.tCl};
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    pdOverride[curP].supps=p.supps.slice();
+    save(); closeES(); renderDietaContent(); showToast('Suplemento atualizado!');
+  });
+}
+
 function openAddSupp(){
   var SUPP_ICONS = ['💊','💉','🧪','⚗️','🌿','🍋','🫐','🥛','💪','🔬','🧬','⚡'];
   var SUPP_TIMES = ['Manhã','Pré-treino','Pós-treino','Almoço','Jantar','Noite','Com refeição'];

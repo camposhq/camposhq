@@ -648,7 +648,12 @@ input[type=file]{display:none}
     </div>
     <div class="chat-msgs" id="chat-msgs"></div>
     <div class="qps" id="chat-qps"></div>
+    <div id="chat-photo-preview" style="display:none;padding:8px 16px 0;position:relative">
+      <img id="chat-photo-img" style="height:60px;border-radius:8px;object-fit:cover">
+      <button onclick="clearChatPhoto()" style="position:absolute;top:4px;left:12px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+    </div>
     <div class="chat-inp-wrap">
+      <button id="chat-photo-btn" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0" title="Enviar foto">📷</button>
       <textarea class="chat-inp" id="chat-inp" placeholder="Pergunte..." rows="1"></textarea>
       <button class="send-btn" id="send-btn">
         <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
@@ -665,6 +670,7 @@ input[type=file]{display:none}
 <input type="file" id="file-progress" accept="image/*">
 <input type="file" id="file-exam" accept="image/*,.pdf">
 <input type="file" id="file-meal-photo" accept="image/*" capture="environment">
+<input type="file" id="file-chat-photo" accept="image/*">
 
 <div class="toast" id="toast"></div>
 
@@ -2218,8 +2224,10 @@ function renderTreinosContent(){
   var estH=Math.floor(estMins/60), estM=estMins%60;
   var estStr = estH>0 ? estH+'h'+(estM>0?estM+'min':'') : estM+'min';
   h += '<div class="block-hdr" style="background:'+w.color+'">';
-  h += '<div class="block-type">💪 Musculacao</div>';
-  h += '<div class="block-title">'+w.name+'</div>';
+  h += '<div style="display:flex;align-items:flex-start;justify-content:space-between">';
+  h += '<div><div class="block-type">💪 Musculacao</div><div class="block-title">'+w.name+'</div></div>';
+  h += '<button id="edit-day-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0;margin-top:2px">✏️ Editar</button>';
+  h += '</div>';
   if(updatedBy) h += '<div style="font-size:11px;opacity:.85;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px">✏️ Atualizado por '+updatedBy+(updatedAt?' · '+updatedAt:'')+'</span></div>';
   h += '<div class="block-meta"><div><div class="bmv">'+exs.length+' exercicios</div><div class="bml">Hoje</div></div>';
   h += '<div><div class="bmv">~'+estStr+'</div><div class="bml">Estimado</div></div>';
@@ -2471,6 +2479,7 @@ function renderTreinosContent(){
   document.querySelectorAll('[data-ckey]').forEach(function(el){
     el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
   });
+  var edb=document.getElementById('edit-day-btn'); if(edb) edb.addEventListener('click', openEditDay);
   var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar'); var tan=document.getElementById('t-analise');
   // shared full profile context for all workout buttons
   function buildTrainingCtx(){
@@ -2805,7 +2814,7 @@ function renderDietaContent(){
   var bmph = document.getElementById('btn-meal-photo');
   if(bmph) bmph.addEventListener('click', function(){ mealPhotoCtx='geral'; document.getElementById('file-meal-photo').click(); });
   var btnGoal = document.getElementById('btn-edit-kcal-goal');
-  if(btnGoal) btnGoal.addEventListener('click', function(){
+  if(btnGoal) btnGoal.addEventListener('click', function(){ openEditMetas('dieta'); return;
     var val = prompt('Meta calórica diária (kcal):', p.calories);
     if(!val) return;
     var n = parseInt(val);
@@ -3242,7 +3251,7 @@ function renderSonoContent(){
   var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60);
   var sleepDisp=eH+'h'+(eM>0?' '+eM+'min':'');
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
-  h += '<div><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta</div></div>';
+  h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta ✏️</div></div>';
   h += '<div><div class="hm-val">'+hDone+'/'+p.habits.length+'</div><div class="hm-lbl">Habitos</div></div>';
   h += '</div></div></div>';
 
@@ -3296,6 +3305,9 @@ function renderSonoContent(){
   h += '</div></div>';
 
   document.getElementById('sono-content').innerHTML = h;
+
+  var esg = document.getElementById('btn-edit-sleep-goal');
+  if(esg) esg.addEventListener('click', function(){ openEditMetas('sono'); });
 
   var entry2 = sleepData[curP] || {hours:p.sleep, quality:3};
   function sleepHM(){ return {h:Math.floor(entry2.hours), m:Math.round((entry2.hours-Math.floor(entry2.hours))*60)}; }
@@ -4639,11 +4651,45 @@ function showTyping(){
 function hideTyping(){ var t=document.getElementById('typing'); if(t) t.remove(); }
 
 function sendQuick(text){ document.getElementById('chat-inp').value=text; sendMsg(); }
+var chatPhotoB64 = null;
+
+function clearChatPhoto(){
+  chatPhotoB64 = null;
+  document.getElementById('chat-photo-preview').style.display='none';
+  document.getElementById('chat-photo-img').src='';
+  document.getElementById('file-chat-photo').value='';
+}
+
+document.getElementById('chat-photo-btn').addEventListener('click', function(){ document.getElementById('file-chat-photo').click(); });
+document.getElementById('file-chat-photo').addEventListener('change', function(e){
+  var file = e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    chatPhotoB64 = ev.target.result.split(',')[1];
+    document.getElementById('chat-photo-img').src = ev.target.result;
+    document.getElementById('chat-photo-preview').style.display='block';
+  };
+  reader.readAsDataURL(file);
+});
+
 function sendMsg(){
   var inp = document.getElementById('chat-inp'); var text = inp.value.trim();
-  if(!text||isTyping) return;
+  if((!text && !chatPhotoB64)||isTyping) return;
   inp.value=''; inp.style.height='auto';
-  addChatMsg('user',text); chatHistory.push({role:'user',content:text});
+
+  var userContent;
+  if(chatPhotoB64){
+    userContent = [
+      {type:'image', source:{type:'base64', media_type:'image/jpeg', data:chatPhotoB64}},
+      {type:'text', text: text||'Analise esta imagem no contexto do meu perfil de saúde.'}
+    ];
+    addChatMsg('user', (text||'📷 Foto enviada'));
+    clearChatPhoto();
+  } else {
+    userContent = text;
+    addChatMsg('user', text);
+  }
+  chatHistory.push({role:'user', content:userContent});
   saveChatHistory();
   isTyping=true; document.getElementById('send-btn').disabled=true; showTyping();
   fetch('/api/claude',{
@@ -4668,7 +4714,76 @@ function applyChatPlan(){
   var isT = chatCtx==='treino';
   var isD = chatCtx==='dieta'||chatCtx==='dieta-ajustar'||chatCtx==='dieta-analise';
   if(!isT&&!isD) return;
+
+  // for treino: ask which days to apply
+  if(isT){
+    var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    var overlay = document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML='<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:340px;padding:20px">'+
+      '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Aplicar treino da IA</div>'+
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Escolha o que aplicar:</div>'+
+      '<div style="margin-bottom:14px">'+
+        '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;font-size:14px">'+
+          '<input type="checkbox" id="chk-all-days" checked style="width:18px;height:18px"> Plano semanal completo (todos os dias)'+
+        '</label>'+
+        DAYS2.map(function(d,i){ return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0 6px 28px;cursor:pointer;font-size:13px;color:var(--muted)"><input type="checkbox" class="chk-day" data-day="'+i+'" checked style="width:16px;height:16px"> '+d+'</label>'; }).join('')+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button id="sel-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+        '<button id="sel-apply" style="flex:2;padding:11px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Aplicar</button>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(overlay);
+
+    // toggle all
+    document.getElementById('chk-all-days').addEventListener('change', function(){
+      var checked = this.checked;
+      overlay.querySelectorAll('.chk-day').forEach(function(c){ c.checked=checked; });
+    });
+    document.getElementById('sel-cancel').addEventListener('click', function(){ overlay.remove(); });
+    document.getElementById('sel-apply').addEventListener('click', function(){
+      var selectedDays = [];
+      overlay.querySelectorAll('.chk-day').forEach(function(c){ if(c.checked) selectedDays.push(parseInt(c.dataset.day)); });
+      overlay.remove();
+      doApplyChatPlan(selectedDays);
+    });
+    return;
+  }
+
+  // for dieta: ask which parts to apply
+  if(isD){
+    var overlay2 = document.createElement('div');
+    overlay2.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay2.innerHTML='<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:340px;padding:20px">'+
+      '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Aplicar plano da IA</div>'+
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Escolha o que aplicar:</div>'+
+      '<div style="margin-bottom:14px">'+
+        '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;font-size:14px"><input type="checkbox" id="chk-meals" checked style="width:18px;height:18px"> Refeições (cardápio)</label>'+
+        '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;font-size:14px"><input type="checkbox" id="chk-calories" checked style="width:18px;height:18px"> Meta calórica</label>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button id="sel2-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+        '<button id="sel2-apply" style="flex:2;padding:11px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Aplicar</button>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(overlay2);
+    document.getElementById('sel2-cancel').addEventListener('click', function(){ overlay2.remove(); });
+    document.getElementById('sel2-apply').addEventListener('click', function(){
+      var applyMeals = document.getElementById('chk-meals').checked;
+      var applyCalories = document.getElementById('chk-calories').checked;
+      overlay2.remove();
+      doApplyChatPlan(null, {meals:applyMeals, calories:applyCalories});
+    });
+    return;
+  }
+
   var btn = event.currentTarget; btn.disabled=true; btn.textContent='Aplicando...';
+}
+
+function doApplyChatPlan(selectedDays, dietaOpts){
+  var isT = chatCtx==='treino';
+  var isD = chatCtx==='dieta'||chatCtx==='dieta-ajustar'||chatCtx==='dieta-analise';
 
   var jsonInstr;
   if(isT){
@@ -4688,26 +4803,32 @@ function applyChatPlan(){
     var parsed = JSON.parse(jsonStr);
     if(!pdOverride[curP]) pdOverride[curP]={};
     if(isT && Array.isArray(parsed.weekly) && parsed.weekly.length===7){
-      PD[curP].weekly = parsed.weekly;
-      pdOverride[curP].weekly = parsed.weekly;
-      save(); showToast('Treino atualizado no app!'); closeChat();
+      if(!pdOverride[curP].weekly) pdOverride[curP].weekly = JSON.parse(JSON.stringify(PD[curP].weekly));
+      var days = selectedDays || [0,1,2,3,4,5,6];
+      days.forEach(function(di){ PD[curP].weekly[di]=parsed.weekly[di]; pdOverride[curP].weekly[di]=parsed.weekly[di]; });
+      var msg = days.length===7 ? 'Treino semanal aplicado!' : days.length+' dias aplicados!';
+      save(); showToast(msg); closeChat();
       showScreen('treinos');
-    } else if(isD && Array.isArray(parsed.meals) && parsed.meals.length>0){
+    } else if(isD && (Array.isArray(parsed.meals)||parsed.calories)){
+      var opts = dietaOpts || {meals:true, calories:true};
       // ensure every meal has a unique id
-      var idCounts = {};
-      parsed.meals = parsed.meals.map(function(m,mi){
-        var base = (m.id||'refeicao').toLowerCase().replace(/\s+/g,'');
-        idCounts[base] = (idCounts[base]||0) + 1;
-        if(idCounts[base]>1) m.id = base+idCounts[base];
-        else m.id = base;
-        if(!m.foods) m.foods = [];
-        m.kcal = m.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
-        return m;
-      });
-      PD[curP].meals = parsed.meals;
-      pdOverride[curP].meals = parsed.meals;
-      if(parsed.calories && parsed.calories>0){ PD[curP].calories=parsed.calories; pdOverride[curP].calories=parsed.calories; }
-      save(); showToast('Dieta atualizada no app!'); closeChat();
+      if(opts.meals && Array.isArray(parsed.meals) && parsed.meals.length>0){
+        var idCounts = {};
+        parsed.meals = parsed.meals.map(function(m,mi){
+          var base = (m.id||'refeicao').toLowerCase().replace(/\s+/g,'');
+          idCounts[base] = (idCounts[base]||0) + 1;
+          if(idCounts[base]>1) m.id = base+idCounts[base];
+          else m.id = base;
+          if(!m.foods) m.foods = [];
+          m.kcal = m.foods.reduce(function(s,f){ return s+(f.k||0); }, 0);
+          return m;
+        });
+        PD[curP].meals = parsed.meals;
+        pdOverride[curP].meals = parsed.meals;
+      }
+      if(opts.calories && parsed.calories && parsed.calories>0){ PD[curP].calories=parsed.calories; pdOverride[curP].calories=parsed.calories; }
+      var msg2 = [opts.meals?'refeições':'', opts.calories?'meta calórica':''].filter(Boolean).join(' e ');
+      save(); showToast('Aplicado: '+msg2+'!'); closeChat();
       showScreen('dieta');
     } else {
       throw new Error('formato invalido');
@@ -5344,6 +5465,144 @@ document.addEventListener('touchend', function(e){
 
 
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// MANUAL EDIT — TREINO DO DIA
+// ══════════════════════════════════════════════════════════════
+function openEditDay(){
+  var p = PD[curP]; var w = p.weekly[curDay];
+  var editPlan = JSON.parse(JSON.stringify(w));
+  var DAYS2 = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+  function renderEditDay(){
+    var h='<div style="margin-bottom:10px">';
+    h+='<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome do treino</div>';
+    h+='<input id="edit-day-name" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none;margin-bottom:10px" value="'+(editPlan.name||'')+'">';
+    h+='<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Exercícios</div>';
+    (editPlan.exs||[]).forEach(function(ex,ei){
+      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">';
+      h+='<input style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="Exercício" value="'+ex.n+'" data-ei="'+ei+'-n">';
+      h+='<input style="width:72px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="4x10" value="'+ex.s+'" data-ei="'+ei+'-s">';
+      h+='<input style="width:64px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="kg" value="'+(ex.w||'')+'" type="number" data-ei="'+ei+'-w">';
+      h+='<button style="background:none;border:none;color:var(--coral);font-size:16px;cursor:pointer;padding:4px" data-rem="'+ei+'">✕</button>';
+      h+='</div>';
+    });
+    h+='<button id="edit-day-add" style="background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:4px;font-family:DM Sans,sans-serif">+ Exercício</button>';
+    h+='</div>';
+    var body = document.getElementById('edit-day-body');
+    if(body) body.innerHTML = h;
+    // listeners
+    body.querySelectorAll('[data-ei]').forEach(function(inp){
+      inp.addEventListener('input', function(){
+        var parts=this.dataset.ei.split('-'); var ei=parseInt(parts[0]),field=parts[1];
+        if(!editPlan.exs[ei]) return;
+        if(field==='n') editPlan.exs[ei].n=this.value;
+        else if(field==='s') editPlan.exs[ei].s=this.value;
+        else if(field==='w') editPlan.exs[ei].w=parseFloat(this.value)||0;
+      });
+    });
+    body.querySelectorAll('[data-rem]').forEach(function(btn){
+      btn.addEventListener('click', function(){ editPlan.exs.splice(parseInt(this.dataset.rem),1); renderEditDay(); });
+    });
+    document.getElementById('edit-day-add').addEventListener('click', function(){ editPlan.exs.push({n:'',s:'3x12',w:0}); renderEditDay(); });
+    document.getElementById('edit-day-name').addEventListener('input', function(){ editPlan.name=this.value; });
+  }
+
+  // create modal
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;display:flex;align-items:flex-end;padding:0';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;display:flex;flex-direction:column">'+
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
+        '<div style="font-size:16px;font-weight:700">✏️ Editar '+DAYS2[curDay]+'</div>'+
+        '<button id="edit-day-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div id="edit-day-body" style="overflow-y:auto;padding:16px;flex:1"></div>'+
+      '<div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">'+
+        '<button id="edit-day-cancel" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+        '<button id="edit-day-save" style="flex:2;padding:12px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  renderEditDay();
+
+  function closeEdit(){ overlay.remove(); }
+  document.getElementById('edit-day-close').addEventListener('click', closeEdit);
+  document.getElementById('edit-day-cancel').addEventListener('click', closeEdit);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeEdit(); });
+  document.getElementById('edit-day-save').addEventListener('click', function(){
+    var cleanExs = editPlan.exs.filter(function(e){ return e.n.trim(); });
+    var updated = {name:editPlan.name||w.name, color:w.color, cl:w.cl, exs:cleanExs};
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    if(!pdOverride[curP].weekly) pdOverride[curP].weekly = JSON.parse(JSON.stringify(PD[curP].weekly));
+    pdOverride[curP].weekly[curDay] = updated;
+    PD[curP].weekly[curDay] = updated;
+    save();
+    closeEdit();
+    renderTreinosContent();
+    showToast('Treino de '+DAYS2[curDay]+' atualizado!');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// MANUAL EDIT — METAS (DIETA + SONO)
+// ══════════════════════════════════════════════════════════════
+function openEditMetas(ctx){
+  var p = PD[curP];
+  var fields = ctx==='sono' ?
+    [{id:'sleepTarget',label:'Meta de sono (horas)',val:p.sleepTarget||7.5,type:'number',step:.5,min:4,max:12}] :
+    [
+      {id:'calories',label:'Meta calórica (kcal)',val:p.calories||2000,type:'number',step:50,min:1000,max:5000},
+      {id:'protein',label:'Proteína (g)',val:p.protein||150,type:'number',step:5,min:50,max:400},
+      {id:'water',label:'Hidratação (ml)',val:p.water||2500,type:'number',step:250,min:1000,max:6000}
+    ];
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px';
+  var title = ctx==='sono' ? '🌙 Meta de sono' : '🥗 Metas da dieta';
+  var fieldsH = fields.map(function(f){
+    return '<div style="margin-bottom:12px">'+
+      '<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">'+f.label+'</div>'+
+      '<input id="meta-'+f.id+'" type="'+f.type+'" step="'+f.step+'" min="'+f.min+'" max="'+f.max+'" value="'+f.val+'" '+
+      'style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:22px;font-weight:700;padding:12px;outline:none;text-align:center">'+
+      '</div>';
+  }).join('');
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:16px;font-weight:700">'+title+'</div>'+
+        '<button id="meta-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+      '</div>'+
+      '<div style="padding:16px">'+fieldsH+
+        '<div style="display:flex;gap:8px;margin-top:4px">'+
+          '<button id="meta-cancel" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+          '<button id="meta-save" style="flex:2;padding:12px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+
+  function closeMeta(){ overlay.remove(); }
+  document.getElementById('meta-close').addEventListener('click', closeMeta);
+  document.getElementById('meta-cancel').addEventListener('click', closeMeta);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeMeta(); });
+  document.getElementById('meta-save').addEventListener('click', function(){
+    if(!pdOverride[curP]) pdOverride[curP]={};
+    fields.forEach(function(f){
+      var val = parseFloat(document.getElementById('meta-'+f.id).value)||0;
+      if(val>0){
+        pdOverride[curP][f.id] = val;
+        PD[curP][f.id] = val;
+      }
+    });
+    save();
+    closeMeta();
+    showToast('Metas atualizadas!');
+    if(curScreen==='dieta') renderDieta(true);
+    else if(curScreen==='sono') renderSono();
+    else if(curScreen==='home') renderHome();
+  });
+}
+
 // PERSONAL TRAINER PRO LINK
 // ══════════════════════════════════════════════════════════════
 var proToken = null;

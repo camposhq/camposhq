@@ -1562,13 +1562,17 @@ document.querySelectorAll('.nav-item').forEach(function(btn){
 // PROFILES STRIP
 // ══════════════════════════════════════════════════════════════
 var ADMIN_EMAIL = 'walter@camposhq.com';
-function isAdmin(){ return !!(currentUser && currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL); }
+function isAdmin(){
+  var u = currentUser || (typeof fbAuth!=='undefined' && fbAuth && fbAuth.currentUser);
+  return !!(u && u.email && u.email.toLowerCase().trim() === ADMIN_EMAIL);
+}
 
 function renderProfiles(containerId){
   var el = document.getElementById(containerId);
   if(!el) return;
   // non-admin users only have their own profile — hide the strip
-  if(!isAdmin()){ el.style.display='none'; curP=0; return; }
+  var admin = isAdmin();
+  if(!admin){ el.style.display='none'; curP=0; return; }
   el.style.display='';
   var h = '';
   PD.forEach(function(p,i){
@@ -5705,10 +5709,14 @@ function initAuth(){
     if(user){
       currentUser = user;
       // show admin button immediately for admin user
-      if(user.email && user.email.toLowerCase() === ADMIN_EMAIL){
+      var userEmail = (user.email||'').toLowerCase().trim();
+      if(userEmail === ADMIN_EMAIL){
         var ab = document.getElementById('admin-btn');
         if(ab) ab.style.display='flex';
       }
+      // debug: show email in sync status temporarily
+      var ss = document.getElementById('sync-status');
+      if(ss) ss.title = 'Login: '+userEmail;
       // check if user is blocked before loading
       if(fbDb){
         fbDb.collection('users').doc(user.uid).get().then(function(doc){

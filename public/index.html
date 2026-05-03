@@ -1563,10 +1563,8 @@ document.querySelectorAll('.nav-item').forEach(function(btn){
 // PROFILES STRIP
 // ══════════════════════════════════════════════════════════════
 var ADMIN_EMAIL = 'walter@camposhq.com';
-function isAdmin(){
-  var u = currentUser || (typeof fbAuth!=='undefined' && fbAuth && fbAuth.currentUser);
-  return !!(u && u.email && u.email.toLowerCase().trim() === ADMIN_EMAIL);
-}
+var adminMode = false; // set immediately on auth, before any async operations
+function isAdmin(){ return adminMode; }
 
 function renderProfiles(containerId){
   var el = document.getElementById(containerId);
@@ -5706,15 +5704,12 @@ function initAuth(){
   fbAuth.onAuthStateChanged(function(user){
     if(user){
       currentUser = user;
-      // show admin button immediately for admin user
-      var userEmail = (user.email||'').toLowerCase().trim();
-      if(userEmail === ADMIN_EMAIL){
+      // set adminMode immediately — before any async operations or renders
+      adminMode = !!(user.email && user.email.toLowerCase().trim() === ADMIN_EMAIL);
+      if(adminMode){
         var ab = document.getElementById('admin-btn');
         if(ab) ab.style.display='flex';
       }
-      // debug: show email in sync status temporarily
-      var ss = document.getElementById('sync-status');
-      if(ss) ss.title = 'Login: '+userEmail;
       // check if user is blocked before loading
       if(fbDb){
         fbDb.collection('users').doc(user.uid).get().then(function(doc){

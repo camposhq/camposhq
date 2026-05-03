@@ -3087,18 +3087,21 @@ function substituirSuplemento(idx){
     fetch('/api/claude',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'claude-sonnet-4-6', max_tokens:300,
+        model:'claude-sonnet-4-6', max_tokens:500,
         system:'Voce e um especialista em suplementacao esportiva e saude. Retorne apenas JSON valido conforme solicitado, sem texto adicional.',
         messages:[{role:'user', content:instrucao}]
       })
-    }).then(function(r){ return r.json(); }).then(function(data){
-      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error('sem conteudo');
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      if(data.error) throw new Error(data.error.message||'erro API');
+      if(!data.content||!data.content[0]||!data.content[0].text) throw new Error('resposta vazia');
       var txt = data.content[0].text.trim();
-      // extract JSON from response (handle markdown code blocks)
-      var match = txt.match(/\{[\s\S]*\}/);
-      if(!match) throw new Error('json nao encontrado');
+      var match = txt.match(/\{[\s\S]*?\}/);
+      if(!match) throw new Error('JSON nao encontrado na resposta');
       var parsed = JSON.parse(match[0]);
-      if(!parsed.n) throw new Error();
+      if(!parsed.n) throw new Error('campo n ausente');
       var newSupp = {
         n: parsed.n,
         dose: parsed.dose||supp.dose,
@@ -3113,9 +3116,9 @@ function substituirSuplemento(idx){
       overlay.remove();
       showToast('"'+supp.n+'" substituido por "'+parsed.n+'" ✓');
       renderDietaContent();
-    }).catch(function(){
+    }).catch(function(e){
       btn.disabled = false; btn.textContent = 'Substituir com IA';
-      showToast('Nao foi possivel substituir. Tente novamente.');
+      showToast('Erro: '+(e&&e.message?e.message:'falha'));
     });
   });
 }

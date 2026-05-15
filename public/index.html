@@ -1796,7 +1796,7 @@ function renderHome(){
   // IMC card — tappable to update body weight
   h += '<div class="metric-card" onclick="openBodyWeight()" style="cursor:pointer"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
   h += '<div class="metric-label">Peso atual <span style="font-size:10px;color:var(--green)">✎</span></div>';
-  h += '<div class="metric-trend" style="color:'+imcColor+'">IMC '+imc+' · '+imcLbl+'</div>';
+  h += '<div class="metric-trend" style="color:'+imcColor+';display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:'+imcColor+';flex-shrink:0;display:inline-block"></span>IMC '+imc+' · '+imcLbl+'</div>';
   h += miniBar(imc,15,40,27,22,'27','22',true);
   h += '</div>';
   // Body fat % card

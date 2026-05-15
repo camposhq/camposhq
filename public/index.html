@@ -1816,6 +1816,31 @@ function renderHome(){
   h += '<div class="metric-trend" style="color:var(--muted)">'+p.height+'cm · '+p.weight+'kg</div>';
   h += '</div>';
   h += '</div></div>';
+  // Smart BMI analysis — shown AFTER metric grid, only when real fat% is available
+  if(bfIsReal){
+    var fatMass = Math.round(p.weight*(bfVal/100)*10)/10;
+    var leanMass = Math.round((p.weight-fatMass)*10)/10;
+    var idealWeight = Math.round(22*Math.pow(p.height/100,2)*10)/10;
+    var excessTotal = Math.round((p.weight-idealWeight)*10)/10;
+    var excessFat = Math.round(Math.max(0, fatMass-(idealWeight*(gender==='M'?0.15:0.22)))*10)/10;
+    var excessMuscle = Math.round(Math.max(0, excessTotal-excessFat)*10)/10;
+    var pctMuscle = excessTotal>0 ? Math.round(excessMuscle/excessTotal*100) : 0;
+    var analysisColor = pctMuscle>=70?'var(--green)':pctMuscle>=40?'var(--amber)':'var(--coral)';
+    var analysisMsg = pctMuscle>=70
+      ? 'Seu IMC elevado é predominantemente de músculo ('+pctMuscle+'%). Massa magra de '+leanMass+'kg — composição de atleta.'
+      : pctMuscle>=40
+        ? 'Excesso de peso misto: ~'+excessMuscle+'kg músculo e ~'+excessFat+'kg gordura acima do ideal.'
+        : 'Excesso de peso com componente significativo de gordura (~'+excessFat+'kg acima do ideal).';
+    h += '<div class="section"><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px">';
+    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔬 Análise IMC + % Gordura</div>';
+    h += '<div style="display:flex;justify-content:space-around;margin-bottom:10px">';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">'+fatMass+'<span style="font-size:11px;color:var(--muted)">kg</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">Gordura</div></div>';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+leanMass+'<span style="font-size:11px;color:var(--muted)">kg</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">Massa magra</div></div>';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:'+analysisColor+'">'+pctMuscle+'<span style="font-size:11px;color:var(--muted)">%</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">excesso = músculo</div></div>';
+    h += '</div>';
+    h += '<div style="background:'+(pctMuscle>=70?'var(--green-light)':pctMuscle>=40?'#fef3c7':'#fee2e2')+';border-radius:8px;padding:10px 12px;font-size:13px;color:'+analysisColor+';font-weight:500;line-height:1.4">'+analysisMsg+'</div>';
+    h += '</div></div>';
+  }
 
   // ── Resumo do dia ──────────────────────────────────────────
   var dayW = p.weekly[curDay]||{};

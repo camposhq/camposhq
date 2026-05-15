@@ -1791,14 +1791,6 @@ function renderHome(){
   h += '<div style="font-size:9px;color:var(--muted);margin-top:2px">'+bfNote+'</div>';
   h += miniBar(bfVal,5,45,gender==='M'?22:30,gender==='M'?15:22,(gender==='M'?'22':'30')+'%',(gender==='M'?'15':'22')+'%',true);
   h += '</div>';
-  // Body composition AI analysis card (shows when photos exist)
-  if(hasPhotos){
-    h += '<div class="metric-card" id="btn-body-ai" style="cursor:pointer;border-color:var(--green)">';
-    h += '<div style="font-size:24px;margin-bottom:4px">🤖</div>';
-    h += '<div class="metric-label" style="color:var(--green);font-weight:600">Análise corporal</div>';
-    h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">IA lê suas fotos</div>';
-    h += '</div>';
-  }
   // Sono card — average from history
   h += '<div class="metric-card"><div class="metric-val">'+avgSleep+'<span class="metric-unit">h</span></div>';
   h += '<div class="metric-label">Sono media</div>';
@@ -1821,6 +1813,9 @@ function renderHome(){
     var fatMass = Math.round(p.weight*(bfVal/100)*10)/10;
     var leanMass = Math.round((p.weight-fatMass)*10)/10;
     var idealWeight = Math.round(22*Math.pow(p.height/100,2)*10)/10;
+    var idealFat = gender==='M' ? 15 : 22; // athlete target %
+    var idealFatMass = Math.round(idealWeight*(idealFat/100)*10)/10;
+    var fatToLose = Math.round(Math.max(0, fatMass-idealFatMass)*10)/10;
     var excessTotal = Math.round((p.weight-idealWeight)*10)/10;
     var excessFat = Math.round(Math.max(0, fatMass-(idealWeight*(gender==='M'?0.15:0.22)))*10)/10;
     var excessMuscle = Math.round(Math.max(0, excessTotal-excessFat)*10)/10;
@@ -1833,11 +1828,22 @@ function renderHome(){
         : 'Excesso de peso com componente significativo de gordura (~'+excessFat+'kg acima do ideal).';
     h += '<div class="section"><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px">';
     h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔬 Análise IMC + % Gordura</div>';
-    h += '<div style="display:flex;justify-content:space-around;margin-bottom:10px">';
-    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">'+fatMass+'<span style="font-size:11px;color:var(--muted)">kg</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">Gordura</div></div>';
-    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+leanMass+'<span style="font-size:11px;color:var(--muted)">kg</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">Massa magra</div></div>';
-    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:'+analysisColor+'">'+pctMuscle+'<span style="font-size:11px;color:var(--muted)">%</span></div><div style="font-size:10px;color:var(--muted);margin-top:2px">excesso = músculo</div></div>';
+    // atual vs ideal
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+    h += '<div style="background:var(--surface);border-radius:10px;padding:10px;text-align:center">';
+    h += '<div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase">ATUAL</div>';
+    h += '<div style="display:flex;justify-content:space-around">';
+    h += '<div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace">'+fatMass+'<span style="font-size:10px">kg</span></div><div style="font-size:9px;color:var(--muted)">gordura</div></div>';
+    h += '<div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+leanMass+'<span style="font-size:10px">kg</span></div><div style="font-size:9px;color:var(--muted)">massa magra</div></div>';
+    h += '</div></div>';
+    h += '<div style="background:var(--green-light);border-radius:10px;padding:10px;text-align:center">';
+    h += '<div style="font-size:10px;color:var(--green);margin-bottom:6px;font-weight:600;text-transform:uppercase">META ATLETA</div>';
+    h += '<div style="display:flex;justify-content:space-around">';
+    h += '<div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+idealFatMass+'<span style="font-size:10px">kg</span></div><div style="font-size:9px;color:var(--green)">gordura ('+idealFat+'%)</div></div>';
+    h += '<div><div style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+idealWeight+'<span style="font-size:10px">kg</span></div><div style="font-size:9px;color:var(--green)">peso ref.</div></div>';
+    h += '</div></div>';
     h += '</div>';
+    if(fatToLose>0) h += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center">Para atingir '+(gender==='M'?'15%':'22%')+' gordura: reduzir <strong style="color:var(--coral)">'+fatToLose+'kg</strong> de gordura</div>';
     h += '<div style="background:'+(pctMuscle>=70?'var(--green-light)':pctMuscle>=40?'#fef3c7':'#fee2e2')+';border-radius:8px;padding:10px 12px;font-size:13px;color:'+analysisColor+';font-weight:500;line-height:1.4">'+analysisMsg+'</div>';
     h += '</div></div>';
   }
@@ -4213,11 +4219,35 @@ function openAddHistory(){
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Os scores e sono sao capturados automaticamente</div></div>'+
     '<button id="hadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
     fieldsH+
+    (hasPhotos ? '<button id="hadd-ai" style="width:100%;padding:11px;background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;color:var(--green);margin-bottom:8px">🤖 Estimar % gordura com IA + fotos</button>' : '')+
     '<button id="hadd-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Salvar medicao</button>';
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
   document.getElementById('hadd-close').addEventListener('click',function(){ overlay.remove(); });
   overlay.addEventListener('click',function(e){ if(e.target===overlay) overlay.remove(); });
+  var haddAI = document.getElementById('hadd-ai');
+  if(haddAI) haddAI.addEventListener('click', function(){
+    var btn=this; btn.disabled=true; btn.textContent='🤖 Analisando fotos...';
+    var photos = p.progressPhotos.filter(function(ph){ return ph&&ph.img; });
+    var wCur = parseFloat(document.getElementById('hf-weight').value)||p.weight;
+    var imc2 = parseFloat((wCur/Math.pow(p.height/100,2)).toFixed(1));
+    var gnd = (pdOverride[curP]&&pdOverride[curP].gender)||'M';
+    var content = [];
+    photos.forEach(function(ph){ content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:ph.img.split(',')[1]||ph.img}}); });
+    content.push({type:'text',text:'Analise as fotos corporais e estime o percentual de gordura corporal. Perfil: '+p.name+', '+p.age+' anos, '+gnd+', '+wCur+'kg, '+p.height+'cm, IMC '+imc2+'. Objetivo: '+p.goal+'. Treina musculação regularmente. Retorne APENAS o número estimado, sem texto. Exemplo: 22.5'});
+    fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:10,system:'Especialista em composição corporal. Retorne apenas o número do % de gordura estimado, sem texto.',messages:[{role:'user',content:content}]})
+    }).then(function(r){return r.json();}).then(function(data){
+      if(data.content&&data.content[0]&&data.content[0].text){
+        var fatEst = parseFloat(data.content[0].text.trim());
+        if(!isNaN(fatEst)&&fatEst>3&&fatEst<60){
+          document.getElementById('hf-fat').value = fatEst.toFixed(1);
+          btn.textContent='✓ '+fatEst.toFixed(1)+'% estimado — confirme e salve';
+          btn.style.background='var(--green-light)';
+        } else { throw new Error(); }
+      } else { throw new Error(); }
+    }).catch(function(){ btn.disabled=false; btn.textContent='🤖 Estimar % gordura com IA + fotos'; showToast('Erro ao estimar. Tente novamente.'); });
+  });
   document.getElementById('hadd-save').addEventListener('click',function(){
     var wVal=parseFloat(document.getElementById('hf-weight').value.replace(',','.'));
     var fVal=document.getElementById('hf-fat').value.replace(',','.');

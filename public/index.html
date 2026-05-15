@@ -1747,19 +1747,24 @@ function renderHome(){
   var hasPhotos = p.progressPhotos && p.progressPhotos.some(function(ph){return ph&&ph.img;});
   var imcColor = imc<=24.9?'var(--green)':imc<=27.9?'var(--amber)':imc<=33?'var(--orange)':'var(--coral)';
   var imcLbl = imc<=24.9?'Normal':imc<=27.9?'Sobrepeso':imc<=33?'Alto · muscular?':'Obesidade';
-  // Body fat % estimate via Deurenberg formula (overestimates ~3-5% for muscular individuals)
+  // Body fat % — use real measurement if available, else estimate via Deurenberg
   var gender = (pdOverride[curP]&&pdOverride[curP].gender)||'M';
+  var histFat = (historyData[curP]||[]).filter(function(e){ return e.fat&&e.fat>0; });
+  histFat.sort(function(a,b){ return a.date>b.date?-1:1; });
+  var realFat = histFat.length>0 ? histFat[0].fat : null;
   var bfRaw = gender==='M'
     ? (1.20*imc)+(0.23*p.age)-16.2
     : (1.20*imc)+(0.23*p.age)-5.4;
   var bfEst = Math.max(5, Math.round(bfRaw*10)/10);
-  var bfNote = bfEst>25 ? '(muscular: ~'+(Math.round((bfEst-4)*10)/10)+'%)' : '';
+  var bfVal = realFat !== null ? realFat : bfEst;
+  var bfIsReal = realFat !== null;
+  var bfNote = !bfIsReal && bfEst>25 ? 'estimado · pode ser menor' : (bfIsReal ? 'medido em '+histFat[0].label : 'estimado por IMC');
   var bfColor = gender==='M'
-    ? (bfEst<=13?'var(--green)':bfEst<=20?'var(--amber)':bfEst<=25?'var(--orange)':'var(--coral)')
-    : (bfEst<=20?'var(--green)':bfEst<=28?'var(--amber)':bfEst<=33?'var(--orange)':'var(--coral)');
+    ? (bfVal<=13?'var(--green)':bfVal<=20?'var(--amber)':bfVal<=25?'var(--orange)':'var(--coral)')
+    : (bfVal<=20?'var(--green)':bfVal<=28?'var(--amber)':bfVal<=33?'var(--orange)':'var(--coral)');
   var bfLbl = gender==='M'
-    ? (bfEst<=13?'Atleta':bfEst<=17?'Fitness':bfEst<=25?'Aceitável':'Elevado')
-    : (bfEst<=20?'Atleta':bfEst<=24?'Fitness':bfEst<=33?'Aceitável':'Elevado');
+    ? (bfVal<=13?'Atleta':bfVal<=17?'Fitness':bfVal<=25?'Aceitável':'Elevado')
+    : (bfVal<=20?'Atleta':bfVal<=24?'Fitness':bfVal<=33?'Aceitável':'Elevado');
   // Sono benchmarks (scale 4–10h, higher is better — target: 7.8h, avg: 6.8h)
   var sonoColor = p.sleep>=7.5?'var(--green)':p.sleep>=6.5?'var(--amber)':'var(--coral)';
   var sonoLbl = p.sleep>=7.5?'Otimo':p.sleep>=6.5?'Regular':'Insuficiente';
@@ -1780,11 +1785,11 @@ function renderHome(){
   h += '</div>';
   // Body fat % card
   h += '<div class="metric-card">';
-  h += '<div class="metric-val" style="color:'+bfColor+'">'+bfEst+'<span class="metric-unit">%</span></div>';
-  h += '<div class="metric-label">Gordura est.</div>';
+  h += '<div class="metric-val" style="color:'+bfColor+'">'+bfVal+'<span class="metric-unit">%</span></div>';
+  h += '<div class="metric-label">Gordura '+(bfIsReal?'corporal':'est.')+'</div>';
   h += '<div class="metric-trend" style="color:'+bfColor+'">'+bfLbl+'</div>';
-  if(bfNote) h += '<div style="font-size:9px;color:var(--muted);margin-top:2px">'+bfNote+'</div>';
-  h += miniBar(bfEst,5,45,gender==='M'?22:30,gender==='M'?15:22,(gender==='M'?'22':'30')+'%',(gender==='M'?'15':'22')+'%',true);
+  h += '<div style="font-size:9px;color:var(--muted);margin-top:2px">'+bfNote+'</div>';
+  h += miniBar(bfVal,5,45,gender==='M'?22:30,gender==='M'?15:22,(gender==='M'?'22':'30')+'%',(gender==='M'?'15':'22')+'%',true);
   h += '</div>';
   // Body composition AI analysis card (shows when photos exist)
   if(hasPhotos){

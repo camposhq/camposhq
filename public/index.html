@@ -1765,12 +1765,18 @@ function renderHome(){
   if(imc<=24.9){ imcColor='var(--green)'; imcLbl='Normal'; }
   else if(imc<=27.9){ imcColor='var(--amber)'; imcLbl='Sobrepeso'; }
   else if(imc<=35){
-    // if we have real fat data, determine if it's muscle or fat
-    var athleteFatLimit = gender==='M' ? 20 : 28;
-    if(bfIsReal && bfVal<=athleteFatLimit){
-      imcColor='var(--green)'; imcLbl='Alto · muscular ✓';
-    } else if(bfIsReal){
-      imcColor='var(--orange)'; imcLbl='Alto · gordura';
+    if(bfIsReal){
+      // calculate muscle vs fat ratio for this person
+      var fatM2 = p.weight*(bfVal/100);
+      var leanM2 = p.weight-fatM2;
+      var idealW2 = 22*Math.pow(p.height/100,2);
+      var excessT2 = Math.max(0, p.weight-idealW2);
+      var excessF2 = Math.max(0, fatM2-(idealW2*(gender==='M'?0.15:0.22)));
+      var excessMu2 = Math.max(0, excessT2-excessF2);
+      var pctMu2 = excessT2>0 ? Math.round(excessMu2/excessT2*100) : 0;
+      if(pctMu2>=70){ imcColor='var(--green)'; imcLbl='Alto · muscular ✓'; }
+      else if(pctMu2>=40){ imcColor='var(--amber)'; imcLbl='Alto · misto'; }
+      else { imcColor='var(--orange)'; imcLbl='Alto · reduzir gordura'; }
     } else {
       imcColor='var(--orange)'; imcLbl='Alto · muscular?';
     }

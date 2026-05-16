@@ -51,7 +51,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 0}
 .nav-icon{font-size:22px;line-height:1}
 .nav-label{font-size:10px;color:var(--muted);font-weight:500}
-.nav-item.active .nav-label{font-weight:600;color:var(--green)}
+.nav-item.active .nav-label{font-weight:600;color:#7c3aed}
 .profiles{display:flex;gap:10px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none}
 .profiles::-webkit-scrollbar{display:none}
 .profile-btn{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;cursor:pointer;flex-shrink:0}
@@ -1563,7 +1563,7 @@ function showScreen(id){
   document.querySelectorAll('.nav-item').forEach(function(b){
     var isA = b.dataset.screen === id;
     b.classList.toggle('active', isA);
-    b.querySelector('.nav-label').style.color = isA ? 'var(--green)' : 'var(--muted)';
+    b.querySelector('.nav-label').style.color = isA ? '#7c3aed' : 'var(--muted)';
   });
   var rmap = {home:renderHome, treinos:renderTreinos, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
   if(rmap[id]) rmap[id]();

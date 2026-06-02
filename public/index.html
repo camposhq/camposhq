@@ -4223,6 +4223,7 @@ function exportProgresso(){
 
 function openAddHistory(){
   var p = PD[curP];
+  var hasPhotos = p.progressPhotos && p.progressPhotos.some(function(ph){ return ph&&ph.img; });
   var overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end';
   var panel = document.createElement('div');

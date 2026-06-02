@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Comunidade — MyHealth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500;600&family=Fraunces:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--orange:#f97316;--surface:#1a1a1a;--card:#242424;--border:#2e2e2e;--text:#f0f0f0;--muted:#888;--green:#1a7a4a;--radius:18px;--radius-sm:12px}
+body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:40px}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-family:Fraunces,serif;font-size:20px;color:var(--orange)}
+.back-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto}
+.content{padding:16px;max-width:700px;margin:0 auto}
+.hero{background:linear-gradient(135deg,#ea580c,#f97316);border-radius:var(--radius);padding:24px 20px;margin-bottom:20px;text-align:center}
+.hero-title{font-family:Fraunces,serif;font-size:28px;color:#fff;margin-bottom:4px}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.8)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--orange)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.sec-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.member-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 14px;text-align:center;position:relative}
+.rank-badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;background:var(--surface);color:var(--muted);border-radius:99px;padding:2px 8px}
+.rank-badge.gold{background:#3a2e00;color:#f5c518}
+.rank-badge.silver{background:#282828;color:#aaa}
+.rank-badge.bronze{background:#2a1f10;color:#cd7f32}
+.avatar-lg{width:56px;height:56px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff}
+.avatar-lg img{width:100%;height:100%;object-fit:cover}
+.member-name{font-size:14px;font-weight:600;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score-ring{width:52px;height:52px;margin:0 auto 8px;position:relative}
+.score-ring svg{transform:rotate(-90deg)}
+.score-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+.member-meta{display:flex;justify-content:center;gap:10px;font-size:11px;color:var(--muted);margin-top:6px}
+.member-meta span{display:flex;align-items:center;gap:3px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;margin:60px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px}
+.updated{font-size:10px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">MyHealth</div>
+  <span style="font-size:13px;color:var(--muted)">Comunidade</span>
+  <button class="back-btn" onclick="window.location='/'">← App</button>
+</div>
+
+<div class="content">
+  <div class="hero">
+    <div class="hero-title">MyHealth <em style="font-style:italic;font-weight:400">Community</em></div>
+    <div class="hero-sub">Acompanhe a evolução de todos os membros</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-tile"><div class="stat-val" id="stat-members">—</div><div class="stat-lbl">Membros</div></div>
+    <div class="stat-tile"><div class="stat-val" id="stat-avg-score">—</div><div class="stat-lbl">Score médio</div></div>
+    <div class="stat-tile"><div class="stat-val" id="stat-best-streak">—</div><div class="stat-lbl">Maior streak</div></div>
+  </div>
+
+  <div class="sec-label">Ranking de membros</div>
+  <div id="members-container"><div class="spinner"></div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script>
+var fbConfig = {
+  apiKey: "AIzaSyALZguDLc-eqlQO1oq0SXFnPw-xfLIM9y8",
+  authDomain: "myhealth-app-d8acf.firebaseapp.com",
+  projectId: "myhealth-app-d8acf",
+  storageBucket: "myhealth-app-d8acf.firebasestorage.app",
+  messagingSenderId: "422827888",
+  appId: "1:422827888:web:230078ee65d4f44ee521b5"
+};
+firebase.initializeApp(fbConfig);
+var fbDb = firebase.firestore();
+
+function scoreColor(s){
+  if(s>=80) return '#1a7a4a';
+  if(s>=60) return '#c47a1a';
+  return '#e05252';
+}
+
+function scoreRing(score){
+  var r=22, circ=2*Math.PI*r, dash=Math.round(circ*(score/100));
+  var col = scoreColor(score);
+  return '<div class="score-ring">'+
+    '<svg width="52" height="52" viewBox="0 0 52 52">'+
+      '<circle cx="26" cy="26" r="'+r+'" fill="none" stroke="#2e2e2e" stroke-width="4"/>'+
+      '<circle cx="26" cy="26" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-dasharray="'+dash+' '+circ+'" stroke-linecap="round"/>'+
+    '</svg>'+
+    '<div class="score-num" style="color:'+col+'">'+score+'</div>'+
+  '</div>';
+}
+
+function rankBadge(i){
+  if(i===0) return '<div class="rank-badge gold">🥇 1º</div>';
+  if(i===1) return '<div class="rank-badge silver">🥈 2º</div>';
+  if(i===2) return '<div class="rank-badge bronze">🥉 3º</div>';
+  return '<div class="rank-badge">'+(i+1)+'º</div>';
+}
+
+function timeAgo(ts){
+  if(!ts) return '';
+  var d = ts.seconds ? new Date(ts.seconds*1000) : new Date(ts);
+  var diff = Math.floor((Date.now()-d)/60000);
+  if(diff<2) return 'agora';
+  if(diff<60) return diff+'min atrás';
+  if(diff<1440) return Math.floor(diff/60)+'h atrás';
+  return Math.floor(diff/1440)+'d atrás';
+}
+
+fbDb.collection('community').where('approved','==',true).get().then(function(snap){
+  var members = snap.docs.map(function(d){ return Object.assign({uid:d.id},d.data()); });
+  members.sort(function(a,b){ return (b.score||0)-(a.score||0); });
+
+  var totalScore = members.reduce(function(s,m){ return s+(m.score||0); },0);
+  var avgScore = members.length ? Math.round(totalScore/members.length) : 0;
+  var bestStreak = members.reduce(function(mx,m){ return Math.max(mx,m.streak||0); },0);
+
+  document.getElementById('stat-members').textContent = members.length;
+  document.getElementById('stat-avg-score').textContent = avgScore||'—';
+  document.getElementById('stat-best-streak').textContent = bestStreak ? bestStreak+'d' : '—';
+
+  if(!members.length){
+    document.getElementById('members-container').innerHTML='<div class="empty">Ainda não há membros aprovados na comunidade.</div>';
+    return;
+  }
+
+  var h='<div class="members-grid">';
+  members.forEach(function(m,i){
+    var initials=(m.name||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var avatarHtml = m.avatar
+      ? '<div class="avatar-lg"><img src="'+m.avatar+'" onerror="this.parentElement.textContent=\''+initials+'\'"></div>'
+      : '<div class="avatar-lg">'+initials+'</div>';
+    var score = m.score||0;
+    var trend = m.weightTrend>0?'↑':(m.weightTrend<0?'↓':'—');
+    var trendColor = m.weightTrend>0?'var(--coral)':(m.weightTrend<0?'#1a7a4a':'var(--muted)');
+
+    h+='<div class="member-card">';
+    h+=rankBadge(i);
+    h+=avatarHtml;
+    h+='<div class="member-name">'+escHtml(m.name||'Membro')+'</div>';
+    h+=scoreRing(score);
+    h+='<div class="member-meta">';
+    if(m.weight) h+='<span>⚖️ '+m.weight+'kg</span>';
+    if(m.streak) h+='<span>🔥 '+m.streak+'d</span>';
+    if(m.weightTrend!==undefined) h+='<span style="color:'+trendColor+'">'+trend+'</span>';
+    h+='</div>';
+    if(m.lastUpdated) h+='<div class="updated">atualizado '+timeAgo(m.lastUpdated)+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  document.getElementById('members-container').innerHTML=h;
+}).catch(function(){ document.getElementById('members-container').innerHTML='<div class="empty">Erro ao carregar membros.</div>'; });
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

@@ -6854,8 +6854,33 @@ function saveToCloud(){
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})
-    .then(function(){ setSyncStatus('ok'); })
+    .then(function(){ setSyncStatus('ok'); syncCommunitySnapshot(); })
     .catch(function(e){ setSyncStatus('error'); console.log('Firestore save error:', e); });
+}
+
+// ── COMMUNITY SNAPSHOT SYNC ───────────────────────────────────
+function syncCommunitySnapshot(){
+  if(!fbAuth||!fbAuth.currentUser||!fbDb) return;
+  var uid = fbAuth.currentUser.uid;
+  fbDb.collection('community').doc(uid).get().then(function(doc){
+    if(!doc.exists||!doc.data().approved) return;
+    var p = PD[curP];
+    var over = pdOverride[curP]||{};
+    var name = over.name||p.name||'';
+    var avatar = over.avatarImg||p.avatarImg||doc.data().avatar||'';
+    var scores = over.scores||p.scores||{Saude:0,Fitness:0,Sono:0,Nutricao:0};
+    var score = Math.round((scores.Saude+scores.Fitness+scores.Sono+scores.Nutricao)/4);
+    var weight = over.weight||p.weight||0;
+    var streak = calcStreak();
+    var hist = (historyData[curP]||[]).slice(-3);
+    var weightTrend = 0;
+    if(hist.length>=2) weightTrend = parseFloat((hist[hist.length-1].weight - hist[hist.length-2].weight).toFixed(1));
+    fbDb.collection('community').doc(uid).update({
+      name:name, avatar:avatar, score:score, weight:weight,
+      streak:streak, weightTrend:weightTrend,
+      lastUpdated:firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function(){});
+  }).catch(function(){});
 }
 
 // Logout function

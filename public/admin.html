@@ -34,6 +34,7 @@ body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-seri
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:500px){.stats-row{grid-template-columns:repeat(5,1fr)}}
 .stat-tile{background:var(--surface);border-radius:var(--radius-sm);padding:14px;text-align:center}
 .stat-val{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
@@ -82,10 +83,13 @@ body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-seri
       <div class="stat-tile"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Usuários</div></div>
       <div class="stat-tile"><div class="stat-val" id="stat-blocked">—</div><div class="stat-lbl">Bloqueados</div></div>
       <div class="stat-tile"><div class="stat-val" id="stat-active">—</div><div class="stat-lbl">Ativos 7d</div></div>
+      <div class="stat-tile"><div class="stat-val" id="stat-members">—</div><div class="stat-lbl">Comunidade</div></div>
+      <div class="stat-tile"><div class="stat-val" id="stat-pending">—</div><div class="stat-lbl">Pendentes</div></div>
     </div>
 
     <div class="tabs">
       <button class="tab active" onclick="switchTab('users')">👥 Usuários</button>
+      <button class="tab" onclick="switchTab('community')">🏘️ Comunidade</button>
       <button class="tab" onclick="switchTab('messages')">📢 Mensagens</button>
     </div>
 
@@ -94,6 +98,25 @@ body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-seri
       <div class="card">
         <div class="sec-label">Todos os usuários</div>
         <div id="users-list"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Community tab -->
+    <div id="tab-community" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="sec-label" style="margin:0">Convites enviados</div>
+          <button class="btn btn-green" onclick="openInviteModal()" style="padding:8px 14px;font-size:12px">+ Convidar pessoa</button>
+        </div>
+        <div id="invites-list"><div class="spinner"></div></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Aguardando aprovação</div>
+        <div id="pending-list"><div class="spinner"></div></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Membros aprovados</div>
+        <div id="members-list"><div class="spinner"></div></div>
       </div>
     </div>
 
@@ -115,6 +138,26 @@ body{background:var(--surface);color:var(--text);font-family:'DM Sans',sans-seri
         <div class="sec-label">Histórico de mensagens</div>
         <div id="messages-list"><div class="spinner"></div></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Invite modal -->
+<div id="invite-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border-radius:var(--radius);padding:24px;max-width:360px;width:100%">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🎟️ Convidar pessoa</div>
+    <div class="field"><label>Nome</label><input id="inv-name" type="text" placeholder="Ex: João Silva"></div>
+    <div class="field"><label>Email</label><input id="inv-email" type="email" placeholder="joao@email.com"></div>
+    <div id="inv-link-box" style="display:none;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Link de convite</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="inv-link" type="text" readonly style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;padding:8px 10px;font-family:DM Mono,monospace;outline:none">
+        <button class="btn btn-sec" onclick="copyInviteLink()" style="padding:8px 12px;font-size:12px;flex-shrink:0">Copiar</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sec" style="flex:1" onclick="closeInviteModal()">Fechar</button>
+      <button class="btn btn-green" style="flex:1" id="inv-send-btn" onclick="createInvite()">Gerar convite</button>
     </div>
   </div>
 </div>
@@ -160,9 +203,11 @@ function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; 
 function switchTab(tab){
   currentTab = tab;
   document.getElementById('tab-users').style.display = tab==='users'?'block':'none';
+  document.getElementById('tab-community').style.display = tab==='community'?'block':'none';
   document.getElementById('tab-messages').style.display = tab==='messages'?'block':'none';
-  document.querySelectorAll('.tab').forEach(function(b,i){ b.className='tab'+((['users','messages'][i]===tab)?' active':''); });
+  document.querySelectorAll('.tab').forEach(function(b,i){ b.className='tab'+((['users','community','messages'][i]===tab)?' active':''); });
   if(tab==='messages') loadMessages();
+  if(tab==='community') loadCommunity();
 }
 
 fbAuth.onAuthStateChanged(function(user){
@@ -274,6 +319,156 @@ function sendMessage(){
     loadMessages();
   }).catch(function(){ toast('Erro ao enviar. Verifique as regras do Firestore.'); });
 }
+
+// ── COMMUNITY ────────────────────────────────────────────────
+function randToken(len){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  var t=''; for(var i=0;i<len;i++) t+=chars[Math.floor(Math.random()*chars.length)]; return t;
+}
+
+function openInviteModal(){
+  document.getElementById('inv-name').value='';
+  document.getElementById('inv-email').value='';
+  document.getElementById('inv-link-box').style.display='none';
+  document.getElementById('inv-send-btn').textContent='Gerar convite';
+  document.getElementById('inv-send-btn').disabled=false;
+  document.getElementById('invite-modal').style.display='flex';
+}
+function closeInviteModal(){ document.getElementById('invite-modal').style.display='none'; }
+
+function createInvite(){
+  var name=document.getElementById('inv-name').value.trim();
+  var email=document.getElementById('inv-email').value.trim();
+  if(!name||!email){ toast('Preencha nome e email.'); return; }
+  var btn=document.getElementById('inv-send-btn');
+  btn.disabled=true; btn.textContent='Gerando...';
+  var token=randToken(16);
+  fbDb.collection('invites').doc(token).set({
+    name:name, email:email, status:'pending',
+    invitedBy:ADMIN_EMAIL,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    var link=window.location.origin+'/join?token='+token;
+    document.getElementById('inv-link').value=link;
+    document.getElementById('inv-link-box').style.display='block';
+    btn.textContent='✓ Convite gerado!';
+    loadCommunity();
+  }).catch(function(){ btn.disabled=false; btn.textContent='Gerar convite'; toast('Erro ao gerar convite.'); });
+}
+
+function copyInviteLink(){
+  var inp=document.getElementById('inv-link');
+  inp.select(); document.execCommand('copy');
+  toast('Link copiado!');
+}
+
+function loadCommunity(){
+  Promise.all([
+    fbDb.collection('invites').orderBy('createdAt','desc').limit(20).get(),
+    fbDb.collection('community').get()
+  ]).then(function(results){
+    var invSnap=results[0], comSnap=results[1];
+    var pending=[], approved=[];
+    comSnap.docs.forEach(function(d){
+      var m=Object.assign({uid:d.id},d.data());
+      if(m.approved) approved.push(m); else pending.push(m);
+    });
+    document.getElementById('stat-members').textContent=approved.length;
+    document.getElementById('stat-pending').textContent=pending.length;
+    renderInvites(invSnap.docs);
+    renderPending(pending);
+    renderApproved(approved);
+  }).catch(function(){ toast('Erro ao carregar comunidade.'); });
+}
+
+function fmtDate(ts){
+  if(!ts) return '';
+  return new Date(ts.seconds?ts.seconds*1000:ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderInvites(docs){
+  if(!docs.length){ document.getElementById('invites-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0">Nenhum convite enviado ainda.</div>'; return; }
+  var h='';
+  docs.forEach(function(doc){
+    var d=doc.data();
+    var statusColor=d.status==='used'?'var(--green)':'var(--amber)';
+    var statusLabel=d.status==='used'?'usado':'pendente';
+    h+='<div class="user-row">';
+    h+='<div class="user-info"><div class="user-name">'+escHtml(d.name||'—')+'</div>';
+    h+='<div class="user-email">'+escHtml(d.email||'')+'</div>';
+    h+='<div class="user-meta">'+fmtDate(d.createdAt)+'</div></div>';
+    h+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">';
+    h+='<span style="font-size:11px;font-weight:600;color:'+statusColor+'">'+statusLabel+'</span>';
+    if(d.status!=='used'){
+      h+='<button class="btn btn-sec" onclick="copyTokenLink(\''+doc.id+'\')" style="padding:4px 10px;font-size:11px">Copiar link</button>';
+    }
+    h+='</div></div>';
+  });
+  document.getElementById('invites-list').innerHTML=h;
+}
+
+function copyTokenLink(token){
+  var link=window.location.origin+'/join?token='+token;
+  navigator.clipboard.writeText(link).then(function(){ toast('Link copiado!'); }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Link copiado!');
+  });
+}
+
+function renderPending(members){
+  if(!members.length){ document.getElementById('pending-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0">Nenhum membro aguardando aprovação.</div>'; return; }
+  var h='';
+  members.forEach(function(m){
+    var initials=(m.name||'?').charAt(0).toUpperCase();
+    h+='<div class="user-row">';
+    h+='<div class="avatar-sm" style="'+(m.avatar?'padding:0;overflow:hidden':'')+'">'+
+      (m.avatar?'<img src="'+m.avatar+'" style="width:100%;height:100%;object-fit:cover">':initials)+'</div>';
+    h+='<div class="user-info"><div class="user-name">'+escHtml(m.name||'—')+'</div>';
+    h+='<div class="user-email">'+escHtml(m.email||'')+'</div></div>';
+    h+='<div style="display:flex;gap:6px">';
+    h+='<button class="btn btn-coral" onclick="rejectMember(\''+m.uid+'\')" style="padding:6px 10px;font-size:12px">Rejeitar</button>';
+    h+='<button class="btn btn-green" onclick="approveMember(\''+m.uid+'\')" style="padding:6px 10px;font-size:12px">Aprovar</button>';
+    h+='</div></div>';
+  });
+  document.getElementById('pending-list').innerHTML=h;
+}
+
+function renderApproved(members){
+  if(!members.length){ document.getElementById('members-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0">Nenhum membro aprovado ainda.</div>'; return; }
+  var h='';
+  members.forEach(function(m){
+    var initials=(m.name||'?').charAt(0).toUpperCase();
+    h+='<div class="user-row">';
+    h+='<div class="avatar-sm" style="'+(m.avatar?'padding:0;overflow:hidden':'background:var(--green)')+'">'+
+      (m.avatar?'<img src="'+m.avatar+'" style="width:100%;height:100%;object-fit:cover">':initials)+'</div>';
+    h+='<div class="user-info"><div class="user-name">'+escHtml(m.name||'—')+'</div>';
+    h+='<div class="user-email">'+escHtml(m.email||'')+'</div>';
+    h+='<div class="user-meta">'+(m.score?'Score: '+m.score+' · ':'')+(m.streak?'Streak: '+m.streak+'d':'')+'</div></div>';
+    h+='<button class="btn btn-coral" onclick="removeMember(\''+m.uid+'\')" style="padding:6px 10px;font-size:12px">Remover</button>';
+    h+='</div>';
+  });
+  document.getElementById('members-list').innerHTML=h;
+}
+
+function approveMember(uid){
+  fbDb.collection('community').doc(uid).update({approved:true}).then(function(){
+    toast('Membro aprovado!'); loadCommunity();
+  }).catch(function(){ toast('Erro ao aprovar.'); });
+}
+
+function rejectMember(uid){
+  if(!confirm('Rejeitar e remover este membro?')) return;
+  fbDb.collection('community').doc(uid).delete().then(function(){
+    toast('Membro removido.'); loadCommunity();
+  }).catch(function(){ toast('Erro ao remover.'); });
+}
+
+function removeMember(uid){
+  if(!confirm('Remover este membro da comunidade?')) return;
+  fbDb.collection('community').doc(uid).delete().then(function(){
+    toast('Membro removido.'); loadCommunity();
+  }).catch(function(){ toast('Erro ao remover.'); });
+}
+// ─────────────────────────────────────────────────────────────
 
 function loadMessages(){
   fbDb.collection('messages').orderBy('createdAt','desc').limit(20).get().then(function(snap){

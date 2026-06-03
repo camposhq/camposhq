@@ -6524,22 +6524,41 @@ function doAuth(){
   } else {
     var name = document.getElementById('auth-name').value.trim();
     if(!name){ showAuthError('Digite seu nome.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
-    fbAuth.createUserWithEmailAndPassword(email, pass)
-      .then(function(cred){
-        currentUser = cred.user;
-        return cred.user.updateProfile({displayName: name});
-      })
-      .then(function(){
+    var invToken = sessionStorage.getItem('inviteToken');
+    if(!invToken){ showAuthError('Você precisa de um convite para criar uma conta.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
+    if(!fbDb){ showAuthError('Erro de conexão. Tente novamente.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
+    fbDb.collection('invites').doc(invToken).get().then(function(invDoc){
+      if(!invDoc.exists || invDoc.data().status === 'used'){
+        sessionStorage.removeItem('inviteToken');
+        showAuthError('Convite inválido ou já utilizado.');
         btn.textContent = 'Criar conta'; btn.disabled = false;
-        spStep = 1;
-        showScreen('setup');
-        document.getElementById('bottom-nav').style.display = 'none';
-        spRender();
-      })
-      .catch(function(err){
-        btn.textContent = 'Criar conta'; btn.disabled = false;
-        showAuthError(getAuthErrorMsg(err.code));
-      });
+        return;
+      }
+      fbAuth.createUserWithEmailAndPassword(email, pass)
+        .then(function(cred){
+          currentUser = cred.user;
+          sessionStorage.removeItem('inviteToken');
+          var batch = fbDb.batch();
+          batch.update(fbDb.collection('invites').doc(invToken), {status:'used', uid:cred.user.uid, joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          batch.set(fbDb.collection('community').doc(cred.user.uid), {name:name, email:email, avatar:'', approved:false, inviteToken:invToken, joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          batch.commit().catch(function(){});
+          return cred.user.updateProfile({displayName: name});
+        })
+        .then(function(){
+          btn.textContent = 'Criar conta'; btn.disabled = false;
+          spStep = 1;
+          showScreen('setup');
+          document.getElementById('bottom-nav').style.display = 'none';
+          spRender();
+        })
+        .catch(function(err){
+          btn.textContent = 'Criar conta'; btn.disabled = false;
+          showAuthError(getAuthErrorMsg(err.code));
+        });
+    }).catch(function(){
+      showAuthError('Erro ao validar convite. Tente novamente.');
+      btn.textContent = 'Criar conta'; btn.disabled = false;
+    });
   }
 }
 
@@ -6919,8 +6938,9 @@ function copyCommInviteLink(){
 function escapeHtmlComm(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function checkInviteToken(){
-  var token = new URLSearchParams(window.location.search).get('token');
+  var token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('inviteToken');
   if(!token) return;
+  sessionStorage.removeItem('inviteToken');
   history.replaceState({},document.title,window.location.pathname);
   if(!fbDb||!currentUser) return;
   fbDb.collection('community').doc(currentUser.uid).get().then(function(doc){
@@ -7133,6 +7153,11 @@ function testNotification(){
     showToast('Notificação chegará em 5 segundos...');
   });
 }
+// Save invite token from URL before auth clears it
+(function(){
+  var t = new URLSearchParams(window.location.search).get('token');
+  if(t) sessionStorage.setItem('inviteToken', t);
+})();
 // Always hide nav until auth confirms user is logged in
 document.getElementById('bottom-nav').style.display = 'none';
 // Start auth flow

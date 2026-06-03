@@ -2087,6 +2087,14 @@ function renderHome(){
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise do dia</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
 
+  // Community banner
+  h += '<div class="section"><button onclick="openCommunity()" style="display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid #f97316;border-radius:var(--radius-sm);padding:14px 16px;width:100%;text-align:left;cursor:pointer;font-family:DM Sans,sans-serif">';
+  h += '<span style="font-size:22px">🏘️</span>';
+  h += '<div><div style="font-size:14px;font-weight:600;color:#f97316">Comunidade MyHealth</div>';
+  h += '<div style="font-size:12px;color:var(--muted)">Ver ranking e evolução dos membros</div></div>';
+  h += '<span style="margin-left:auto;color:var(--muted)">›</span>';
+  h += '</button></div>';
+
   // Admin button — only for admin
   if(isAdmin()){
     h += '<div class="section"><a href="/admin.html" style="display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:14px 16px;text-decoration:none">';
@@ -4162,7 +4170,6 @@ function renderEvolucao(){
   h+='<div class="section"><div class="actions">';
   h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
   h+='<button class="act-btn" id="evo-export-btn"><span class="act-icon">📤</span><span class="act-lbl">Exportar</span><span class="act-sub">Compartilhar progresso</span></button>';
-  h+='<button class="act-btn" id="evo-community-btn"><span class="act-icon">🏘️</span><span class="act-lbl">Comunidade</span><span class="act-sub">Ver membros</span></button>';
   h+='</div></div>';
 
   document.getElementById('evolucao-content').innerHTML = h;
@@ -4185,8 +4192,6 @@ function renderEvolucao(){
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
   var exportBtn = document.getElementById('evo-export-btn');
   if(exportBtn) exportBtn.addEventListener('click', exportProgresso);
-  var commBtn = document.getElementById('evo-community-btn');
-  if(commBtn) commBtn.addEventListener('click', openCommunity);
 }
 
 function exportProgresso(){

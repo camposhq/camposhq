@@ -1539,7 +1539,7 @@ document.querySelectorAll('.nav-item').forEach(function(btn){
 // ══════════════════════════════════════════════════════════════
 // PROFILES STRIP
 // ══════════════════════════════════════════════════════════════
-var ADMIN_EMAIL = 'walter@camposhq.com';
+var ADMIN_EMAILS = ['walter@camposhq.com', 'camposwalter@gmail.com'];
 var adminMode = false; // set immediately on auth, before any async operations
 function isAdmin(){ return adminMode; }
 
@@ -6354,7 +6354,7 @@ function initAuth(){
     if(user){
       currentUser = user;
       // set adminMode immediately — before any async operations or renders
-      adminMode = !!(user.email && user.email.toLowerCase().trim() === ADMIN_EMAIL);
+      adminMode = !!(user.email && ADMIN_EMAILS.indexOf(user.email.toLowerCase().trim()) !== -1);
       if(adminMode){
         var ab = document.getElementById('admin-btn');
         if(ab) ab.style.display='flex';
@@ -6895,6 +6895,7 @@ function generateCommInvite(){
   btn.disabled=true; btn.textContent='Gerando...';
   var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   var token=''; for(var i=0;i<16;i++) token+=chars[Math.floor(Math.random()*chars.length)];
+  if(!fbDb){ showToast('Erro: banco de dados não inicializado.'); btn.disabled=false; btn.textContent='Gerar link de convite'; return; }
   fbDb.collection('invites').doc(token).set({
     name:name, email:email, status:'pending',
     invitedBy:currentUser?currentUser.email:'',
@@ -6905,7 +6906,7 @@ function generateCommInvite(){
     document.getElementById('comm-inv-link-box').style.display='block';
     btn.textContent='✓ Link gerado!';
     showToast('Convite criado! Copie o link.');
-  }).catch(function(){ btn.disabled=false; btn.textContent='Gerar link de convite'; showToast('Erro ao gerar convite.'); });
+  }).catch(function(err){ console.error('Erro ao gerar convite:', err); btn.disabled=false; btn.textContent='Gerar link de convite'; showToast('Erro ao gerar convite: ' + (err.code||err.message||err)); });
 }
 
 function copyCommInviteLink(){

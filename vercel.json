@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/join", "destination": "/public/index.html" },
     { "source": "/((?!api/|pro\\.html|admin\\.html|join\\.html|community\\.html).*)", "destination": "/public/index.html" }
   ]
 }

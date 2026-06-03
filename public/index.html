@@ -263,6 +263,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .dsi:last-child{border-right:none}
 .dsi-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
 .dsi-lbl{font-size:10px;opacity:.7;margin-top:3px}
+#community-ov{position:fixed;inset:0;z-index:90;background:var(--surface);overflow-y:auto;display:none;padding-bottom:40px}
+#community-ov .c-header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
+.cmember-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;position:relative}
+.cmember-avatar{width:50px;height:50px;border-radius:50%;margin:0 auto 8px;overflow:hidden;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff}
+.cmember-avatar img{width:100%;height:100%;object-fit:cover}
+.cmember-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+.crank{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface);border-radius:99px;padding:2px 7px}
+#join-ov{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center}
+#join-ov.open{display:flex}
 .wmodal-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .wmodal-back.open{opacity:1;pointer-events:all}
 .wmodal{background:var(--card);border-radius:var(--radius);padding:24px;width:280px;text-align:center}
@@ -614,6 +623,27 @@ input[type=file]{display:none}
   <button class="nav-item" data-screen="evolucao"><span class="nav-icon">📈</span><span class="nav-label">Evolucao</span></button>
 </nav>
 </div><!-- /app-shell -->
+
+<!-- COMMUNITY OVERLAY -->
+<div id="community-ov">
+  <div class="c-header">
+    <div style="font-family:Fraunces,serif;font-size:20px">MyHealth <em style="font-style:italic;font-weight:400">Community</em></div>
+    <button onclick="closeCommunity()" style="background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+  </div>
+  <div id="community-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 16px 0"></div>
+  <div class="cmember-grid" id="community-body"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div></div>
+</div>
+
+<!-- JOIN MODAL -->
+<div id="join-ov">
+  <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🎟️</div>
+    <div style="font-family:Fraunces,serif;font-size:22px;margin-bottom:8px">Convite recebido!</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px" id="join-msg">Você foi convidado para a comunidade MyHealth.</div>
+    <button onclick="doJoinCommunity()" style="width:100%;padding:14px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;margin-bottom:10px">Entrar na comunidade</button>
+    <button onclick="dismissJoin()" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:500;font-family:DM Sans,sans-serif;cursor:pointer;color:var(--muted)">Agora não</button>
+  </div>
+</div>
 
 <!-- WEIGHT MODAL -->
 <div class="wmodal-back" id="wmodal-back">
@@ -4132,7 +4162,7 @@ function renderEvolucao(){
   h+='<div class="section"><div class="actions">';
   h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
   h+='<button class="act-btn" id="evo-export-btn"><span class="act-icon">📤</span><span class="act-lbl">Exportar</span><span class="act-sub">Compartilhar progresso</span></button>';
-  h+='<a class="act-btn" href="/community.html"><span class="act-icon">🏘️</span><span class="act-lbl">Comunidade</span><span class="act-sub">Ver membros</span></a>';
+  h+='<button class="act-btn" id="evo-community-btn"><span class="act-icon">🏘️</span><span class="act-lbl">Comunidade</span><span class="act-sub">Ver membros</span></button>';
   h+='</div></div>';
 
   document.getElementById('evolucao-content').innerHTML = h;
@@ -4155,6 +4185,8 @@ function renderEvolucao(){
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
   var exportBtn = document.getElementById('evo-export-btn');
   if(exportBtn) exportBtn.addEventListener('click', exportProgresso);
+  var commBtn = document.getElementById('evo-community-btn');
+  if(commBtn) commBtn.addEventListener('click', openCommunity);
 }
 
 function exportProgresso(){
@@ -6427,6 +6459,7 @@ function initAuth(){
           if(stored){ proToken=stored; setTimeout(function(){ syncSpecialistView(); checkProposals(); },2000); }
           hideSplash();
           showScreen('home');
+          setTimeout(checkInviteToken, 500);
         });
       }
     } else {
@@ -6857,6 +6890,106 @@ function saveToCloud(){
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})
     .then(function(){ setSyncStatus('ok'); syncCommunitySnapshot(); })
     .catch(function(e){ setSyncStatus('error'); console.log('Firestore save error:', e); });
+}
+
+// ── COMMUNITY OVERLAY ─────────────────────────────────────────
+var _pendingJoin = null;
+
+function openCommunity(){
+  document.getElementById('community-ov').style.display = 'block';
+  document.getElementById('community-body').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div>';
+  document.getElementById('community-stats').innerHTML = '';
+  if(!fbDb){ document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Sem conexão.</div>'; return; }
+  fbDb.collection('community').where('approved','==',true).get().then(function(snap){
+    var members = snap.docs.map(function(d){ return Object.assign({uid:d.id},d.data()); });
+    members.sort(function(a,b){ return (b.score||0)-(a.score||0); });
+    var totalScore = members.reduce(function(s,m){ return s+(m.score||0); },0);
+    var avgScore = members.length ? Math.round(totalScore/members.length) : 0;
+    var bestStreak = members.reduce(function(mx,m){ return Math.max(mx,m.streak||0); },0);
+    document.getElementById('community-stats').innerHTML =
+      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+members.length+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Membros</div></div>'+
+      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+(avgScore||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Score médio</div></div>'+
+      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+(bestStreak?bestStreak+'d':'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Maior streak</div></div>';
+    if(!members.length){
+      document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum membro aprovado ainda.</div>';
+      return;
+    }
+    var h='';
+    members.forEach(function(m,i){
+      var initials=(m.name||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      var avatarH = m.avatar
+        ? '<div class="cmember-avatar"><img src="'+m.avatar+'" onerror="this.parentElement.textContent=\''+initials+'\'"></div>'
+        : '<div class="cmember-avatar">'+initials+'</div>';
+      var score=m.score||0;
+      var scoreColor=score>=80?'#1a7a4a':score>=60?'#c47a1a':'#e05252';
+      var rankLabel = i===0?'🥇 1º':i===1?'🥈 2º':i===2?'🥉 3º':(i+1)+'º';
+      var trend=m.weightTrend>0?'↑ peso':m.weightTrend<0?'↓ peso':'';
+      var trendColor=m.weightTrend>0?'#e05252':m.weightTrend<0?'#1a7a4a':'var(--muted)';
+      h+='<div class="cmember-card">';
+      h+='<div class="crank">'+rankLabel+'</div>';
+      h+=avatarH;
+      h+='<div style="font-size:13px;font-weight:600;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtmlComm(m.name||'Membro')+'</div>';
+      h+='<div style="font-size:28px;font-weight:700;font-family:DM Mono,monospace;color:'+scoreColor+'">'+score+'</div>';
+      h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">score</div>';
+      h+='<div style="display:flex;justify-content:center;gap:8px;font-size:11px;color:var(--muted)">';
+      if(m.weight) h+='<span>⚖️ '+m.weight+'kg</span>';
+      if(m.streak) h+='<span>🔥 '+m.streak+'d</span>';
+      if(trend) h+='<span style="color:'+trendColor+'">'+trend+'</span>';
+      h+='</div></div>';
+    });
+    document.getElementById('community-body').innerHTML=h;
+  }).catch(function(){ document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Erro ao carregar membros.</div>'; });
+}
+
+function closeCommunity(){
+  document.getElementById('community-ov').style.display='none';
+}
+
+function escapeHtmlComm(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function checkInviteToken(){
+  var token = new URLSearchParams(window.location.search).get('token');
+  if(!token) return;
+  history.replaceState({},document.title,window.location.pathname);
+  if(!fbDb||!currentUser) return;
+  fbDb.collection('community').doc(currentUser.uid).get().then(function(doc){
+    if(doc.exists) return;
+    fbDb.collection('invites').doc(token).get().then(function(invDoc){
+      if(!invDoc.exists||invDoc.data().status==='used') return;
+      _pendingJoin = {token:token, invite:invDoc.data()};
+      document.getElementById('join-msg').textContent = 'Você foi convidado para fazer parte da comunidade MyHealth. Confirme para entrar!';
+      document.getElementById('join-ov').classList.add('open');
+    });
+  });
+}
+
+function doJoinCommunity(){
+  if(!_pendingJoin||!currentUser||!fbDb) return;
+  var token=_pendingJoin.token;
+  var invite=_pendingJoin.invite;
+  var user=currentUser;
+  var batch=fbDb.batch();
+  batch.set(fbDb.collection('community').doc(user.uid),{
+    name:user.displayName||invite.name||'',
+    email:user.email||'',
+    avatar:user.photoURL||'',
+    approved:false,
+    inviteToken:token,
+    joinedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  batch.update(fbDb.collection('invites').doc(token),{
+    status:'used', uid:user.uid,
+    joinedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  batch.commit().then(function(){
+    dismissJoin();
+    showToast('Solicitação enviada! Aguarde aprovação. ✓');
+  }).catch(function(){ showToast('Erro ao entrar. Tente novamente.'); });
+}
+
+function dismissJoin(){
+  document.getElementById('join-ov').classList.remove('open');
+  _pendingJoin=null;
 }
 
 // ── COMMUNITY SNAPSHOT SYNC ───────────────────────────────────

@@ -263,13 +263,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .dsi:last-child{border-right:none}
 .dsi-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
 .dsi-lbl{font-size:10px;opacity:.7;margin-top:3px}
-#community-ov{position:fixed;inset:0;z-index:90;background:var(--surface);overflow-y:auto;display:none;padding-bottom:40px}
-#community-ov .c-header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
-.cmember-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;position:relative}
-.cmember-avatar{width:50px;height:50px;border-radius:50%;margin:0 auto 8px;overflow:hidden;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff}
+#community-ov{position:fixed;inset:0;z-index:200;background:var(--surface);overflow-y:auto;display:none;padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+.c-hero{background:linear-gradient(135deg,#ea580c,#f97316);padding:calc(18px + env(safe-area-inset-top)) 20px 24px}
+.c-hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cmember-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;position:relative;transition:transform .15s}
+.cmember-card:active{transform:scale(.97)}
+.cmember-avatar{width:52px;height:52px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.15)}
 .cmember-avatar img{width:100%;height:100%;object-fit:cover}
-.cmember-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
-.crank{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface);border-radius:99px;padding:2px 7px}
+.cmember-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;padding:16px}
+.crank{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface);border-radius:99px;padding:2px 8px}
 #join-ov{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center}
 #join-ov.open{display:flex}
 .wmodal-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -626,17 +628,29 @@ input[type=file]{display:none}
 
 <!-- COMMUNITY OVERLAY -->
 <div id="community-ov">
-  <div class="c-header">
-    <div style="font-family:Fraunces,serif;font-size:20px">MyHealth <em style="font-style:italic;font-weight:400">Community</em></div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button id="comm-invite-btn" onclick="openCommInvite()" style="background:#f97316;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Convidar</button>
-      <button onclick="closeCommunity()" style="background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+  <!-- Hero header -->
+  <div class="c-hero">
+    <div class="c-hero-top">
+      <div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">MyHealth</div>
+        <div style="font-family:Fraunces,serif;font-size:26px;color:#fff;line-height:1"><em>Community</em></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="comm-invite-btn" onclick="openCommInvite()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;backdrop-filter:blur(8px)">+ Convidar</button>
+        <button onclick="closeCommunity()" style="background:rgba(255,255,255,.15);border:none;width:34px;height:34px;border-radius:50%;font-size:18px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+      </div>
     </div>
+    <!-- Stats inside hero -->
+    <div id="community-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
   </div>
-  <div id="community-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 16px 0"></div>
+  <!-- Members -->
+  <div style="padding:12px 16px 6px">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Ranking de membros</div>
+  </div>
   <div class="cmember-grid" id="community-body"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div></div>
-  <!-- Invite panel (admin only, inside overlay) -->
-  <div id="comm-invite-panel" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center">
+
+  <!-- Invite panel -->
+  <div id="comm-invite-panel" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center">
     <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 20px calc(28px + env(safe-area-inset-bottom))">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-family:Fraunces,serif;font-size:20px">🎟️ Convidar pessoa</div>
@@ -650,11 +664,11 @@ input[type=file]{display:none}
         <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Email</div>
         <input id="comm-inv-email" type="email" placeholder="joao@email.com" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:11px 14px;font-family:DM Sans,sans-serif;outline:none;box-sizing:border-box">
       </div>
-      <div id="comm-inv-link-box" style="display:none;margin-bottom:16px;background:var(--surface);border-radius:12px;padding:12px 14px">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Link de convite gerado</div>
+      <div id="comm-inv-link-box" style="display:none;margin-bottom:16px;background:var(--surface);border-radius:12px;padding:14px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Link de convite</div>
         <div style="display:flex;gap:8px;align-items:center">
           <input id="comm-inv-link" type="text" readonly style="flex:1;background:transparent;border:none;color:#f97316;font-size:12px;font-family:DM Mono,monospace;outline:none;min-width:0">
-          <button onclick="copyCommInviteLink()" style="background:#f97316;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0">Copiar</button>
+          <button onclick="copyCommInviteLink()" style="background:#f97316;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0">Copiar</button>
         </div>
       </div>
       <button id="comm-inv-gen-btn" onclick="generateCommInvite()" style="width:100%;padding:14px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Gerar link de convite</button>
@@ -6821,9 +6835,9 @@ function openCommunity(){
     var avgScore = members.length ? Math.round(totalScore/members.length) : 0;
     var bestStreak = members.reduce(function(mx,m){ return Math.max(mx,m.streak||0); },0);
     document.getElementById('community-stats').innerHTML =
-      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+members.length+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Membros</div></div>'+
-      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+(avgScore||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Score médio</div></div>'+
-      '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:#f97316">'+(bestStreak?bestStreak+'d':'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Maior streak</div></div>';
+      '<div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:700;font-family:DM Mono,monospace;color:#fff">'+members.length+'</div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Membros</div></div>'+
+      '<div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:700;font-family:DM Mono,monospace;color:#fff">'+(avgScore||'—')+'</div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Score médio</div></div>'+
+      '<div style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:700;font-family:DM Mono,monospace;color:#fff">'+(bestStreak?bestStreak+'d':'—')+'</div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Maior streak</div></div>';
     if(!members.length){
       document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum membro aprovado ainda.</div>';
       return;

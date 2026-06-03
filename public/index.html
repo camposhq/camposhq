@@ -629,7 +629,7 @@ input[type=file]{display:none}
   <div class="c-header">
     <div style="font-family:Fraunces,serif;font-size:20px">MyHealth <em style="font-style:italic;font-weight:400">Community</em></div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button id="comm-invite-btn" onclick="openCommInvite()" style="display:none;background:#f97316;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Convidar</button>
+      <button id="comm-invite-btn" onclick="openCommInvite()" style="background:#f97316;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Convidar</button>
       <button onclick="closeCommunity()" style="background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
     </div>
   </div>
@@ -6811,8 +6811,6 @@ var _pendingJoin = null;
 
 function openCommunity(){
   document.getElementById('community-ov').style.display = 'block';
-  var invBtn = document.getElementById('comm-invite-btn');
-  if(invBtn) invBtn.style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('community-body').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div>';
   document.getElementById('community-stats').innerHTML = '';
   if(!fbDb){ document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Sem conexão.</div>'; return; }
@@ -6878,6 +6876,7 @@ function generateCommInvite(){
   var name=document.getElementById('comm-inv-name').value.trim();
   var email=document.getElementById('comm-inv-email').value.trim();
   if(!name||!email){ showToast('Preencha nome e email.'); return; }
+  if(!isAdmin()){ showToast('Apenas o admin pode convidar.'); return; }
   var btn=document.getElementById('comm-inv-gen-btn');
   btn.disabled=true; btn.textContent='Gerando...';
   var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';

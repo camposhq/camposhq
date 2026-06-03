@@ -1524,11 +1524,13 @@ function renderProfiles(containerId){
   h += '<button id="btn-edit-profile-strip" style="display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:0 4px;flex-shrink:0">';
   h += '<div style="width:38px;height:38px;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)">⚙️</div>';
   h += '<span style="font-size:10px;color:var(--muted)">Editar</span></button>';
-  // Community card
-  h += '<button onclick="openCommunity()" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid #f97316;border-radius:20px;padding:6px 14px 6px 8px;cursor:pointer;flex-shrink:0;margin-left:auto;font-family:DM Sans,sans-serif">';
-  h += '<div style="width:30px;height:30px;border-radius:50%;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:14px">🏘️</div>';
-  h += '<div style="text-align:left"><div style="font-size:12px;font-weight:600;color:#f97316;line-height:1.2">Comunidade</div><div style="font-size:10px;color:var(--muted)">MyHealth</div></div>';
-  h += '</button>';
+  // Community card — home screen only
+  if(containerId === 'home-profiles'){
+    h += '<button onclick="openCommunity()" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid #f97316;border-radius:20px;padding:6px 14px 6px 8px;cursor:pointer;flex-shrink:0;margin-left:auto;font-family:DM Sans,sans-serif">';
+    h += '<div style="width:30px;height:30px;border-radius:50%;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:14px">🏘️</div>';
+    h += '<div style="text-align:left"><div style="font-size:12px;font-weight:600;color:#f97316;line-height:1.2">Comunidade</div><div style="font-size:10px;color:var(--muted)">MyHealth</div></div>';
+    h += '</button>';
+  }
   el.innerHTML = h;
   document.getElementById('btn-edit-profile-strip').addEventListener('click', function(){
     spStep=1; spLoadFromProfile(); showScreen('setup');

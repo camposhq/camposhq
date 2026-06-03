@@ -628,10 +628,38 @@ input[type=file]{display:none}
 <div id="community-ov">
   <div class="c-header">
     <div style="font-family:Fraunces,serif;font-size:20px">MyHealth <em style="font-style:italic;font-weight:400">Community</em></div>
-    <button onclick="closeCommunity()" style="background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="comm-invite-btn" onclick="openCommInvite()" style="display:none;background:#f97316;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Convidar</button>
+      <button onclick="closeCommunity()" style="background:none;border:none;font-size:24px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+    </div>
   </div>
   <div id="community-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 16px 0"></div>
   <div class="cmember-grid" id="community-body"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div></div>
+  <!-- Invite panel (admin only, inside overlay) -->
+  <div id="comm-invite-panel" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center">
+    <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 20px calc(28px + env(safe-area-inset-bottom))">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-family:Fraunces,serif;font-size:20px">🎟️ Convidar pessoa</div>
+        <button onclick="closeCommInvite()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>
+        <input id="comm-inv-name" type="text" placeholder="Ex: João Silva" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:11px 14px;font-family:DM Sans,sans-serif;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Email</div>
+        <input id="comm-inv-email" type="email" placeholder="joao@email.com" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:11px 14px;font-family:DM Sans,sans-serif;outline:none;box-sizing:border-box">
+      </div>
+      <div id="comm-inv-link-box" style="display:none;margin-bottom:16px;background:var(--surface);border-radius:12px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Link de convite gerado</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="comm-inv-link" type="text" readonly style="flex:1;background:transparent;border:none;color:#f97316;font-size:12px;font-family:DM Mono,monospace;outline:none;min-width:0">
+          <button onclick="copyCommInviteLink()" style="background:#f97316;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0">Copiar</button>
+        </div>
+      </div>
+      <button id="comm-inv-gen-btn" onclick="generateCommInvite()" style="width:100%;padding:14px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Gerar link de convite</button>
+    </div>
+  </div>
 </div>
 
 <!-- JOIN MODAL -->
@@ -6783,6 +6811,8 @@ var _pendingJoin = null;
 
 function openCommunity(){
   document.getElementById('community-ov').style.display = 'block';
+  var invBtn = document.getElementById('comm-invite-btn');
+  if(invBtn) invBtn.style.display = isAdmin() ? 'block' : 'none';
   document.getElementById('community-body').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando...</div>';
   document.getElementById('community-stats').innerHTML = '';
   if(!fbDb){ document.getElementById('community-body').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Sem conexão.</div>'; return; }
@@ -6829,6 +6859,47 @@ function openCommunity(){
 
 function closeCommunity(){
   document.getElementById('community-ov').style.display='none';
+}
+
+function openCommInvite(){
+  document.getElementById('comm-inv-name').value='';
+  document.getElementById('comm-inv-email').value='';
+  document.getElementById('comm-inv-link-box').style.display='none';
+  document.getElementById('comm-inv-gen-btn').textContent='Gerar link de convite';
+  document.getElementById('comm-inv-gen-btn').disabled=false;
+  document.getElementById('comm-invite-panel').style.display='flex';
+}
+
+function closeCommInvite(){
+  document.getElementById('comm-invite-panel').style.display='none';
+}
+
+function generateCommInvite(){
+  var name=document.getElementById('comm-inv-name').value.trim();
+  var email=document.getElementById('comm-inv-email').value.trim();
+  if(!name||!email){ showToast('Preencha nome e email.'); return; }
+  var btn=document.getElementById('comm-inv-gen-btn');
+  btn.disabled=true; btn.textContent='Gerando...';
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  var token=''; for(var i=0;i<16;i++) token+=chars[Math.floor(Math.random()*chars.length)];
+  fbDb.collection('invites').doc(token).set({
+    name:name, email:email, status:'pending',
+    invitedBy:currentUser?currentUser.email:'',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    var link=window.location.origin+'/join?token='+token;
+    document.getElementById('comm-inv-link').value=link;
+    document.getElementById('comm-inv-link-box').style.display='block';
+    btn.textContent='✓ Link gerado!';
+    showToast('Convite criado! Copie o link.');
+  }).catch(function(){ btn.disabled=false; btn.textContent='Gerar link de convite'; showToast('Erro ao gerar convite.'); });
+}
+
+function copyCommInviteLink(){
+  var link=document.getElementById('comm-inv-link').value;
+  navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado! ✓'); }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showToast('Link copiado! ✓');
+  });
 }
 
 function escapeHtmlComm(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

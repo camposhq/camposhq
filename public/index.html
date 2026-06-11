@@ -6527,38 +6527,37 @@ function doAuth(){
     var invToken = sessionStorage.getItem('inviteToken');
     if(!invToken){ showAuthError('Você precisa de um convite para criar uma conta.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
     if(!fbDb){ showAuthError('Erro de conexão. Tente novamente.'); btn.textContent = 'Criar conta'; btn.disabled = false; return; }
-    fbDb.collection('invites').doc(invToken).get().then(function(invDoc){
-      if(!invDoc.exists || invDoc.data().status === 'used'){
-        sessionStorage.removeItem('inviteToken');
-        showAuthError('Convite inválido ou já utilizado.');
-        btn.textContent = 'Criar conta'; btn.disabled = false;
-        return;
-      }
-      fbAuth.createUserWithEmailAndPassword(email, pass)
-        .then(function(cred){
-          currentUser = cred.user;
+    // Create account first (authenticates the user), then validate invite with Firestore
+    fbAuth.createUserWithEmailAndPassword(email, pass)
+      .then(function(cred){
+        currentUser = cred.user;
+        return fbDb.collection('invites').doc(invToken).get().then(function(invDoc){
+          if(!invDoc.exists || invDoc.data().status === 'used'){
+            sessionStorage.removeItem('inviteToken');
+            return cred.user.delete().catch(function(){}).then(function(){
+              currentUser = null;
+              showAuthError('Convite inválido ou já utilizado.');
+              btn.textContent = 'Criar conta'; btn.disabled = false;
+            });
+          }
           sessionStorage.removeItem('inviteToken');
           var batch = fbDb.batch();
           batch.update(fbDb.collection('invites').doc(invToken), {status:'used', uid:cred.user.uid, joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
           batch.set(fbDb.collection('community').doc(cred.user.uid), {name:name, email:email, avatar:'', approved:false, inviteToken:invToken, joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
           batch.commit().catch(function(){});
-          return cred.user.updateProfile({displayName: name});
-        })
-        .then(function(){
-          btn.textContent = 'Criar conta'; btn.disabled = false;
-          spStep = 1;
-          showScreen('setup');
-          document.getElementById('bottom-nav').style.display = 'none';
-          spRender();
-        })
-        .catch(function(err){
-          btn.textContent = 'Criar conta'; btn.disabled = false;
-          showAuthError(getAuthErrorMsg(err.code));
+          return cred.user.updateProfile({displayName: name}).then(function(){
+            btn.textContent = 'Criar conta'; btn.disabled = false;
+            spStep = 1;
+            showScreen('setup');
+            document.getElementById('bottom-nav').style.display = 'none';
+            spRender();
+          });
         });
-    }).catch(function(){
-      showAuthError('Erro ao validar convite. Tente novamente.');
-      btn.textContent = 'Criar conta'; btn.disabled = false;
-    });
+      })
+      .catch(function(err){
+        btn.textContent = 'Criar conta'; btn.disabled = false;
+        showAuthError(getAuthErrorMsg(err.code));
+      });
   }
 }
 

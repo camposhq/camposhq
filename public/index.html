@@ -2238,8 +2238,8 @@ function renderTreinosStrip(){
         });
       }
       var isSug = sel===today && i===suggested && done===0;
-      hp += '<button class="day-btn'+(isA?' active':'')+'" data-plan="'+i+'" style="position:relative;padding:9px 14px'+(isA?';background:'+w.color+';border-color:'+w.color:'')+'">';
-      hp += '<span class="dlabel" style="font-size:12px;font-weight:600;white-space:nowrap'+(isA?';color:#fff':'')+'">'+w.name+'</span>';
+      hp += '<button class="day-btn'+(isA?' active':'')+'" data-plan="'+i+'" style="position:relative;padding:10px 6px;width:100%'+(isA?';background:'+w.color+';border-color:'+w.color:'')+'">';
+      hp += '<span class="dlabel" style="font-size:11.5px;font-weight:600;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis'+(isA?';color:#fff':'')+'">'+w.name+'</span>';
       if(done>0) hp += '<span class="dnum" style="font-size:10px;font-weight:600;color:'+(isA?'rgba(255,255,255,.85)':done>=total?'var(--green)':'var(--amber)')+'">'+(done>=total?'✓ completo':done+'/'+total+' séries')+'</span>';
       else if(isSug) hp += '<span class="dnum" style="font-size:10px;font-weight:700;color:'+(isA?'rgba(255,255,255,.85)':'var(--green)')+'">↻ próximo</span>';
       else hp += '<span class="dnum" style="font-size:10px;color:'+(isA?'rgba(255,255,255,.6)':'var(--muted)')+'">'+(w.exs?w.exs.length:0)+' exercícios</span>';
@@ -2250,7 +2250,7 @@ function renderTreinosStrip(){
   var strip = document.getElementById('treinos-strip');
   strip.style.flexDirection = 'column';
   strip.innerHTML = '<div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">'+hw+'</div>'
-    + (hp ? '<div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:8px">'+hp+'</div>' : '');
+    + (hp ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'+hp+'</div>' : '');
 
   strip.querySelectorAll('[data-date]').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -2267,8 +2267,6 @@ function renderTreinosStrip(){
       save(); renderTreinosStrip(); renderTreinosContent();
     });
   });
-  var activeBtn = strip.querySelector('[data-plan].active');
-  if(activeBtn) activeBtn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
 }
 
 // ── Rest timer ────────────────────────────────────────────────

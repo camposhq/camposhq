@@ -973,6 +973,8 @@ let curPlan = 0;          // índice do treino selecionado em PD[curP].weekly (a
 let planSelDate = '';     // data em que curPlan foi selecionado (para sugerir rotação em novo dia)
 let lastPlanDone = {};    // por perfil: {plan, date} — último treino 100% concluído
 let treinoHist = {};      // por perfil: [{date, plan, name, done, total}] — histórico de treinos
+let curDate = '';         // data selecionada no strip da semana ('' = hoje)
+let dayPlanSel = {};      // por data (YYYY-MM-DD): treino planejado para aquele dia
 let dietaTab = 'all';
 let examesTab = 'todos';
 let evoPeriod = 30; // days
@@ -1025,16 +1027,27 @@ function migratePlansModel(){
   });
   if(curPlan >= (PD[curP].weekly||[]).length) curPlan = 0;
 }
-// Garante que a seleção de treino é de hoje; em dia novo sugere o próximo da rotação
+// Garante que a seleção de treino é de hoje; em dia novo usa o planejado ou sugere o próximo da rotação
 function ensurePlanForToday(){
   var n = (PD[curP].weekly||[]).length || 4;
   if(planSelDate === todayStr()){ if(curPlan>=n) curPlan=0; return; }
   var lp = lastPlanDone[curP];
-  if(lp && lp.date === todayStr()) curPlan = lp.plan % n;      // já treinou hoje: mantém o treino feito
+  var planned = dayPlanSel[todayStr()];
+  if(planned!=null && planned < n) curPlan = planned;           // treino planejado para hoje tem prioridade
+  else if(lp && lp.date === todayStr()) curPlan = lp.plan % n;  // já treinou hoje: mantém o treino feito
   else if(lp) curPlan = (lp.plan + 1) % n;                      // continua de onde parou
   else if(curPlan >= n) curPlan = 0;                            // sem histórico: mantém seleção atual
   planSelDate = todayStr();
   save();
+}
+// Datas (YYYY-MM-DD locais) de SEG a DOM da semana atual
+function dateStrLocal(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function weekDates(){
+  var now = new Date(); var dow = (now.getDay()+6)%7;
+  var mon = new Date(now); mon.setDate(now.getDate()-dow);
+  var out = [];
+  for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); out.push(dateStrLocal(d)); }
+  return out;
 }
 // Atualiza o histórico de treinos de hoje (chamado a cada série marcada)
 function updateTreinoHistToday(){
@@ -1252,6 +1265,7 @@ function handleDayChange(oldDate){
   // reset IMMEDIATELY — don't wait for popup confirmation
   resetDailyState();
   curDay = (new Date().getDay()+6)%7;
+  curDate = '';
   ensurePlanForToday(); // sugere o próximo treino da rotação para o novo dia
   markDayChangeDone(); // record that today's day change was handled
   save();
@@ -1355,7 +1369,7 @@ function save(immediate){
     if(saveCount % 5 === 0) saveBackup();
 
     var data = {
-      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,mealDone,foodDone,suppDone,habitDone,
+      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,dayPlanSel,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,inputHistory,
       lastSavedDate:todayStr(),
@@ -1406,7 +1420,7 @@ function load(){
     var s = JSON.parse(d);
     curP = s.curP||0; curDay = s.curDay||curDay;
     curPlan = s.curPlan||0; planSelDate = s.planSelDate||'';
-    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{};
+    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{}; dayPlanSel = s.dayPlanSel||{};
     mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
@@ -2181,33 +2195,79 @@ function renderTreinos(){
 
 function renderTreinosStrip(){
   var p = PD[curP];
-  var lp = lastPlanDone[curP];
-  var suggested = lp ? (lp.plan+1)%(p.weekly.length||4) : -1;
-  var h = '';
-  p.weekly.forEach(function(w,i){
-    var isA = i===curPlan;
-    // progresso de hoje neste treino
-    var done=0, total=0;
-    (w.exs||[]).forEach(function(ex,ei){
-      var k=curP+'-'+i+'-'+ei; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-      total+=ns;
-      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) done++; }
+  var today = todayStr();
+  var sel = curDate || today;
+  var dates = weekDates();
+  var hist = treinoHist[curP]||[];
+
+  // ── Linha 1: dias da semana (SEG–DOM com data real) ──
+  var hw = '';
+  dates.forEach(function(ds,i){
+    var isSel = ds===sel; var isToday = ds===today;
+    // melhor treino registrado nesse dia
+    var entries = hist.filter(function(e){ return e.date===ds && e.done>0; });
+    var best = entries.length ? entries.reduce(function(a,b){ return b.done>a.done?b:a; }) : null;
+    var planned = dayPlanSel[ds];
+    var dotColor = best ? ((p.weekly[best.plan]||{}).color||'var(--green)')
+                 : (planned!=null && ds>=today) ? ((p.weekly[planned]||{}).color||'var(--muted)')
+                 : null;
+    hw += '<button class="day-btn'+(isSel?' active':'')+'" data-date="'+ds+'" style="position:relative">';
+    hw += '<span class="dlabel"'+(isSel?' style="color:#fff"':'')+'>'+DAYS[i]+'</span>';
+    hw += '<span class="dnum"'+(isSel?' style="color:#fff"':'')+'>'+parseInt(ds.slice(8),10)+'</span>';
+    if(best && best.done>=best.total && best.total>0) hw += '<span style="font-size:9px;font-weight:700;color:'+(isSel?'#fff':'var(--green)')+'">✓</span>';
+    else if(dotColor) hw += '<div style="width:6px;height:6px;border-radius:50%;background:'+(isSel?'rgba(255,255,255,.9)':dotColor)+';margin:2px auto 0'+(best?'':';opacity:.55')+'"></div>';
+    else if(isToday) hw += '<div style="width:5px;height:5px;border-radius:50%;background:'+(isSel?'rgba(255,255,255,.8)':'var(--green)')+';margin:2px auto 0"></div>';
+    else hw += '<div class="ddot" style="margin:3px auto 0"></div>';
+    hw += '</button>';
+  });
+
+  // ── Linha 2: tipos de treino (hoje = treinar; futuro = planejar) ──
+  var hp = '';
+  if(sel >= today){
+    var lp = lastPlanDone[curP];
+    var suggested = lp ? (lp.plan+1)%(p.weekly.length||4) : -1;
+    var activePlan = sel===today ? curPlan : dayPlanSel[sel];
+    p.weekly.forEach(function(w,i){
+      var isA = i===activePlan;
+      var done=0, total=0;
+      if(sel===today){
+        (w.exs||[]).forEach(function(ex,ei){
+          var k=curP+'-'+i+'-'+ei; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+          total+=ns;
+          for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) done++; }
+        });
+      }
+      var isSug = sel===today && i===suggested && done===0;
+      hp += '<button class="day-btn'+(isA?' active':'')+'" data-plan="'+i+'" style="position:relative;padding:9px 14px'+(isA?';background:'+w.color+';border-color:'+w.color:'')+'">';
+      hp += '<span class="dlabel" style="font-size:12px;font-weight:600;white-space:nowrap'+(isA?';color:#fff':'')+'">'+w.name+'</span>';
+      if(done>0) hp += '<span class="dnum" style="font-size:10px;font-weight:600;color:'+(isA?'rgba(255,255,255,.85)':done>=total?'var(--green)':'var(--amber)')+'">'+(done>=total?'✓ completo':done+'/'+total+' séries')+'</span>';
+      else if(isSug) hp += '<span class="dnum" style="font-size:10px;font-weight:700;color:'+(isA?'rgba(255,255,255,.85)':'var(--green)')+'">↻ próximo</span>';
+      else hp += '<span class="dnum" style="font-size:10px;color:'+(isA?'rgba(255,255,255,.6)':'var(--muted)')+'">'+(w.exs?w.exs.length:0)+' exercícios</span>';
+      hp += '</button>';
     });
-    var isSug = i===suggested && done===0;
-    h += '<button class="day-btn'+(isA?' active':'')+'" data-plan="'+i+'" style="position:relative;padding:9px 14px'+(isA?';background:'+w.color+';border-color:'+w.color:'')+'">';
-    h += '<span class="dlabel" style="font-size:12px;font-weight:600;white-space:nowrap'+(isA?';color:#fff':'')+'">'+w.name+'</span>';
-    if(done>0) h += '<span class="dnum" style="font-size:10px;font-weight:600;color:'+(isA?'rgba(255,255,255,.85)':done>=total?'var(--green)':'var(--amber)')+'">'+(done>=total?'✓ completo':done+'/'+total+' séries')+'</span>';
-    else if(isSug) h += '<span class="dnum" style="font-size:10px;font-weight:700;color:'+(isA?'rgba(255,255,255,.85)':'var(--green)')+'">↻ próximo</span>';
-    else h += '<span class="dnum" style="font-size:10px;color:'+(isA?'rgba(255,255,255,.6)':'var(--muted)')+'">'+(w.exs?w.exs.length:0)+' exercícios</span>';
-    h += '</button>';
-  });
+  }
+
   var strip = document.getElementById('treinos-strip');
-  strip.innerHTML = h;
-  strip.querySelectorAll('.day-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){ curPlan = parseInt(this.dataset.plan); planSelDate = todayStr(); save(); renderTreinosStrip(); renderTreinosContent(); });
+  strip.style.flexDirection = 'column';
+  strip.innerHTML = '<div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">'+hw+'</div>'
+    + (hp ? '<div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:8px">'+hp+'</div>' : '');
+
+  strip.querySelectorAll('[data-date]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      curDate = this.dataset.date===today ? '' : this.dataset.date;
+      renderTreinosStrip(); renderTreinosContent();
+    });
   });
-  // scroll active plan into view
-  var activeBtn = strip.querySelector('.day-btn.active');
+  strip.querySelectorAll('[data-plan]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var pi = parseInt(this.dataset.plan);
+      var selNow = curDate || todayStr();
+      dayPlanSel[selNow] = pi;
+      if(selNow === todayStr()){ curPlan = pi; planSelDate = todayStr(); }
+      save(); renderTreinosStrip(); renderTreinosContent();
+    });
+  });
+  var activeBtn = strip.querySelector('[data-plan].active');
   if(activeBtn) activeBtn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
 }
 
@@ -2375,8 +2435,74 @@ function playExerciseDone(){
 }
 // ──────────────────────────────────────────────────────────────
 
+// Dia passado: mostra o que foi treinado naquele dia
+function renderTreinosDayHistory(ds){
+  var p = PD[curP];
+  var dLbl = new Date(ds+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  var entries = (treinoHist[curP]||[]).filter(function(e){ return e.date===ds && e.done>0; });
+  var h = '';
+  if(entries.length===0){
+    h += '<div class="section"><div class="card" style="padding:32px 20px;text-align:center">';
+    h += '<div style="font-size:40px;margin-bottom:12px">🌿</div>';
+    h += '<div style="font-size:16px;font-weight:600;margin-bottom:6px">Nenhum treino registrado</div>';
+    h += '<div style="font-size:13px;color:var(--muted);text-transform:capitalize">'+dLbl+'</div></div></div>';
+  } else {
+    h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
+    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;text-transform:capitalize">📖 '+dLbl+'</div>';
+    entries.forEach(function(e){
+      var pl = p.weekly[e.plan]||{};
+      var full = e.done>=e.total && e.total>0;
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)">';
+      h += '<div style="width:10px;height:10px;border-radius:50%;background:'+(pl.color||'var(--green)')+';flex-shrink:0"></div>';
+      h += '<div style="flex:1;font-size:14px;font-weight:600">'+e.name+'</div>';
+      h += '<div style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+'">'+(full?'✓ ':'')+e.done+'/'+e.total+' séries</div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+  }
+  document.getElementById('treinos-content').innerHTML = h;
+}
+
+// Dia futuro: planejar qual treino fazer
+function renderTreinosDayPlan(ds){
+  var p = PD[curP];
+  var dLbl = new Date(ds+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  var pi = dayPlanSel[ds];
+  var h = '';
+  if(pi==null || !p.weekly[pi]){
+    h += '<div class="section"><div class="card" style="padding:32px 20px;text-align:center">';
+    h += '<div style="font-size:40px;margin-bottom:12px">🗓️</div>';
+    h += '<div style="font-size:16px;font-weight:600;margin-bottom:6px">Planeje este dia</div>';
+    h += '<div style="font-size:13px;color:var(--muted)">Escolha acima o treino para <span style="text-transform:capitalize">'+dLbl+'</span>.</div></div></div>';
+  } else {
+    var w = p.weekly[pi];
+    h += '<div class="section">';
+    h += '<div class="block-hdr" style="background:'+w.color+'">';
+    h += '<div class="block-type">🗓️ Planejado</div><div class="block-title">'+w.name+'</div>';
+    h += '<div style="font-size:12px;opacity:.85;margin-top:4px;text-transform:capitalize">'+dLbl+'</div></div>';
+    h += '<div class="ex-block">';
+    (w.exs||[]).forEach(function(ex,i){
+      var key = wk(curP,pi,i);
+      var wval = exWeights[key] !== undefined ? exWeights[key] : ex.w;
+      h += '<div class="ex-row">';
+      h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
+      h += '<div class="ex-info"><div class="ex-name">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
+      h += (wval>0?'<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:var(--muted);padding-right:6px">'+wval+'kg</div>':'');
+      h += '</div>';
+    });
+    h += '</div>';
+    h += '<div style="font-size:12px;color:var(--muted);padding:10px 4px">As séries ficam liberadas para marcar no próprio dia. Quando esse dia chegar, este treino já vem selecionado.</div>';
+    h += '</div>';
+  }
+  document.getElementById('treinos-content').innerHTML = h;
+}
+
 function renderTreinosContent(){
-  var p = PD[curP]; var w = p.weekly[curPlan]; var h = '';
+  var p = PD[curP]; var h = '';
+  var todayD = todayStr(); var selD = curDate || todayD;
+  if(selD < todayD) return renderTreinosDayHistory(selD);
+  if(selD > todayD) return renderTreinosDayPlan(selD);
+  var w = p.weekly[curPlan];
   if(!w){ curPlan = 0; w = p.weekly[0]; }
   if(!w) return;
   var exs = w.exs || [];
@@ -2556,7 +2682,7 @@ function renderTreinosContent(){
 
   // Stats + AI + buttons
   var last7 = [];
-  for(var d7=6; d7>=0; d7--){ var dd=new Date(); dd.setDate(dd.getDate()-d7); last7.push(dd.toISOString().slice(0,10)); }
+  for(var d7=6; d7>=0; d7--){ var dd=new Date(); dd.setDate(dd.getDate()-d7); last7.push(dateStrLocal(dd)); }
   var weekDone = (treinoHist[curP]||[]).filter(function(e){ return last7.indexOf(e.date)>=0 && e.done>0; }).length;
   var totalSetsPlanned = exs.reduce(function(s,ex){ return s+(parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3); },0);
   var setsPct = totalSetsPlanned>0?Math.round(totalSetsDone/totalSetsPlanned*100):0;
@@ -6678,6 +6804,7 @@ function loadUserData(uid, callback){
             // treinos por tipo: só restaura seleção do Firebase se for mais recente que a local
             if(s.planSelDate && s.planSelDate >= (planSelDate||'')){ curPlan = s.planSelDate>planSelDate ? (s.curPlan||0) : curPlan; planSelDate = s.planSelDate>planSelDate ? s.planSelDate : planSelDate; }
             if(s.lastPlanDone){ Object.keys(s.lastPlanDone).forEach(function(pi){ var r=s.lastPlanDone[pi], l=lastPlanDone[pi]; if(!l || (r&&r.date>l.date)) lastPlanDone[pi]=r; }); }
+            if(s.dayPlanSel){ dayPlanSel = Object.assign({}, s.dayPlanSel, dayPlanSel); }
             if(s.treinoHist){ Object.keys(s.treinoHist).forEach(function(pi){
               if(!treinoHist[pi]) treinoHist[pi]=[];
               (s.treinoHist[pi]||[]).forEach(function(re){
@@ -6925,7 +7052,7 @@ function saveToCloud(){
   });
   var appState = {
     curP:curP, curDay:curDay, curPlan:curPlan, planSelDate:planSelDate,
-    lastPlanDone:lastPlanDone, treinoHist:treinoHist,
+    lastPlanDone:lastPlanDone, treinoHist:treinoHist, dayPlanSel:dayPlanSel,
     mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,

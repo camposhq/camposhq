@@ -177,7 +177,22 @@ var fbAuth = firebase.auth();
 var fbDb = firebase.firestore();
 var provider = new firebase.auth.GoogleAuthProvider();
 
-var DAYS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+// Treinos por tipo (rotação livre) — migra planos antigos de 7 dias para a lista de 4 treinos
+var PLAN_CANON = [
+  {name:'Peito + Tríceps', color:'#1a7a4a', cl:'#e8f5ee'},
+  {name:'Costas + Bíceps', color:'#1a5a8a', cl:'#e3f0fd'},
+  {name:'Pernas',          color:'#993c1d', cl:'#faece7'},
+  {name:'Ombros',          color:'#5a3ab7', cl:'#eeedfb'}
+];
+function migrateWeeklyToPlans(weekly){
+  var isOld = Array.isArray(weekly) && (weekly.length>4 || weekly.some(function(w){ return w && w.rest; }));
+  if(!isOld) return null;
+  var actives = weekly.filter(function(w){ return w && !w.rest && w.exs && w.exs.length>0; });
+  return PLAN_CANON.map(function(c,i){
+    var src = actives[i];
+    return {name:c.name, color:c.color, cl:c.cl, exs:src?JSON.parse(JSON.stringify(src.exs)):[]};
+  });
+}
 var CARDIO_OPTS = [
   {id:'1230',icon:'🏃',label:'12/3/30',mins:43},
   {id:'hiit',icon:'💨',label:'HIIT',mins:25},
@@ -314,20 +329,20 @@ fbAuth.onAuthStateChanged(function(user){
 
 function showMain(data){
   var history = data.history||[];
-  var weekly = data.weeklyPlan||[];
+  var weekly = migrateWeeklyToPlans(data.weeklyPlan||[]) || (data.weeklyPlan||[]);
   var weights = data.exWeights||{};
   var pidx = data.profileIdx!=null ? data.profileIdx : 0;
   currentPidx = pidx; // store globally for use in proposal editor
   var now = new Date(); now.setHours(0,0,0,0);
   var days28=[];
   for(var i=27;i>=0;i--){ var d=new Date(now); d.setDate(d.getDate()-i); days28.push(d.toISOString().slice(0,10)); }
+  // treinoHist = histórico real de treinos (rotação livre); fallback: history geral
+  var tHist = data.treinoHist||[];
   var trainedDays={};
-  history.forEach(function(e){ if(e.date) trainedDays[e.date]=e; });
-  var trainedCount=0;
-  days28.forEach(function(ds){ var dow=(new Date(ds+'T12:00:00').getDay()+6)%7; if(weekly[dow]&&!weekly[dow].rest&&trainedDays[ds]) trainedCount++; });
-  var workDays=days28.filter(function(ds){ var dow=(new Date(ds+'T12:00:00').getDay()+6)%7; return weekly[dow]&&!weekly[dow].rest; }).length;
-  var consistency=workDays>0?Math.round(trainedCount/workDays*100):0;
-  var totalExs=weekly.filter(function(w){return !w.rest&&w.exs;}).reduce(function(s,w){return s+w.exs.length;},0);
+  if(tHist.length>0) tHist.forEach(function(e){ if(e.date && e.done>0) trainedDays[e.date]=e; });
+  else history.forEach(function(e){ if(e.date) trainedDays[e.date]=e; });
+  var trainedCount=days28.filter(function(ds){ return !!trainedDays[ds]; }).length;
+  var totalExs=weekly.filter(function(w){return w.exs;}).reduce(function(s,w){return s+w.exs.length;},0);
 
   var h='';
 
@@ -356,35 +371,46 @@ function showMain(data){
   h+='</div>';
 
   h+='<div class="metrics-row">';
-  h+='<div class="metric-tile"><div class="metric-val">'+consistency+'%</div><div class="metric-lbl">Consistência 28d</div></div>';
-  h+='<div class="metric-tile"><div class="metric-val">'+totalExs+'</div><div class="metric-lbl">Exercícios/sem</div></div>';
+  h+='<div class="metric-tile"><div class="metric-val">'+trainedCount+'</div><div class="metric-lbl">Treinos 28d</div></div>';
+  h+='<div class="metric-tile"><div class="metric-val">'+totalExs+'</div><div class="metric-lbl">Exercícios no plano</div></div>';
   h+='</div>';
 
   h+='<div class="card"><div class="sec-label">Últimos 28 dias</div><div class="history-grid">';
   days28.forEach(function(ds){
-    var dow=(new Date(ds+'T12:00:00').getDay()+6)%7;
-    var isRest=weekly[dow]&&weekly[dow].rest;
-    var trained=!isRest&&!!trainedDays[ds];
+    var trained=!!trainedDays[ds];
     var dayLbl=new Date(ds+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}).slice(0,5);
-    if(isRest) h+='<div class="hist-dot rest" title="'+dayLbl+'">—</div>';
-    else if(trained) h+='<div class="hist-dot done" title="'+dayLbl+' ✓">✓</div>';
+    if(trained) h+='<div class="hist-dot done" title="'+dayLbl+' ✓">✓</div>';
     else h+='<div class="hist-dot miss" title="'+dayLbl+'">·</div>';
   });
   h+='</div></div>';
 
-  h+='<div class="sec-label">Plano semanal atual</div>';
+  // histórico detalhado (tipo de treino por dia)
+  if(tHist.length>0){
+    h+='<div class="card"><div class="sec-label">Treinos recentes</div>';
+    tHist.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,8).forEach(function(e){
+      var dLbl=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+      var full=e.done>=e.total&&e.total>0;
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">';
+      h+='<div style="flex:1;font-size:13px;font-weight:500">'+(e.name||'Treino')+'</div>';
+      h+='<div style="font-size:11px;color:var(--muted)">'+dLbl+'</div>';
+      h+='<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+'">'+e.done+'/'+e.total+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  h+='<div class="sec-label">Treinos do plano (rotação livre)</div>';
   weekly.forEach(function(w,i){
     h+='<div class="day-card">';
     var curCardioKey2 = pidx+'-'+i;
     var curCardioId2 = data.cardioSel&&data.cardioSel[curCardioKey2];
     var dur = estimateDuration(w, curCardioId2);
-    h+='<div class="day-hdr" data-day="'+i+'"><div><div class="day-name">'+DAYS[i]+(dur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+dur+'</span>':'')+'</div>';
-    if(!w.rest) h+='<div class="day-meta">'+(w.name||'')+' · '+(w.exs?w.exs.length:0)+' exs</div>';
+    h+='<div class="day-hdr" data-day="'+i+'"><div><div class="day-name">'+(w.name||('Treino '+(i+1)))+(dur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+dur+'</span>':'')+'</div>';
+    h+='<div class="day-meta">'+(w.exs?w.exs.length:0)+' exercícios</div>';
     h+='</div>';
-    if(w.rest) h+='<span class="rest-badge">Descanso</span>';
-    else h+='<span style="font-size:18px;color:var(--muted)" id="arr-'+i+'">∨</span>';
+    h+='<span style="font-size:18px;color:var(--muted)" id="arr-'+i+'">∨</span>';
     h+='</div>';
-    if(!w.rest&&w.exs){
+    if(w.exs){
       var curCardioKey = pidx+'-'+i;
       var curCardioId = data.cardioSel&&data.cardioSel[curCardioKey];
       var curCardioOpt = curCardioId ? CARDIO_OPTS.find(function(c){return c.id===curCardioId;}) : null;
@@ -424,7 +450,7 @@ function showMain(data){
 }
 
 function openProposal(){
-  proposalPlan=JSON.parse(JSON.stringify(viewData.weeklyPlan||[]));
+  proposalPlan=JSON.parse(JSON.stringify(migrateWeeklyToPlans(viewData.weeklyPlan||[]) || (viewData.weeklyPlan||[])));
   proposalCardio = JSON.parse(JSON.stringify(viewData.cardioSel||{}));
   renderPlanEditor();
   document.getElementById('proposal-modal').classList.add('open');
@@ -436,10 +462,9 @@ function renderPlanEditor(){
     h+='<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px">';
     var edDur = estimateDuration(w, proposalCardio[currentPidx+'-'+i]);
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-    h+='<div><span style="font-size:13px;font-weight:600">'+DAYS[i]+'</span>'+(edDur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+edDur+'</span>':'')+'</div>';
-    h+='<button class="toggle-rest'+(w.rest?' active':'')+'" data-di="'+i+'">'+(w.rest?'✓ Descanso':'Marcar descanso')+'</button>';
+    h+='<div><span style="font-size:13px;font-weight:600;color:'+(w.color||'var(--green)')+'">Treino '+(i+1)+'</span>'+(edDur?'<span style="font-size:11px;color:var(--green);font-weight:600;margin-left:8px;font-family:DM Mono,monospace">~'+edDur+'</span>':'')+'</div>';
     h+='</div>';
-    if(!w.rest){
+    {
       h+='<input style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none;margin-bottom:8px" placeholder="Nome do treino" value="'+(w.name||'')+'" data-wname="'+i+'">';
       (w.exs||[]).forEach(function(ex,ei){
         h+='<div class="ex-edit-row">';
@@ -466,9 +491,6 @@ function renderPlanEditor(){
   });
   var pe=document.getElementById('plan-editor');
   pe.innerHTML=h;
-  pe.querySelectorAll('.toggle-rest').forEach(function(btn){
-    btn.addEventListener('click',function(){ var di=parseInt(this.dataset.di); proposalPlan[di].rest=!proposalPlan[di].rest; if(proposalPlan[di].rest) proposalPlan[di].exs=[]; renderPlanEditor(); });
-  });
   pe.querySelectorAll('[data-wname]').forEach(function(inp){
     inp.addEventListener('input',function(){ proposalPlan[parseInt(this.dataset.wname)].name=this.value; });
   });
@@ -497,17 +519,16 @@ function renderPlanEditor(){
   });
 }
 
-document.getElementById('copy-current-btn').addEventListener('click',function(){ if(viewData){ proposalPlan=JSON.parse(JSON.stringify(viewData.weeklyPlan||[])); renderPlanEditor(); } });
+document.getElementById('copy-current-btn').addEventListener('click',function(){ if(viewData){ proposalPlan=JSON.parse(JSON.stringify(migrateWeeklyToPlans(viewData.weeklyPlan||[]) || (viewData.weeklyPlan||[]))); renderPlanEditor(); } });
 document.getElementById('cancel-prop-btn').addEventListener('click',function(){ document.getElementById('proposal-modal').classList.remove('open'); });
 
 document.getElementById('submit-prop-btn').addEventListener('click',function(){
   var msg=document.getElementById('prop-msg').value.trim();
   if(!msg){ alert('Escreva uma mensagem para o atleta.'); return; }
-  var hasExs=proposalPlan.some(function(w){ return !w.rest&&w.exs&&w.exs.some(function(e){ return e.n.trim(); }); });
+  var hasExs=proposalPlan.some(function(w){ return w.exs&&w.exs.some(function(e){ return e.n.trim(); }); });
   if(!hasExs){ alert('Adicione pelo menos um exercício ao plano.'); return; }
-  var cleanPlan=proposalPlan.map(function(w){
-    if(w.rest) return {rest:true};
-    return {name:w.name||'',color:w.color||'#1a7a4a',cl:w.cl||'#e8f5ee',exs:(w.exs||[]).filter(function(e){return e.n.trim();}).map(function(e){return {n:e.n.trim(),s:e.s||'3x12',w:parseFloat(e.w)||0};})};
+  var cleanPlan=proposalPlan.map(function(w,i){
+    return {name:w.name||('Treino '+(i+1)),color:w.color||(PLAN_CANON[i]?PLAN_CANON[i].color:'#1a7a4a'),cl:w.cl||(PLAN_CANON[i]?PLAN_CANON[i].cl:'#e8f5ee'),exs:(w.exs||[]).filter(function(e){return e.n.trim();}).map(function(e){return {n:e.n.trim(),s:e.s||'3x12',w:parseFloat(e.w)||0};})};
   });
   var btn=document.getElementById('submit-prop-btn');
   btn.textContent='Enviando...'; btn.disabled=true;

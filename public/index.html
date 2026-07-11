@@ -896,19 +896,18 @@ function getBasalKcal(p){
   var g = p.gender || (pdOverride[curP]||{}).gender||'M';
   return Math.round(g==='M' ? 10*p.weight+6.25*p.height-5*p.age+5 : 10*p.weight+6.25*p.height-5*p.age-161);
 }
-function calcWorkoutKcalToday(pi, dayOverride){
-  var idx = pi!=null?pi:curP; var p = PD[idx]; var day = dayOverride!=null ? dayOverride : curDay;
-  var dw = p.weekly[day]||{};
-  // count muscle sets (even on rest days if user trained)
+function calcWorkoutKcalToday(pi){
+  var idx = pi!=null?pi:curP; var p = PD[idx];
+  // conta séries feitas hoje em TODOS os treinos (exSets é zerado diariamente)
   var sets=0;
-  if(!dw.rest && dw.exs){
-    dw.exs.forEach(function(ex,i){
-      var k=idx+'-'+day+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+  (p.weekly||[]).forEach(function(w,pl){
+    (w.exs||[]).forEach(function(ex,i){
+      var k=idx+'-'+pl+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
       for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sets++; }
     });
-  }
+  });
   var musK = calcMusKcal(p.weight, sets);
-  var cselKey = idx+'-'+day;
+  var cselKey = idx+'-'+(idx===curP?curPlan:0);
   var selIds = getCardioIds(cselKey);
   var cardK = calcCardioKcalFromIds(selIds, p.weight, cselKey);
   return musK + cardK;
@@ -924,12 +923,10 @@ const PD = [
    insight:'Perfil forte para 45 anos. Prioridades: Vitamina D abaixo do ideal (suplementar 5000 UI), sono de 6.8h abaixo da meta. Manter musculacao 5x + 12/3/30 diario para longevidade.',
    progressPhotos:[{angle:'Frente',date:'Jan 2025',img:''},{angle:'Lado',date:'Jan 2025',img:''},{angle:'Costas',date:'Jan 2025',img:''}],
    weekly:[
-    {name:'Peito + Triceps',color:'#1a7a4a',cl:'#e8f5ee',exs:[{n:'Supino reto',s:'4x10-12',w:70},{n:'Supino inclinado haltere',s:'3x12',w:24},{n:'Crucifixo maquina',s:'3x15',w:0},{n:'Triceps corda',s:'4x15',w:0},{n:'Triceps testa',s:'3x12',w:20},{n:'Crossover cabo',s:'3x12',w:0}]},
-    {name:'Costas + Biceps',color:'#1a5a8a',cl:'#e3f0fd',exs:[{n:'Puxada frontal',s:'4x10',w:70},{n:'Remada curvada',s:'4x10',w:60},{n:'Remada unilateral',s:'3x12',w:30},{n:'Rosca direta',s:'4x12',w:18},{n:'Rosca martelo',s:'3x12',w:16},{n:'Face pull',s:'3x15',w:0}]},
-    {name:'Pernas + Gluteos',color:'#993c1d',cl:'#faece7',exs:[{n:'Agachamento livre',s:'5x8',w:80},{n:'Leg press 45',s:'4x12',w:160},{n:'Stiff haltere',s:'4x10',w:60},{n:'Hip thrust',s:'4x15',w:80},{n:'Mesa flexora',s:'3x15',w:0},{n:'Panturrilha em pe',s:'4x20',w:0}]},
-    {name:'Ombros + Core',color:'#5a3ab7',cl:'#eeedfb',exs:[{n:'Desenvolvimento haltere',s:'4x12',w:22},{n:'Elevacao lateral',s:'4x15',w:10},{n:'Elevacao frontal',s:'3x12',w:8},{n:'Prancha frontal',s:'3x60s',w:0},{n:'Russian twist',s:'3x20',w:0},{n:'Dead bug',s:'3x10',w:0}]},
-    {name:'Peito + Triceps B',color:'#1a7a4a',cl:'#e8f5ee',exs:[{n:'Supino reto',s:'4x10',w:72},{n:'Supino declinado',s:'3x10',w:65},{n:'Crucifixo',s:'3x15',w:0},{n:'Triceps frances',s:'3x12',w:18},{n:'Mergulho dips',s:'3x12',w:0}]},
-    {rest:true},{rest:true}
+    {name:'Peito + Tríceps',color:'#1a7a4a',cl:'#e8f5ee',exs:[{n:'Supino reto',s:'4x10-12',w:70},{n:'Supino inclinado haltere',s:'3x12',w:24},{n:'Crucifixo maquina',s:'3x15',w:0},{n:'Triceps corda',s:'4x15',w:0},{n:'Triceps testa',s:'3x12',w:20},{n:'Crossover cabo',s:'3x12',w:0}]},
+    {name:'Costas + Bíceps',color:'#1a5a8a',cl:'#e3f0fd',exs:[{n:'Puxada frontal',s:'4x10',w:70},{n:'Remada curvada',s:'4x10',w:60},{n:'Remada unilateral',s:'3x12',w:30},{n:'Rosca direta',s:'4x12',w:18},{n:'Rosca martelo',s:'3x12',w:16},{n:'Face pull',s:'3x15',w:0}]},
+    {name:'Pernas',color:'#993c1d',cl:'#faece7',exs:[{n:'Agachamento livre',s:'5x8',w:80},{n:'Leg press 45',s:'4x12',w:160},{n:'Stiff haltere',s:'4x10',w:60},{n:'Hip thrust',s:'4x15',w:80},{n:'Mesa flexora',s:'3x15',w:0},{n:'Panturrilha em pe',s:'4x20',w:0}]},
+    {name:'Ombros',color:'#5a3ab7',cl:'#eeedfb',exs:[{n:'Desenvolvimento haltere',s:'4x12',w:22},{n:'Elevacao lateral',s:'4x15',w:10},{n:'Elevacao frontal',s:'3x12',w:8},{n:'Prancha frontal',s:'3x60s',w:0},{n:'Russian twist',s:'3x20',w:0},{n:'Dead bug',s:'3x10',w:0}]}
    ],
    meals:[
     {id:'cafe',name:'Cafe da manha',time:'08:00',kcal:520,foods:[{n:'Ovos mexidos',p:'3 ovos',k:210},{n:'Pao integral',p:'2 fatias',k:140},{n:'Abacate',p:'meio',k:110},{n:'Cafe preto',p:'200ml',k:5}]},
@@ -970,7 +967,12 @@ var PD_DEFAULT_MEALS = PD.map(function(p){ return {meals: JSON.parse(JSON.string
 // ══════════════════════════════════════════════════════════════
 let curScreen = 'home';
 let curP = 0;
-let curDay = (new Date().getDay()+6)%7;
+let curDay = (new Date().getDay()+6)%7; // dia da semana real (usado só para data/resumo)
+// ── Modelo de treinos por TIPO (rotação livre, não preso ao dia da semana) ──
+let curPlan = 0;          // índice do treino selecionado em PD[curP].weekly (agora lista de treinos)
+let planSelDate = '';     // data em que curPlan foi selecionado (para sugerir rotação em novo dia)
+let lastPlanDone = {};    // por perfil: {plan, date} — último treino 100% concluído
+let treinoHist = {};      // por perfil: [{date, plan, name, done, total}] — histórico de treinos
 let dietaTab = 'all';
 let examesTab = 'todos';
 let evoPeriod = 30; // days
@@ -986,6 +988,79 @@ let historyData = {}; // per profile: {0: [{date,label,weight,imc,fat,sleep,avg,
 let progressPhotoAngle = 0;
 let pdOverride = {};
 let profileComplete = false;
+
+// ══════════════════════════════════════════════════════════════
+// TREINOS POR TIPO — helpers e migração do modelo antigo (7 dias)
+// ══════════════════════════════════════════════════════════════
+var PLAN_CANON = [
+  {name:'Peito + Tríceps', color:'#1a7a4a', cl:'#e8f5ee'},
+  {name:'Costas + Bíceps', color:'#1a5a8a', cl:'#e3f0fd'},
+  {name:'Pernas',          color:'#993c1d', cl:'#faece7'},
+  {name:'Ombros',          color:'#5a3ab7', cl:'#eeedfb'}
+];
+// Converte um weekly antigo (7 dias com rest) na lista de 4 treinos.
+// Os treinos de SEG–QUI viram a base inicial; nomes/cores canonizados.
+function migrateWeeklyToPlans(weekly){
+  var isOld = Array.isArray(weekly) && (weekly.length>4 || weekly.some(function(w){ return w && w.rest; }));
+  if(!isOld) return null;
+  var actives = weekly.filter(function(w){ return w && !w.rest && w.exs && w.exs.length>0; });
+  return PLAN_CANON.map(function(c,i){
+    var src = actives[i];
+    var exs = src ? src.exs : (PD[0].weekly[i]?PD[0].weekly[i].exs:[]);
+    return {name:c.name, color:c.color, cl:c.cl, exs:JSON.parse(JSON.stringify(exs||[]))};
+  });
+}
+// Aplica migração em PD e pdOverride (roda após load local e após load do Firebase)
+function migratePlansModel(){
+  PD.forEach(function(p,i){
+    var m = migrateWeeklyToPlans(p.weekly);
+    if(m) p.weekly = m;
+  });
+  Object.keys(pdOverride).forEach(function(idx){
+    var o = pdOverride[idx];
+    if(o && o.weekly){
+      var m = migrateWeeklyToPlans(o.weekly);
+      if(m){ o.weekly = m; if(PD[parseInt(idx)]) PD[parseInt(idx)].weekly = m; }
+    }
+  });
+  if(curPlan >= (PD[curP].weekly||[]).length) curPlan = 0;
+}
+// Garante que a seleção de treino é de hoje; em dia novo sugere o próximo da rotação
+function ensurePlanForToday(){
+  var n = (PD[curP].weekly||[]).length || 4;
+  if(planSelDate === todayStr()){ if(curPlan>=n) curPlan=0; return; }
+  var lp = lastPlanDone[curP];
+  if(lp && lp.date === todayStr()) curPlan = lp.plan % n;      // já treinou hoje: mantém o treino feito
+  else if(lp) curPlan = (lp.plan + 1) % n;                      // continua de onde parou
+  else if(curPlan >= n) curPlan = 0;                            // sem histórico: mantém seleção atual
+  planSelDate = todayStr();
+  save();
+}
+// Atualiza o histórico de treinos de hoje (chamado a cada série marcada)
+function updateTreinoHistToday(){
+  var p = PD[curP]; var today = todayStr();
+  if(!treinoHist[curP]) treinoHist[curP] = [];
+  (p.weekly||[]).forEach(function(w,pi){
+    var done=0, total=0;
+    (w.exs||[]).forEach(function(ex,i){
+      var k=curP+'-'+pi+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      total+=ns;
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) done++; }
+    });
+    var idx = treinoHist[curP].findIndex(function(e){ return e.date===today && e.plan===pi; });
+    if(done>0){
+      var entry = {date:today, plan:pi, name:w.name, done:done, total:total};
+      if(idx>=0) treinoHist[curP][idx]=entry; else treinoHist[curP].push(entry);
+      if(done>=total && total>0) lastPlanDone[curP] = {plan:pi, date:today};
+    } else if(idx>=0){
+      treinoHist[curP].splice(idx,1);
+      var lp=lastPlanDone[curP];
+      if(lp && lp.plan===pi && lp.date===today) delete lastPlanDone[curP];
+    }
+  });
+  // manter só os últimos 120 registros por perfil
+  if(treinoHist[curP].length>120) treinoHist[curP] = treinoHist[curP].slice(-120);
+}
 
 // Setup wizard state
 let spStep = 1;
@@ -1014,7 +1089,7 @@ function kcalConsumedToday(pi){
 function totalSetsDoneToday(pi){
   var idx=pi!=null?pi:curP; var p=PD[idx]; if(!p||!p.weekly) return 0;
   var tot=0;
-  p.weekly.forEach(function(w,d){ if(w.rest||!w.exs) return; w.exs.forEach(function(ex,i){ var k=idx+'-'+d+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) tot++; } }); });
+  p.weekly.forEach(function(w,d){ if(!w.exs) return; w.exs.forEach(function(ex,i){ var k=idx+'-'+d+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) tot++; } }); });
   return tot;
 }
 var dayChangeHandled = false; // prevent double execution
@@ -1116,30 +1191,22 @@ function handleDayChange(oldDate){
   if(datesToFill.length===0) datesToFill=[oldDate];
 
   // compute summary for the active profile before resetting
-  // use the day-of-week derived from oldDate, not curDay (which may differ if user navigated the strip)
-  var oldDow = (new Date(oldDate+'T12:00:00').getDay()+6)%7;
   var p0 = PD[curP];
   var kcal0 = kcalConsumedToday(curP);
   var basal0 = getBasalKcal(p0);
-  var treino0 = calcWorkoutKcalToday(curP, oldDow);
+  var treino0 = calcWorkoutKcalToday(curP);
   var gasto0 = basal0 + treino0;
   var deficit0 = kcal0 - gasto0;
   var sleep0 = parseFloat(((sleepData[curP]||{hours:p0.sleep}).hours||0).toFixed(1));
   var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
   var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
   var suppDone0 = p0.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
-  // workout summary
-  var w0 = p0.weekly[oldDow]||{};
+  // workout summary — o histórico (treinoHist) já foi gravado a cada série marcada
   var workout0 = null;
-  if(!w0.rest && w0.exs && w0.exs.length>0){
-    var totalSets0=0, doneSets0=0;
-    w0.exs.forEach(function(ex,i){
-      var k=curP+'-'+oldDow+'-'+i;
-      var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-      totalSets0+=ns;
-      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) doneSets0++; }
-    });
-    workout0 = {name:w0.name, done:doneSets0, total:totalSets0};
+  var histOld = (treinoHist[curP]||[]).filter(function(e){ return e.date===oldDate; });
+  if(histOld.length>0){
+    var best0 = histOld.reduce(function(a,b){ return b.done>a.done?b:a; });
+    workout0 = {name:best0.name, done:best0.done, total:best0.total};
   }
   // auto highlight
   var highlights0 = [];
@@ -1185,7 +1252,7 @@ function handleDayChange(oldDate){
   // reset IMMEDIATELY — don't wait for popup confirmation
   resetDailyState();
   curDay = (new Date().getDay()+6)%7;
-  curDayManualOverride = false;
+  ensurePlanForToday(); // sugere o próximo treino da rotação para o novo dia
   markDayChangeDone(); // record that today's day change was handled
   save();
   // show summary popup as informational only (no longer gates the reset)
@@ -1288,7 +1355,7 @@ function save(immediate){
     if(saveCount % 5 === 0) saveBackup();
 
     var data = {
-      curP,curDay,mealDone,foodDone,suppDone,habitDone,
+      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,inputHistory,
       lastSavedDate:todayStr(),
@@ -1338,6 +1405,8 @@ function load(){
     if(!d) return false;
     var s = JSON.parse(d);
     curP = s.curP||0; curDay = s.curDay||curDay;
+    curPlan = s.curPlan||0; planSelDate = s.planSelDate||'';
+    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{};
     mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
@@ -1416,6 +1485,8 @@ function load(){
         if(PD[i]){ PD[i].avatarImg = a.avatarImg||''; PD[i].progressPhotos = a.progressPhotos||PD[i].progressPhotos; }
       });
     }
+    // Migra o modelo antigo de treino por dia da semana para treinos por tipo
+    migratePlansModel();
     // Now handleDayChange with correct profile data (bmr, weight, etc. already applied)
     if(s.lastSavedDate && s.lastSavedDate !== todayStr()) handleDayChange(s.lastSavedDate);
     applyResetMealsFlag();
@@ -1439,6 +1510,7 @@ function load(){
               if(o.weekly) PD[i].weekly=o.weekly;
               if(o.calories) PD[i].calories=o.calories;
             });
+            migratePlansModel();
           }
         }catch(e){}
       }
@@ -1831,16 +1903,17 @@ function renderHome(){
   }
 
   // ── Resumo do dia ──────────────────────────────────────────
-  var dayW = p.weekly[curDay]||{};
-  var dayExs = (!dayW.rest && dayW.exs) ? dayW.exs : [];
+  ensurePlanForToday();
+  var dayW = p.weekly[curPlan]||{};
+  var dayExs = dayW.exs || [];
   var planSets=0, doneSets=0;
   dayExs.forEach(function(ex,i){
-    var k=curP+'-'+curDay+'-'+i;
+    var k=curP+'-'+curPlan+'-'+i;
     var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
     planSets+=ns;
     for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) doneSets++; }
   });
-  var treinoIsRest = !!dayW.rest;
+  var treinoIsRest = false;
   var kcalC = kcalConsumedToday(); var kcalPct2 = p.calories>0?Math.min(100,Math.round(kcalC/p.calories*100)):0;
   var glasses2 = waterGlasses[curP+'-water']||0; var totalG2 = Math.round(p.water/250)||8;
   var waterPct = Math.min(100,Math.round(glasses2/totalG2*100));
@@ -1858,7 +1931,7 @@ function renderHome(){
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'treinos\')">';
   h += '<div style="font-size:18px;margin-bottom:2px">💪</div>';
   h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+treinoVal+'</div>';
-  h += '<div style="font-size:11px;color:var(--muted)">Treino</div>';
+  h += '<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dayW.name||'Treino')+'</div>';
   h += dayBar(treinoPct,'var(--green)');
   h += '</div>';
   // Dieta
@@ -2099,37 +2172,41 @@ function analisarComposicaoCorporal(){
 function wk(p,d,i){ return p+'-'+d+'-'+i; }
 
 function renderTreinos(){
-  // Always default to today's day of week when opening the tab
-  var todayDow = (new Date().getDay()+6)%7;
-  if(curDay !== todayDow){
-    // Only reset to today if user hasn't explicitly changed it this session
-    if(!curDayManualOverride) curDay = todayDow;
-  }
+  ensurePlanForToday();
   renderProfiles('treinos-profiles');
-  document.getElementById('treinos-date').textContent = 'Semana de '+new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
+  document.getElementById('treinos-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'short'});
   renderTreinosStrip();
   renderTreinosContent();
 }
-var curDayManualOverride = false;
 
 function renderTreinosStrip(){
   var p = PD[curP];
-  var todayDow = (new Date().getDay()+6)%7;
+  var lp = lastPlanDone[curP];
+  var suggested = lp ? (lp.plan+1)%(p.weekly.length||4) : -1;
   var h = '';
-  DAYS.forEach(function(d,i){
-    var w = p.weekly[i]; var isA = i===curDay; var isR = w.rest; var isToday = i===todayDow;
-    h += '<button class="day-btn'+(isA?' active':isR?' rest':'')+'" data-day="'+i+'" style="position:relative">';
-    h += '<span class="dlabel">'+d+'</span><span class="dnum">'+(i+1)+'</span>';
-    if(isToday) h += '<div style="width:5px;height:5px;border-radius:50%;background:'+(isA?'rgba(255,255,255,.8)':'var(--green)')+';margin:0 auto"></div>';
-    else h += '<div class="ddot"></div>';
+  p.weekly.forEach(function(w,i){
+    var isA = i===curPlan;
+    // progresso de hoje neste treino
+    var done=0, total=0;
+    (w.exs||[]).forEach(function(ex,ei){
+      var k=curP+'-'+i+'-'+ei; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+      total+=ns;
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) done++; }
+    });
+    var isSug = i===suggested && done===0;
+    h += '<button class="day-btn'+(isA?' active':'')+'" data-plan="'+i+'" style="position:relative;padding:9px 14px'+(isA?';background:'+w.color+';border-color:'+w.color:'')+'">';
+    h += '<span class="dlabel" style="font-size:12px;font-weight:600;white-space:nowrap'+(isA?';color:#fff':'')+'">'+w.name+'</span>';
+    if(done>0) h += '<span class="dnum" style="font-size:10px;font-weight:600;color:'+(isA?'rgba(255,255,255,.85)':done>=total?'var(--green)':'var(--amber)')+'">'+(done>=total?'✓ completo':done+'/'+total+' séries')+'</span>';
+    else if(isSug) h += '<span class="dnum" style="font-size:10px;font-weight:700;color:'+(isA?'rgba(255,255,255,.85)':'var(--green)')+'">↻ próximo</span>';
+    else h += '<span class="dnum" style="font-size:10px;color:'+(isA?'rgba(255,255,255,.6)':'var(--muted)')+'">'+(w.exs?w.exs.length:0)+' exercícios</span>';
     h += '</button>';
   });
   var strip = document.getElementById('treinos-strip');
   strip.innerHTML = h;
   strip.querySelectorAll('.day-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){ curDay = parseInt(this.dataset.day); curDayManualOverride = (curDay !== (new Date().getDay()+6)%7); save(); renderTreinosStrip(); renderTreinosContent(); });
+    btn.addEventListener('click', function(){ curPlan = parseInt(this.dataset.plan); planSelDate = todayStr(); save(); renderTreinosStrip(); renderTreinosContent(); });
   });
-  // scroll active day into view
+  // scroll active plan into view
   var activeBtn = strip.querySelector('.day-btn.active');
   if(activeBtn) activeBtn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
 }
@@ -2299,22 +2376,13 @@ function playExerciseDone(){
 // ──────────────────────────────────────────────────────────────
 
 function renderTreinosContent(){
-  var p = PD[curP]; var w = p.weekly[curDay]; var h = '';
-  if(w.rest){
-    h += '<div class="section"><div class="card" style="padding:32px 20px;text-align:center">';
-    h += '<div style="font-size:40px;margin-bottom:12px">🌿</div>';
-    h += '<div style="font-size:18px;font-weight:500;margin-bottom:6px">Dia de descanso</div>';
-    h += '<div style="font-size:14px;color:var(--muted)">Recuperacao ativa: caminhada, alongamento ou descansar.</div></div></div>';
-    h += '<div class="section"><button class="btn-full" id="t-rec">Dicas de recuperacao com IA</button></div>';
-    document.getElementById('treinos-content').innerHTML = h;
-    var tr = document.getElementById('t-rec');
-    if(tr) tr.addEventListener('click', function(){ openChat('treino','Me da dicas de recuperacao ativa para hoje, dia de descanso. Perfil: '+p.name+', '+p.age+' anos.'); });
-    return;
-  }
-  var exs = w.exs;
+  var p = PD[curP]; var w = p.weekly[curPlan]; var h = '';
+  if(!w){ curPlan = 0; w = p.weekly[0]; }
+  if(!w) return;
+  var exs = w.exs || [];
   var doneMus = 0;
   exs.forEach(function(ex,i){
-    var key=wk(curP,curDay,i);
+    var key=wk(curP,curPlan,i);
     var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
     var dc=0; for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) dc++; }
     if(dc>=ns) doneMus++;
@@ -2341,7 +2409,7 @@ function renderTreinosContent(){
   h += '<div><div class="bmv">'+pctMus+'%</div><div class="bml">Feito</div></div></div></div>';
   h += '<div class="ex-block">';
   exs.forEach(function(ex,i){
-    var key = wk(curP,curDay,i);
+    var key = wk(curP,curPlan,i);
     var numSets = parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
     var doneCount = 0;
     for(var si=0;si<numSets;si++){ if(exSets[key+'-s'+si]) doneCount++; }
@@ -2359,15 +2427,15 @@ function renderTreinosContent(){
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+'</div><div class="ex-sets">'+ex.s+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
-    h += '<button class="food-swap" data-exedit-day="'+curDay+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">✏️</button>';
-    h += '<button class="food-swap" data-day="'+curDay+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">🔄</button>';
-    h += '<button class="food-swap" data-exrem-day="'+curDay+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
+    h += '<button class="food-swap" data-exedit-day="'+curPlan+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">✏️</button>';
+    h += '<button class="food-swap" data-day="'+curPlan+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">🔄</button>';
+    h += '<button class="food-swap" data-exrem-day="'+curPlan+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
     h += '<div style="display:flex;gap:6px;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+'</div>';
   });
   h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
-  h += '<button class="food-swap" data-exadd-day="'+curDay+'" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar exercicio</button>';
+  h += '<button class="food-swap" data-exadd-day="'+curPlan+'" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar exercicio</button>';
   h += '</div></div>';
   h += '<div class="prog-card" style="border-radius:0 0 var(--radius) var(--radius);border-top:none">';
   h += '<div class="prog-top"><span class="prog-lbl">Musculacao</span><span class="prog-val">'+doneMus+'/'+exs.length+' · '+pctMus+'%</span></div>';
@@ -2375,7 +2443,7 @@ function renderTreinosContent(){
   h += '</div></div>';
 
   // Cardio picker — multiple selection supported
-  var cselKey = curP+'-'+curDay;
+  var cselKey = curP+'-'+curPlan;
   var selIds = getCardioIds(cselKey);
   var wp = walkParams[cselKey] || {inc:5, spd:5.5, mins:30};
   h += '<div class="section"><div class="card">';
@@ -2438,7 +2506,7 @@ function renderTreinosContent(){
         h += '</div>';
       } else {
         var doneC = 0;
-        co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curDay+'-'+co.id+'-'+i]) doneC++; });
+        co.steps.forEach(function(_,i){ if(cardioChecked['c'+curP+'-'+curPlan+'-'+co.id+'-'+i]) doneC++; });
         h += '<div style="margin-top:10px"><div style="background:'+co.color+';border-radius:var(--radius) var(--radius) 0 0;padding:13px 16px;color:#fff">';
         h += '<div style="font-size:15px;font-weight:500">'+co.title+'</div>';
         h += '<div style="font-size:12px;opacity:.8;margin-top:2px">'+co.sub+' · '+co.dur+'</div></div>';
@@ -2451,7 +2519,7 @@ function renderTreinosContent(){
         h += '</div>';
         h += '<div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius)">';
         co.steps.forEach(function(st,i){
-          var ckey = 'c'+curP+'-'+curDay+'-'+co.id+'-'+i;
+          var ckey = 'c'+curP+'-'+curPlan+'-'+co.id+'-'+i;
           var cdone = !!cardioChecked[ckey];
           h += '<div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer" data-ckey="'+ckey+'">';
           h += '<div style="width:24px;height:24px;border-radius:6px;background:'+co.cl+';color:'+co.color+';font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>';
@@ -2470,7 +2538,7 @@ function renderTreinosContent(){
   // ── Total kcal ──
   var totalSetsDone = 0;
   exs.forEach(function(ex,i){
-    var key=wk(curP,curDay,i);
+    var key=wk(curP,curPlan,i);
     var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
     for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) totalSetsDone++; }
   });
@@ -2487,7 +2555,9 @@ function renderTreinosContent(){
   h += '</div></div>';
 
   // Stats + AI + buttons
-  var weekDone = PD[curP].weekly.filter(function(wk2,d){ return !wk2.rest && wk2.exs && wk2.exs.some(function(_,i){ return !!exChecked[wk(curP,d,i)]; }); }).length;
+  var last7 = [];
+  for(var d7=6; d7>=0; d7--){ var dd=new Date(); dd.setDate(dd.getDate()-d7); last7.push(dd.toISOString().slice(0,10)); }
+  var weekDone = (treinoHist[curP]||[]).filter(function(e){ return last7.indexOf(e.date)>=0 && e.done>0; }).length;
   var totalSetsPlanned = exs.reduce(function(s,ex){ return s+(parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3); },0);
   var setsPct = totalSetsPlanned>0?Math.round(totalSetsDone/totalSetsPlanned*100):0;
   h += '<div class="section"><div class="card" style="padding:14px 16px">';
@@ -2497,15 +2567,33 @@ function renderTreinosContent(){
   h += '<div style="height:8px;border-radius:99px;background:#f0f0ed;overflow:hidden"><div style="height:100%;border-radius:99px;background:var(--green);width:'+setsPct+'%;transition:width .4s"></div></div>';
   h += '</div>';
   h += '<div class="section"><div class="stats">';
-  h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+weekDone+'</div><div class="stat-lbl">Treinos feitos</div></div>';
-  h += '<div class="stat-card"><div class="stat-val">'+PD[curP].weekly.filter(function(d){return !d.rest;}).length+'</div><div class="stat-lbl">Planejados</div></div>';
+  h += '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+weekDone+'</div><div class="stat-lbl">Treinos 7 dias</div></div>';
+  h += '<div class="stat-card"><div class="stat-val">'+PD[curP].weekly.length+'</div><div class="stat-lbl">Tipos de treino</div></div>';
   h += '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+selIds.length+'</div><div class="stat-lbl">Cardio hoje</div></div>';
   h += '</div></div>';
+  // ── Histórico de treinos ──
+  var histAll = (treinoHist[curP]||[]).slice().sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,10);
+  if(histAll.length>0){
+    h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
+    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600">📖 Histórico de treinos</div>';
+    histAll.forEach(function(e){
+      var pl = p.weekly[e.plan]||{};
+      var dLbl = new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+      var full = e.done>=e.total && e.total>0;
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)">';
+      h += '<div style="width:10px;height:10px;border-radius:50%;background:'+(pl.color||'var(--green)')+';flex-shrink:0"></div>';
+      h += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.name+'</div>';
+      h += '<div style="font-size:11px;color:var(--muted)">'+dLbl+'</div></div>';
+      h += '<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+';flex-shrink:0">'+(full?'✓ ':'')+e.done+'/'+e.total+'</div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+  }
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise IA</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
   h += '<button class="act-btn" id="t-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar treino</span><span class="act-sub">Cargas e series</span></button>';
-  h += '<button class="act-btn" id="t-gerar"><span class="act-icon">✨</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novo plano semanal</span></button>';
+  h += '<button class="act-btn" id="t-gerar"><span class="act-icon">✨</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novos treinos</span></button>';
   h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">🔗</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
   h += '</div></div>';
   h += '<div class="section"><button class="btn-full" id="t-analise">Analise completa com IA ↗</button></div>';
@@ -2519,7 +2607,8 @@ function renderTreinosContent(){
       var dotKey=skey+'-s'+sidx;
       var wasDone=!!exSets[dotKey];
       exSets[dotKey]=!wasDone;
-      save(); renderTreinosContent();
+      updateTreinoHistToday();
+      save(); renderTreinosStrip(); renderTreinosContent();
       if(!wasDone){
         if(sidx === stotal-1){
           playExerciseDone();
@@ -2547,14 +2636,14 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){ openExVideo(this.dataset.vid); });
   });
   document.querySelectorAll('[data-cid]').forEach(function(el){
-    el.addEventListener('click', function(){ var k=curP+'-'+curDay; toggleCardioId(k, this.dataset.cid); save(); renderTreinosContent(); });
+    el.addEventListener('click', function(){ var k=curP+'-'+curPlan; toggleCardioId(k, this.dataset.cid); save(); renderTreinosContent(); });
   });
   // Walk param buttons
   document.querySelectorAll('[data-wact]').forEach(function(el){
     el.addEventListener('click', function(){
       var wid=this.dataset.wid, act=this.dataset.wact;
       var step=parseFloat(this.dataset.step), mn=parseFloat(this.dataset.min), mx=parseFloat(this.dataset.max);
-      var k=curP+'-'+curDay;
+      var k=curP+'-'+curPlan;
       walkParams[k]=walkParams[k]||{inc:5,spd:5.5,mins:30,km:5,dif:'moderada'};
       var cur=walkParams[k][wid]||0;
       var nv=act==='plus'?Math.min(mx,parseFloat((cur+step).toFixed(1))):Math.max(mn,parseFloat((cur-step).toFixed(1)));
@@ -2577,7 +2666,7 @@ function renderTreinosContent(){
   });
   document.querySelectorAll('[data-tdif]').forEach(function(el){
     el.addEventListener('click', function(){
-      var k=curP+'-'+curDay;
+      var k=curP+'-'+curPlan;
       walkParams[k]=walkParams[k]||{mins:60,km:5,dif:'moderada'};
       walkParams[k].dif=this.dataset.tdif;
       save(); renderTreinosContent();
@@ -2601,17 +2690,20 @@ function renderTreinosContent(){
     if(o.conditions&&o.conditions.length>0) ctx += 'Condicoes/lesoes: '+o.conditions.join(', ')+'.\n';
     if(hasPhotos) ctx += 'Fotos corporais: 3 angulos disponíveis no perfil.\n';
     // cardio preferences
-    var cardioSelDay = cardioSel[curP+'-'+curDay];
+    var cardioSelDay = cardioSel[curP+'-'+curPlan];
     if(cardioSelDay){ var co=CARDIO_OPTS.find(function(x){return x.id===cardioSelDay;}); if(co) ctx += 'Cardio preferido: '+co.title+'.\n'; }
-    if(walkParams[curP+'-'+curDay]) ctx += 'Caminhada: '+(walkParams[curP+'-'+curDay].spd||5.5)+'km/h, '+(walkParams[curP+'-'+curDay].inc||5)+'% inclinacao, '+(walkParams[curP+'-'+curDay].mins||30)+'min.\n';
-    ctx += '\nPLANO SEMANAL:\n'+p.weekly.map(function(d,di){
-      if(d.rest) return DAYS[di]+': Descanso';
+    if(walkParams[curP+'-'+curPlan]) ctx += 'Caminhada: '+(walkParams[curP+'-'+curPlan].spd||5.5)+'km/h, '+(walkParams[curP+'-'+curPlan].inc||5)+'% inclinacao, '+(walkParams[curP+'-'+curPlan].mins||30)+'min.\n';
+    ctx += '\nTREINOS (rotação livre por tipo, não presos ao dia da semana):\n'+p.weekly.map(function(d,di){
       var exStr=(d.exs||[]).map(function(ex,i){
         var wval=exWeights[wk(curP,di,i)]||ex.w||0;
         return ex.n+' '+ex.s+(wval>0?' @'+wval+'kg':'');
       }).join(', ');
-      return DAYS[di]+': '+d.name+' ('+exStr+')';
+      return (di+1)+'. '+d.name+' ('+exStr+')';
     }).join('\n');
+    var lpCtx = lastPlanDone[curP];
+    if(lpCtx && p.weekly[lpCtx.plan]) ctx += '\nÚltimo treino concluído: '+p.weekly[lpCtx.plan].name+' em '+lpCtx.date+'.';
+    var histT = (treinoHist[curP]||[]).slice(-10);
+    if(histT.length>0) ctx += '\nHistórico recente de treinos: '+histT.map(function(e){ return e.date+' '+e.name+' ('+e.done+'/'+e.total+' séries)'; }).join('; ')+'.';
     if(hist.length>0){
       ctx += '\n\nHISTORICO ('+hist.length+' semanas):\n'+hist.map(function(e){
         return e.label+': peso '+e.weight+'kg, score '+e.avg+', sono '+e.sleep+'h';
@@ -2623,7 +2715,7 @@ function renderTreinosContent(){
   }
   if(ta) ta.addEventListener('click', function(){
     var exList = (w.exs||[]).map(function(ex,i){
-      var key=wk(curP,curDay,i); var wval=exWeights[key]||ex.w||0;
+      var key=wk(curP,curPlan,i); var wval=exWeights[key]||ex.w||0;
       var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
       var done=0; for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) done++; }
       return (i+1)+'. '+ex.n+' — '+ex.s+(wval>0?' @ '+wval+'kg':'')+' ('+done+'/'+ns+' feitas)';
@@ -2633,11 +2725,11 @@ function renderTreinosContent(){
   });
   if(tg) tg.addEventListener('click', function(){
     var ctx = buildTrainingCtx();
-    openChatWithContext('treino', ctx, 'Perfil completo, plano atual, historico e exames carregados. Posso gerar um novo plano semanal personalizado ou responder qualquer duvida sobre treino.');
+    openChatWithContext('treino', ctx, 'Perfil completo, plano atual, historico e exames carregados. Posso gerar novos treinos personalizados (Peito + Tríceps, Costas + Bíceps, Pernas, Ombros) ou responder qualquer duvida sobre treino.');
   });
   if(tan) tan.addEventListener('click', function(){
     var ctx = buildTrainingCtx();
-    var totalDone=0; (w.exs||[]).forEach(function(ex,i){ var k=wk(curP,curDay,i); var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) totalDone++; } });
+    var totalDone=0; (w.exs||[]).forEach(function(ex,i){ var k=wk(curP,curPlan,i); var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) totalDone++; } });
     ctx += '\n\nHOJE: '+totalDone+' series concluidas de '+w.name+'.';
     openChatWithContext('treino', ctx, 'Perfil completo com historico, evolucao e exames carregados. Analise sua evolucao, frequencia, pontos de melhoria ou qualquer aspeto do treino.');
   });
@@ -3279,7 +3371,7 @@ function removerExercicio(dayIdx, exIdx){
   pdOverride[curP].weekly = p.weekly;
   save();
   showToast('"'+nome+'" removido ✓');
-  renderTreinosContent();
+  renderTreinosStrip(); renderTreinosContent();
 }
 
 function adicionarExercicio(dayIdx){
@@ -3328,7 +3420,7 @@ function adicionarExercicio(dayIdx){
       pdOverride[curP].weekly = p.weekly;
       save(); overlay.remove();
       showToast('"'+n+'" adicionado ✓');
-      renderTreinosContent();
+      renderTreinosStrip(); renderTreinosContent();
     }
 
     if(series){ aplicar(nome, series, peso); return; }
@@ -4597,7 +4689,7 @@ function getPopBench(age){
 }
 
 var CHAT_QPS = {
-  treino:['Ajustar carga de hoje','Substituir exercicio','Gerar plano semanal','Dicas de execucao'],
+  treino:['Ajustar carga de hoje','Substituir exercicio','Gerar novos treinos','Dicas de execucao'],
   dieta:['Ajustar plano alimentar','Pre-treino ideal','Analise de macros','Suplementos para dieta'],
   'dieta-ajustar':['Aumentar calorias','Reduzir carboidratos','Mudar objetivo para massa','Redistribuir macros'],
   'dieta-analise':['O que esta faltando na minha dieta?','Qualidade nutricional do plano','Timing das refeicoes','Onde posso melhorar?'],
@@ -4866,19 +4958,19 @@ function applyChatPlan(){
   var isD = chatCtx==='dieta'||chatCtx==='dieta-ajustar'||chatCtx==='dieta-analise';
   if(!isT&&!isD) return;
 
-  // for treino: ask which days to apply
+  // for treino: ask which workout types to apply
   if(isT){
-    var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    var planNames = PD[curP].weekly.map(function(w){ return w.name; });
     var overlay = document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML='<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:340px;padding:20px">'+
       '<div style="font-size:16px;font-weight:700;margin-bottom:4px">Aplicar treino da IA</div>'+
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Escolha o que aplicar:</div>'+
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Escolha quais treinos aplicar:</div>'+
       '<div style="margin-bottom:14px">'+
         '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;font-size:14px">'+
-          '<input type="checkbox" id="chk-all-days" checked style="width:18px;height:18px"> Plano semanal completo (todos os dias)'+
+          '<input type="checkbox" id="chk-all-days" checked style="width:18px;height:18px"> Todos os treinos'+
         '</label>'+
-        DAYS2.map(function(d,i){ return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0 6px 28px;cursor:pointer;font-size:13px;color:var(--muted)"><input type="checkbox" class="chk-day" data-day="'+i+'" checked style="width:16px;height:16px"> '+d+'</label>'; }).join('')+
+        planNames.map(function(d,i){ return '<label style="display:flex;align-items:center;gap:10px;padding:6px 0 6px 28px;cursor:pointer;font-size:13px;color:var(--muted)"><input type="checkbox" class="chk-day" data-day="'+i+'" checked style="width:16px;height:16px"> '+d+'</label>'; }).join('')+
       '</div>'+
       '<div style="display:flex;gap:8px">'+
         '<button id="sel-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
@@ -4938,7 +5030,7 @@ function doApplyChatPlan(selectedDays, dietaOpts){
 
   var jsonInstr;
   if(isT){
-    jsonInstr = 'Com base no plano de treino que acabamos de discutir, retorne SOMENTE um objeto JSON valido, sem texto adicional, sem markdown, sem explicacao. Formato exato:\n{"weekly":[{"name":"Nome do treino","color":"#1a7a4a","cl":"#e8f5ee","exs":[{"n":"Nome exercicio","s":"4x10","w":0}]},{"rest":true}]}\nRegras: array "weekly" deve ter exatamente 7 itens (Seg a Dom). Use {"rest":true} para dias de descanso. Cores por grupo: verde #1a7a4a/#e8f5ee (peito/triceps), azul #1a5a8a/#e3f0fd (costas/biceps), marrom #993c1d/#faece7 (pernas/gluteos), roxo #5a3ab7/#eeedfb (ombros/core), laranja #854f0b/#faeeda (full body). Campo "w" e peso em kg (0 para exercicios com peso corporal).';
+    jsonInstr = 'Com base no plano de treino que acabamos de discutir, retorne SOMENTE um objeto JSON valido, sem texto adicional, sem markdown, sem explicacao. Formato exato:\n{"weekly":[{"name":"Nome do treino","color":"#1a7a4a","cl":"#e8f5ee","exs":[{"n":"Nome exercicio","s":"4x10","w":0}]}]}\nRegras: array "weekly" deve ter exatamente 4 itens, um por tipo de treino, NESTA ordem: 1. Peito + Tríceps, 2. Costas + Bíceps, 3. Pernas, 4. Ombros. Sem dias de descanso — os treinos sao feitos em rotacao livre. Cores por tipo: verde #1a7a4a/#e8f5ee (Peito + Tríceps), azul #1a5a8a/#e3f0fd (Costas + Bíceps), marrom #993c1d/#faece7 (Pernas), roxo #5a3ab7/#eeedfb (Ombros). Campo "w" e peso em kg (0 para exercicios com peso corporal).';
   } else {
     jsonInstr = 'Com base no plano alimentar que acabamos de discutir, retorne SOMENTE um objeto JSON valido, sem texto adicional, sem markdown, sem explicacao. Formato exato:\n{"calories":2000,"meals":[{"id":"cafe","name":"Cafe da manha","time":"07:00","kcal":500,"foods":[{"n":"Alimento","p":"quantidade","k":200}]}]}\nRegras: ids aceitos para refeicoes: cafe, lanche1, almoco, lanche2, jantar, ceia. Campo "k" e as calorias de cada alimento. O campo "calories" e o total diario.';
   }
@@ -4953,11 +5045,14 @@ function doApplyChatPlan(selectedDays, dietaOpts){
     var jsonStr = txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
     var parsed = JSON.parse(jsonStr);
     if(!pdOverride[curP]) pdOverride[curP]={};
-    if(isT && Array.isArray(parsed.weekly) && parsed.weekly.length===7){
+    if(isT && Array.isArray(parsed.weekly) && parsed.weekly.length>0){
+      // aceita tanto o formato novo (4 treinos) quanto um antigo de 7 dias (migra)
+      var newPlans = migrateWeeklyToPlans(parsed.weekly) || parsed.weekly.filter(function(w){ return w && !w.rest && w.exs; });
       if(!pdOverride[curP].weekly) pdOverride[curP].weekly = JSON.parse(JSON.stringify(PD[curP].weekly));
-      var days = selectedDays || [0,1,2,3,4,5,6];
-      days.forEach(function(di){ PD[curP].weekly[di]=parsed.weekly[di]; pdOverride[curP].weekly[di]=parsed.weekly[di]; });
-      var msg = days.length===7 ? 'Treino semanal aplicado!' : days.length+' dias aplicados!';
+      var nPlans = PD[curP].weekly.length;
+      var days = selectedDays || PD[curP].weekly.map(function(_,i){ return i; });
+      days.forEach(function(di){ if(di<newPlans.length && di<nPlans){ PD[curP].weekly[di]=newPlans[di]; pdOverride[curP].weekly[di]=newPlans[di]; } });
+      var msg = days.length===nPlans ? 'Treinos aplicados!' : days.length+' treino(s) aplicado(s)!';
       save(); showToast(msg); closeChat();
       showScreen('treinos');
     } else if(isD && (Array.isArray(parsed.meals)||parsed.calories)){
@@ -5469,15 +5564,7 @@ function applyProfileToPD(idx){
     +(sleepHours<7?' — aumentar para 8h e prioridade':'')+'.'
     +' Foco: '+goalLabels+'. Meta: '+calories+'kcal/dia, '+protein+'g proteina.';
 
-  // Adjust weekly: first trainDays are active, rest are rest days
-  var activePlans = p.weekly.filter(function(d){ return !d.rest; });
-  var newWeekly = [];
-  var ai = 0;
-  for(var i=0; i<7; i++){
-    if(i<trainDays){ newWeekly.push(activePlans[ai%activePlans.length]); ai++; }
-    else { newWeekly.push({rest:true}); }
-  }
-  p.weekly = newWeekly;
+  // Treinos por tipo (rotação livre): trainDays é só informativo, plano de treinos não muda aqui
 
   // Scale meal calories proportionally to new total
   var mealTotal = p.meals.reduce(function(s,m){ return s+(m.kcal||0); },0);
@@ -5860,9 +5947,8 @@ function openAddSupp(){
 // MANUAL EDIT — TREINO DO DIA
 // ══════════════════════════════════════════════════════════════
 function openEditDay(){
-  var p = PD[curP]; var w = p.weekly[curDay];
+  var p = PD[curP]; var w = p.weekly[curPlan];
   var editPlan = JSON.parse(JSON.stringify(w));
-  var DAYS2 = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 
   function renderEditDay(){
     var h='<div style="margin-bottom:10px">';
@@ -5904,7 +5990,7 @@ function openEditDay(){
   overlay.innerHTML=
     '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;display:flex;flex-direction:column">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
-        '<div style="font-size:16px;font-weight:700">✏️ Editar '+DAYS2[curDay]+'</div>'+
+        '<div style="font-size:16px;font-weight:700">✏️ Editar '+(w.name||'treino')+'</div>'+
         '<button id="edit-day-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
       '</div>'+
       '<div id="edit-day-body" style="overflow-y:auto;padding:16px;flex:1"></div>'+
@@ -5925,12 +6011,12 @@ function openEditDay(){
     var updated = {name:editPlan.name||w.name, color:w.color, cl:w.cl, exs:cleanExs};
     if(!pdOverride[curP]) pdOverride[curP]={};
     if(!pdOverride[curP].weekly) pdOverride[curP].weekly = JSON.parse(JSON.stringify(PD[curP].weekly));
-    pdOverride[curP].weekly[curDay] = updated;
-    PD[curP].weekly[curDay] = updated;
+    pdOverride[curP].weekly[curPlan] = updated;
+    PD[curP].weekly[curPlan] = updated;
     save();
     closeEdit();
-    renderTreinosContent();
-    showToast('Treino de '+DAYS2[curDay]+' atualizado!');
+    renderTreinosStrip(); renderTreinosContent();
+    showToast('Treino "'+(updated.name||w.name)+'" atualizado!');
   });
 }
 
@@ -6075,6 +6161,7 @@ function syncSpecialistView(emailOverride){
     exWeights: exWeights||{},
     cardioSel: cardioSel||{},
     history: (historyData[curP]||[]).slice(-28),
+    treinoHist: (treinoHist[curP]||[]).slice(-28),
     active: true,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -6163,11 +6250,10 @@ function openProposalReview(){
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Enviado em '+pDate+'</div>';
   h += '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.5">'+p.message+'</div>';
   h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Novo plano proposto</div>';
-  var DAYS2=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   var CARDIO_LABELS={'1230':'12/3/30','hiit':'HIIT','bike':'Bike','corrida':'Corrida','natacao':'Natação','corda':'Corda','onda':'Onda','walk':'Caminhada','trilha':'Trilha','futvoley':'Futvoley','beach':'Beach Tennis','voley':'Voley de Areia'};
-  (p.weeklyPlan||[]).forEach(function(w,i){
-    if(w.rest){ h+='<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+DAYS2[i]+': Descanso</div>'; return; }
-    h+='<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:600">'+DAYS2[i]+' · '+(w.name||'')+'</div>';
+  var propPlans = migrateWeeklyToPlans(p.weeklyPlan||[]) || (p.weeklyPlan||[]);
+  propPlans.forEach(function(w,i){
+    h+='<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:600">'+(w.name||('Treino '+(i+1)))+'</div>';
     (w.exs||[]).forEach(function(ex){ h+='<div style="font-size:11px;color:var(--muted);padding-left:8px">· '+ex.n+' '+ex.s+(ex.w>0?' @ '+ex.w+'kg':'')+'</div>'; });
     var cKey = curP+'-'+i; var cId = p.cardioSel&&p.cardioSel[cKey];
     if(cId) h+='<div style="font-size:11px;color:var(--green);padding-left:8px;margin-top:2px">🏃 Cardio: '+(CARDIO_LABELS[cId]||cId)+'</div>';
@@ -6217,10 +6303,11 @@ function doApproveProposal(msg){
   var pName = p.specialistName || p.specialistEmail || 'Personal';
   var nowDate = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   if(!pdOverride[curP]) pdOverride[curP]={};
-  pdOverride[curP].weekly = p.weeklyPlan;
+  var approvedPlans = migrateWeeklyToPlans(p.weeklyPlan||[]) || p.weeklyPlan;
+  pdOverride[curP].weekly = approvedPlans;
   pdOverride[curP].lastUpdatedBy = pName;
   pdOverride[curP].lastUpdatedAt = nowDate;
-  PD[curP].weekly = p.weeklyPlan;
+  PD[curP].weekly = approvedPlans;
   if(p.cardioSel) Object.assign(cardioSel, p.cardioSel);
   fbDb.collection('proposals').doc(p.id).update({
     status:'approved',
@@ -6236,7 +6323,7 @@ function doApproveProposal(msg){
         date: nowDate,
         athleteName: PD[curP].name||''
       },
-      weeklyPlan: p.weeklyPlan,
+      weeklyPlan: approvedPlans,
       cardioSel: Object.assign({}, cardioSel)
     }, {merge:true}).catch(function(e){ console.log('specialistViews update error:', e); });
   }
@@ -6588,6 +6675,18 @@ function loadUserData(uid, callback){
           try{
             var s = data.appState;
             curP = s.curP||0; curDay = s.curDay||curDay;
+            // treinos por tipo: só restaura seleção do Firebase se for mais recente que a local
+            if(s.planSelDate && s.planSelDate >= (planSelDate||'')){ curPlan = s.planSelDate>planSelDate ? (s.curPlan||0) : curPlan; planSelDate = s.planSelDate>planSelDate ? s.planSelDate : planSelDate; }
+            if(s.lastPlanDone){ Object.keys(s.lastPlanDone).forEach(function(pi){ var r=s.lastPlanDone[pi], l=lastPlanDone[pi]; if(!l || (r&&r.date>l.date)) lastPlanDone[pi]=r; }); }
+            if(s.treinoHist){ Object.keys(s.treinoHist).forEach(function(pi){
+              if(!treinoHist[pi]) treinoHist[pi]=[];
+              (s.treinoHist[pi]||[]).forEach(function(re){
+                var li = treinoHist[pi].findIndex(function(le){ return le.date===re.date && le.plan===re.plan; });
+                if(li<0) treinoHist[pi].push(re);
+                else if(re.done>treinoHist[pi][li].done) treinoHist[pi][li]=re;
+              });
+              treinoHist[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
+            }); }
             function mergeObj(local, remote){
               var r = remote||{}; var out = Object.assign({}, r);
               Object.keys(local||{}).forEach(function(k){ if(local[k]===true) out[k]=true; else if(!(k in out)) out[k]=local[k]; });
@@ -6672,6 +6771,7 @@ function loadUserData(uid, callback){
                 if(o.bmr!=null) PD[i].bmr = o.bmr;
                 if(o.gender) PD[i].gender = o.gender;
               });
+              migratePlansModel();
             }
             if(s.historyData){
               // merge history: keep all entries from both local and Firebase, deduplicate by date
@@ -6720,8 +6820,8 @@ function showDataSummary(){
   var water = Math.round((waterGlasses[curP+'-water']||0)*250);
   var sleep = parseFloat(((sleepData[curP]||{hours:0}).hours||0).toFixed(1));
   var setsDone = 0;
-  (p.weekly[curDay]&&p.weekly[curDay].exs||[]).forEach(function(ex,i){
-    var k=curP+'-'+curDay+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
+  (p.weekly[curPlan]&&p.weekly[curPlan].exs||[]).forEach(function(ex,i){
+    var k=curP+'-'+curPlan+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
     for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) setsDone++; }
   });
   var daily = null;
@@ -6824,7 +6924,9 @@ function saveToCloud(){
     };
   });
   var appState = {
-    curP:curP, curDay:curDay, mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
+    curP:curP, curDay:curDay, curPlan:curPlan, planSelDate:planSelDate,
+    lastPlanDone:lastPlanDone, treinoHist:treinoHist,
+    mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,

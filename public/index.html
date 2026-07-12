@@ -474,7 +474,7 @@ input[type=file]{display:none}
 
 <!-- SPLASH / AUTH LOADING -->
 <div id="screen-splash" style="position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200">
-  <div style="width:72px;height:72px;background:var(--green);border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:32px">🌿</div>
+  <div style="width:72px;height:72px;background:var(--green);border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:32px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>
   <div style="font-family:Fraunces,serif;font-size:28px;font-weight:300;letter-spacing:-.5px;color:var(--text)">MyHealth</div>
   <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:DM Mono,monospace">v1.3.1</div>
   <div style="margin-top:28px;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>
@@ -485,7 +485,7 @@ input[type=file]{display:none}
 <div id="screen-login" class="screen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:40px 24px;background:var(--surface)">
   <div style="width:100%;max-width:360px">
     <div style="text-align:center;margin-bottom:40px">
-      <div style="width:64px;height:64px;background:var(--green);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px">🌿</div>
+      <div style="width:64px;height:64px;background:var(--green);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>
       <div style="font-family:Fraunces,serif;font-size:28px;font-weight:300;letter-spacing:-.5px;margin-bottom:6px">MyHealth</div>
       <div style="font-size:14px;color:var(--muted)">Saude da sua familia em um lugar</div>
     </div>
@@ -553,14 +553,14 @@ input[type=file]{display:none}
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ai-badge" id="home-ai-btn">IA ativo</div>
-        <div id="offline-badge" style="display:none;font-size:11px;background:#fee2e2;color:#c0392b;border-radius:6px;padding:3px 8px;font-weight:600">📵 offline</div>
-        <div id="sync-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer" onclick="showDataSummary()">⏳ salvando...</div>
-        <button id="dark-toggle" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:15px;cursor:pointer;line-height:1">🌙</button>
+        <div id="offline-badge" style="display:none;font-size:11px;background:#fee2e2;color:#c0392b;border-radius:6px;padding:3px 8px;font-weight:600">⦸ offline</div>
+        <div id="sync-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;cursor:pointer" onclick="showDataSummary()">salvando...</div>
+        <button id="dark-toggle" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 9px;font-size:15px;cursor:pointer;line-height:1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button>
         <button id="logout-btn" style="display:flex;align-items:center;background:none;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--coral);cursor:pointer;font-family:DM Sans,sans-serif;padding:6px 12px;transition:all .15s">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
         </button>
       </div>
-      <a id="admin-btn" href="/admin.html" style="display:none;background:#1a3a8a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;padding:5px 10px;text-decoration:none;align-items:center;gap:4px">🛡️ Admin</a>
+      <a id="admin-btn" href="/admin.html" style="display:none;background:#1a3a8a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;padding:5px 10px;text-decoration:none;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg> Admin</a>
     </div>
   </div>
   <div class="profiles" id="home-profiles"></div>
@@ -657,7 +657,7 @@ input[type=file]{display:none}
   <div id="comm-invite-panel" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center">
     <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 20px calc(28px + env(safe-area-inset-bottom))">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <div style="font-family:Fraunces,serif;font-size:20px">🎟️ Convidar pessoa</div>
+        <div style="font-family:Fraunces,serif;font-size:20px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M2 9a3 3 0 0 1 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg> Convidar pessoa</div>
         <button onclick="closeCommInvite()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
       <div style="margin-bottom:12px">
@@ -683,7 +683,7 @@ input[type=file]{display:none}
 <!-- JOIN MODAL -->
 <div id="join-ov">
   <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 24px calc(28px + env(safe-area-inset-bottom));text-align:center">
-    <div style="font-size:44px;margin-bottom:12px">🎟️</div>
+    <div style="margin-bottom:12px;color:var(--green)"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/></svg></div>
     <div style="font-family:Fraunces,serif;font-size:22px;margin-bottom:8px">Convite recebido!</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:24px" id="join-msg">Você foi convidado para a comunidade MyHealth.</div>
     <button onclick="doJoinCommunity()" style="width:100%;padding:14px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;margin-bottom:10px">Entrar na comunidade</button>
@@ -723,7 +723,7 @@ input[type=file]{display:none}
       <button onclick="clearChatPhoto()" style="position:absolute;top:4px;left:12px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="chat-inp-wrap">
-      <button id="chat-photo-btn" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0" title="Enviar foto">📷</button>
+      <button id="chat-photo-btn" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0" title="Enviar foto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
       <textarea class="chat-inp" id="chat-inp" placeholder="Pergunte..." rows="1"></textarea>
       <button class="send-btn" id="send-btn">
         <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
@@ -747,7 +747,7 @@ input[type=file]{display:none}
 <!-- Share Personal Modal -->
 <div class="wmodal-back" id="pro-share-back" style="z-index:70">
   <div class="wmodal" style="width:320px;text-align:left">
-    <div class="wmodal-title" style="margin-bottom:4px">🔗 Personal Trainer</div>
+    <div class="wmodal-title" style="margin-bottom:4px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Personal Trainer</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Só o personal com este email conseguirá acessar seus dados.</div>
     <div id="pro-email-section">
       <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Email do personal</div>
@@ -758,7 +758,7 @@ input[type=file]{display:none}
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Autorizado para: <strong id="pro-auth-email" style="color:var(--green)"></strong></div>
       <div id="pro-share-url" style="background:var(--surface);border-radius:10px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);word-break:break-all;margin-bottom:8px;cursor:pointer"></div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Qualquer um com o link só entra se logar com o email autorizado.</div>
-      <button id="pro-revoke-btn" style="background:none;border:none;color:var(--coral);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;padding:0">🚫 Revogar acesso</button>
+      <button id="pro-revoke-btn" style="background:none;border:none;color:var(--coral);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;padding:0">Revogar acesso</button>
     </div>
     <div class="wmodal-btns">
       <button class="wmodal-cancel" id="pro-share-close">Fechar</button>
@@ -771,7 +771,7 @@ input[type=file]{display:none}
 <div class="wmodal-back" id="pro-prop-back" style="z-index:70">
   <div class="wmodal" style="width:340px;text-align:left;max-height:85vh;overflow-y:auto">
     <div id="pro-prop-view">
-      <div class="wmodal-title" style="margin-bottom:4px">💪 Proposta do Personal</div>
+      <div class="wmodal-title" style="margin-bottom:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/></svg> Proposta do Personal</div>
       <div id="pro-prop-content"></div>
       <div class="wmodal-btns" style="margin-top:14px">
         <button class="wmodal-cancel" id="pro-prop-reject" style="color:var(--coral)">Rejeitar</button>
@@ -793,6 +793,64 @@ input[type=file]{display:none}
 // ══════════════════════════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// ÍCONES — SVG monocromático (currentColor), estilo linha minimalista
+// ══════════════════════════════════════════════════════════════
+var ICONS = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  pill: '<path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7z"/><path d="M8.5 8.5l7 7"/>',
+  bike: '<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6h-4l-2.5 6M12 17.5l3-8 3.5 2M9 6h2"/>',
+  wind: '<path d="M9.6 4.6A2 2 0 1 1 11 8H2M17.7 7.7A2.5 2.5 0 1 1 19.5 12H2M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+  waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+  mountain: '<path d="M8 3l4 8 5-5 5 15H2z"/>',
+  footprints: '<path d="M4 16v-2.4c0-1.3.4-2.6 1-3.6.6-1 1-2.5 1-4C6 4 7 3 8 3s2 1.5 2 3.5c0 2-1 3.5-1 5.5v4a2.5 2.5 0 0 1-5 0zM14 20v-2.4c0-1.3.4-2.6 1-3.6.6-1 1-2.5 1-4 0-2 1-3 2-3s2 1.5 2 3.5c0 2-1 3.5-1 5.5v4a2.5 2.5 0 0 1-5 0z"/>',
+  activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  ball: '<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20M2 12h20"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  brain: '<path d="M12 3v18M12 3a4 4 0 0 0-7 3 4 4 0 0 0-1 6 4 4 0 0 0 4 6h4M12 3a4 4 0 0 1 7 3 4 4 0 0 1 1 6 4 4 0 0 1-4 6h-4"/>',
+  zap: '<path d="M13 2L3 14h7l-1 8 10-12h-7z"/>',
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  dumbbell: '<path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/>',
+  nutrition: '<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-2 0-3 2.2-3 4.5V13h6V7.5C20 5.2 19 3 17 3zM17 13v8"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+  flask: '<path d="M14.5 2v17.5a2.5 2.5 0 0 1-5 0V2"/><path d="M8.5 2h7M14.5 16h-5"/>',
+  chart: '<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.51 4.04 3 5.5l7 7z"/>',
+  droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  swap: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  play: '<path d="M7 4l13 8-13 8z"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  sparkles: '<path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  weight: '<circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.9 12a1 1 0 0 1-1 1.2H5.6a1 1 0 0 1-1-1.2z"/>',
+  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="M14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 15v2c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 15v2c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z"/>',
+  gear: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+  run: '<circle cx="14" cy="4" r="2"/><path d="M9 20l2-6-3-2 1-5 5 1 2 3h4M6 20h3M4 12l3-1"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zM21 15v7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>',
+  export: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+};
+function icn(name, sz, style){
+  var body = ICONS[name]; if(!body) return '';
+  sz = sz||18;
+  return '<svg class="icn" width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'+(style?' style="'+style+'"':'')+'>'+body+'</svg>';
+}
+
 const DAYS = ['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
 const COLORS = [
   {bg:'#e8f5ee',cl:'#1a7a4a'},{bg:'#eeedfe',cl:'#534ab7'},
@@ -800,37 +858,37 @@ const COLORS = [
   {bg:'#e3f0fd',cl:'#1a5a8a'},{bg:'#fbeaf0',cl:'#993556'}
 ];
 const GOALS = [
-  {v:'longevidade',i:'🌿',l:'Longevidade e saude preventiva'},
-  {v:'hipertrofia',i:'💪',l:'Ganhar massa muscular'},
-  {v:'perda_gordura',i:'🔥',l:'Perder gordura'},
-  {v:'recomposicao',i:'⚖️',l:'Recomposicao corporal'},
-  {v:'performance',i:'⚡',l:'Performance esportiva'},
-  {v:'sono',i:'🌙',l:'Melhorar qualidade do sono'},
-  {v:'cognitivo',i:'🧠',l:'Performance cognitiva'},
-  {v:'hormonal',i:'🔬',l:'Equilibrio hormonal'},
-  {v:'saude_geral',i:'❤️',l:'Saude geral'},
-  {v:'digestao',i:'🌱',l:'Saude digestiva'}
+  {v:'longevidade',i:icn('leaf',13),l:'Longevidade e saude preventiva'},
+  {v:'hipertrofia',i:icn('dumbbell',13),l:'Ganhar massa muscular'},
+  {v:'perda_gordura',i:icn('flame',13),l:'Perder gordura'},
+  {v:'recomposicao',i:icn('weight',13),l:'Recomposicao corporal'},
+  {v:'performance',i:icn('zap',13),l:'Performance esportiva'},
+  {v:'sono',i:icn('moon',13),l:'Melhorar qualidade do sono'},
+  {v:'cognitivo',i:icn('brain',13),l:'Performance cognitiva'},
+  {v:'hormonal',i:icn('flask',13),l:'Equilibrio hormonal'},
+  {v:'saude_geral',i:icn('heart',13),l:'Saude geral'},
+  {v:'digestao',i:icn('leaf',13),l:'Saude digestiva'}
 ];
 const CARDIO_OPTS = [
-  {id:'1230',icon:'🏃',label:'12/3/30',color:'#c4621a',cl:'#fdf0e8',title:'Esteira 12/3/30',sub:'12% inclinacao • 4.8 km/h',dur:'43 min',
+  {id:'1230',icon:'run',label:'12/3/30',color:'#c4621a',cl:'#fdf0e8',title:'Esteira 12/3/30',sub:'12% inclinacao • 4.8 km/h',dur:'43 min',
    params:[{v:'12%',l:'Inclinacao'},{v:'4.8',l:'km/h'},{v:'30',l:'Min'},{v:'~280',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'0% • 3 km/h',t:'5 min'},{n:'Protocolo 12/3/30',d:'12% • 4.8 km/h • postura ereta',t:'30 min'},{n:'Desaceleracao',d:'Velocidade reduzindo',t:'3 min'},{n:'Alongamento',d:'Panturrilha + isquiotibial',t:'5 min'}]},
-  {id:'hiit',icon:'💨',label:'HIIT',color:'#993c1d',cl:'#faece7',title:'HIIT',sub:'Tiros de alta intensidade',dur:'25 min',
+  {id:'hiit',icon:'wind',label:'HIIT',color:'#993c1d',cl:'#faece7',title:'HIIT',sub:'Tiros de alta intensidade',dur:'25 min',
    params:[{v:'30s',l:'Sprint'},{v:'90s',l:'Leve'},{v:'8x',l:'Series'},{v:'~300',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Velocidade leve',t:'5 min'},{n:'Tiros x8',d:'30s rapido / 90s leve',t:'16 min'},{n:'Volta a calma',d:'Caminhada',t:'4 min'}]},
-  {id:'bike',icon:'🚴',label:'Bike',color:'#1a5a8a',cl:'#e3f0fd',title:'Bike ergometrica',sub:'Baixo impacto',dur:'35 min',
+  {id:'bike',icon:'bike',label:'Bike',color:'#1a5a8a',cl:'#e3f0fd',title:'Bike ergometrica',sub:'Baixo impacto',dur:'35 min',
    params:[{v:'35',l:'Min'},{v:'Mod',l:'Resist.'},{v:'75%',l:'FC max'},{v:'~250',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Resistencia baixa',t:'5 min'},{n:'Principal',d:'Resistencia moderada',t:'25 min'},{n:'Desaceleracao',d:'Resistencia baixa',t:'5 min'}]},
-  {id:'corrida',icon:'🏃',label:'Corrida',color:'#1a7a4a',cl:'#e8f5ee',title:'Corrida LISS',sub:'Zona aerobica 60-70%',dur:'35 min',
+  {id:'corrida',icon:'run',label:'Corrida',color:'#1a7a4a',cl:'#e8f5ee',title:'Corrida LISS',sub:'Zona aerobica 60-70%',dur:'35 min',
    params:[{v:'35',l:'Min'},{v:'65%',l:'FC max'},{v:'Leve',l:'Intensidade'},{v:'~280',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Caminhada rapida',t:'5 min'},{n:'Corrida leve',d:'Ritmo confortavel',t:'25 min'},{n:'Desaceleracao',d:'Caminhada',t:'5 min'}]},
-  {id:'natacao',icon:'🏊',label:'Natacao',color:'#1a5a8a',cl:'#e3f0fd',title:'Natacao',sub:'Full body baixo impacto',dur:'40 min',
+  {id:'natacao',icon:'waves',label:'Natacao',color:'#1a5a8a',cl:'#e3f0fd',title:'Natacao',sub:'Full body baixo impacto',dur:'40 min',
    params:[{v:'40',l:'Min'},{v:'Livre',l:'Estilo'},{v:'Mod',l:'Intensidade'},{v:'~350',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Nado leve',t:'5 min'},{n:'Principal',d:'Ritmo moderado',t:'30 min'},{n:'Desaceleracao',d:'Nado leve',t:'5 min'}]},
-  {id:'corda',icon:'⛹️',label:'Corda',color:'#5a3ab7',cl:'#eeedfb',title:'Pular corda',sub:'Alta queima calorica',dur:'20 min',
+  {id:'corda',icon:'activity',label:'Corda',color:'#5a3ab7',cl:'#eeedfb',title:'Pular corda',sub:'Alta queima calorica',dur:'20 min',
    params:[{v:'2min',l:'Serie'},{v:'1min',l:'Descanso'},{v:'6x',l:'Rodadas'},{v:'~250',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Pular leve 2 min',t:'2 min'},{n:'Series x6',d:'2 min / 1 min descanso',t:'15 min'},{n:'Alongamento',d:'Panturrilhas',t:'3 min'}]},
-  {id:'onda',icon:'🌊',label:'Onda',color:'#1a5a8a',cl:'#e3f0fd',title:'Protocolo Onda',sub:'Inclinação progressiva em ondas',dur:'25 min',
+  {id:'onda',icon:'waves',label:'Onda',color:'#1a5a8a',cl:'#e3f0fd',title:'Protocolo Onda',sub:'Inclinação progressiva em ondas',dur:'25 min',
    params:[{v:'25',l:'Min'},{v:'5–11%',l:'Inclinação'},{v:'~3.5',l:'km/h'},{v:'~220',l:'Kcal'}],
    steps:[
     {n:'Bloco 1',d:'5% inclinação • 3,5 km/h',t:'5 min'},
@@ -839,17 +897,17 @@ const CARDIO_OPTS = [
     {n:'Bloco 4',d:'11% inclinação • 3,6 km/h',t:'5 min'},
     {n:'Bloco 5 — Descida',d:'6% inclinação • 3,4 km/h',t:'5 min'},
    ]},
-  {id:'walk',icon:'🚶',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
+  {id:'walk',icon:'footprints',label:'Caminhada',color:'#1a7a4a',cl:'#e8f5ee',title:'Caminhada na esteira',editable:true,
    params:[],steps:[]},
-  {id:'trilha',icon:'🥾',label:'Trilha',color:'#854f0b',cl:'#faeeda',title:'Trilha',editable:true,trilha:true,
+  {id:'trilha',icon:'mountain',label:'Trilha',color:'#854f0b',cl:'#faeeda',title:'Trilha',editable:true,trilha:true,
    params:[],steps:[]},
-  {id:'futvoley',icon:'⚽',label:'Futvoley',color:'#c4621a',cl:'#fdf0e8',title:'Futvoley',sub:'Alta intensidade • Explosao + aerobico',dur:'60 min',
+  {id:'futvoley',icon:'ball',label:'Futvoley',color:'#c4621a',cl:'#fdf0e8',title:'Futvoley',sub:'Alta intensidade • Explosao + aerobico',dur:'60 min',
    params:[{v:'60',l:'Min'},{v:'Alta',l:'Intensidade'},{v:'80%',l:'FC max'},{v:'~500',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Passe + mobilidade',t:'10 min'},{n:'Jogo',d:'Partidas de futvoley',t:'45 min'},{n:'Volta a calma',d:'Alongamento',t:'5 min'}]},
-  {id:'beachtennis',icon:'🎾',label:'Beach Tennis',color:'#1a5a8a',cl:'#e3f0fd',title:'Beach Tennis',sub:'Aerobico + explosao lateral',dur:'60 min',
+  {id:'beachtennis',icon:'ball',label:'Beach Tennis',color:'#1a5a8a',cl:'#e3f0fd',title:'Beach Tennis',sub:'Aerobico + explosao lateral',dur:'60 min',
    params:[{v:'60',l:'Min'},{v:'Mod-Alta',l:'Intensidade'},{v:'75%',l:'FC max'},{v:'~450',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Troca de bolas leve',t:'10 min'},{n:'Jogo',d:'Sets / rally',t:'45 min'},{n:'Volta a calma',d:'Alongamento',t:'5 min'}]},
-  {id:'voleyareia',icon:'🏐',label:'Voley de Areia',color:'#854f0b',cl:'#faeeda',title:'Voley de Areia',sub:'Full body • Areia aumenta o gasto',dur:'60 min',
+  {id:'voleyareia',icon:'ball',label:'Voley de Areia',color:'#854f0b',cl:'#faeeda',title:'Voley de Areia',sub:'Full body • Areia aumenta o gasto',dur:'60 min',
    params:[{v:'60',l:'Min'},{v:'Mod-Alta',l:'Intensidade'},{v:'78%',l:'FC max'},{v:'~480',l:'Kcal'}],
    steps:[{n:'Aquecimento',d:'Passes e movimentacao',t:'10 min'},{n:'Jogo',d:'Sets de voley na areia',t:'45 min'},{n:'Volta a calma',d:'Alongamento leve',t:'5 min'}]},
 ];
@@ -1146,50 +1204,6 @@ window.fetch = function(url, opts){
   return _origFetch(url, opts);
 };
 
-// ══════════════════════════════════════════════════════════════
-// ÍCONES — SVG monocromático (currentColor), estilo linha minimalista
-// ══════════════════════════════════════════════════════════════
-var ICONS = {
-  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
-  dumbbell: '<path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/>',
-  nutrition: '<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-2 0-3 2.2-3 4.5V13h6V7.5C20 5.2 19 3 17 3zM17 13v8"/>',
-  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
-  flask: '<path d="M14.5 2v17.5a2.5 2.5 0 0 1-5 0V2"/><path d="M8.5 2h7M14.5 16h-5"/>',
-  chart: '<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
-  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.51 4.04 3 5.5l7 7z"/>',
-  droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
-  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
-  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
-  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
-  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
-  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
-  swap: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
-  x: '<path d="M18 6L6 18M6 6l12 12"/>',
-  play: '<path d="M7 4l13 8-13 8z"/>',
-  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-  sparkles: '<path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/>',
-  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
-  weight: '<circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.9 12a1 1 0 0 1-1 1.2H5.6a1 1 0 0 1-1-1.2z"/>',
-  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="M14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
-  bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>',
-  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 15v2c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 15v2c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z"/>',
-  gear: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/>',
-  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
-  run: '<circle cx="14" cy="4" r="2"/><path d="M9 20l2-6-3-2 1-5 5 1 2 3h4M6 20h3M4 12l3-1"/>',
-  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
-  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zM21 15v7"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>',
-  export: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
-  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
-};
-function icn(name, sz, style){
-  var body = ICONS[name]; if(!body) return '';
-  sz = sz||18;
-  return '<svg class="icn" width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'+(style?' style="'+style+'"':'')+'>'+body+'</svg>';
-}
 
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function kcalConsumedToday(pi){
@@ -1326,12 +1340,12 @@ function handleDayChange(oldDate){
   }
   // auto highlight
   var highlights0 = [];
-  if(deficit0<=0 && kcal0>0) highlights0.push('🎯 Meta calórica atingida');
-  if(sleep0>=(p0.sleepTarget||7.5)) highlights0.push('😴 Meta de sono atingida');
-  if(mealsDone0===p0.meals.length) highlights0.push('🍽 Todas as refeições registradas');
-  if(workout0 && workout0.done===workout0.total && workout0.total>0) highlights0.push('💪 Treino 100% completo');
-  if(water0>=(p0.water||2500)) highlights0.push('💧 Meta de hidratação atingida');
-  var highlight0 = highlights0.length>=3 ? '🔥 Dia completo!' : highlights0.length>0 ? highlights0[0] : null;
+  if(deficit0<=0 && kcal0>0) highlights0.push('Meta calórica atingida');
+  if(sleep0>=(p0.sleepTarget||7.5)) highlights0.push('Meta de sono atingida');
+  if(mealsDone0===p0.meals.length) highlights0.push('Todas as refeições registradas');
+  if(workout0 && workout0.done===workout0.total && workout0.total>0) highlights0.push('Treino 100% completo');
+  if(water0>=(p0.water||2500)) highlights0.push('Meta de hidratação atingida');
+  var highlight0 = highlights0.length>=3 ? 'Dia completo!' : highlights0.length>0 ? highlights0[0] : null;
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}).replace(/ De /g,' de ');
 
@@ -1398,7 +1412,7 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
     '<div style="background:var(--card);border-radius:24px;width:100%;max-width:380px;overflow:hidden">'+
       // Header
       '<div style="background:linear-gradient(135deg,var(--green),var(--green-deep));padding:20px 24px 16px;text-align:center">'+
-        '<div style="font-size:28px;margin-bottom:6px">📋</div>'+
+        '<div style="margin-bottom:6px;color:rgba(255,255,255,.9)">'+icn('clipboard',26)+'</div>'+
         '<div style="font-family:Fraunces,serif;font-size:22px;color:#fff;margin-bottom:2px">Resumo do Dia Anterior</div>'+
         '<div style="font-size:13px;color:rgba(255,255,255,.75);text-transform:capitalize">'+dateLabel+'</div>'+
       '</div>'+
@@ -1408,8 +1422,8 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
         '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Balanço Calórico</div>'+
         '<div style="font-size:26px;font-weight:700;font-family:DM Mono,monospace;color:'+defColor+'">'+defLabel+'</div>'+
         '<div style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)">'+
-          '<span>🍽 '+kcal+' consumidas</span>'+
-          '<span>🔥 '+gasto+' gastas</span>'+
+          '<span>'+kcal+' consumidas</span>'+
+          '<span>'+gasto+' gastas</span>'+
         '</div>'+
         '<div style="font-size:10px;color:var(--muted);margin-top:4px">Basal '+basal+' + Treino '+treino+' kcal</div>'+
       '</div>'+
@@ -1417,26 +1431,26 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
           '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+sleep+'h</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">😴 Sono</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">Sono</div>'+
         '</div>'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
           '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+waterColor+'">'+(water>0?water+'ml':'—')+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">💧 Hidratação</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">Hidratação</div>'+
         '</div>'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
           '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+(mealsDone===mealsTotal?'var(--green)':'var(--amber)')+'">'+mealsDone+'/'+mealsTotal+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">🍽 Refeições</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">Refeições</div>'+
         '</div>'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
           '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+(suppDone===suppTotal&&suppTotal>0?'var(--green)':'var(--amber)')+'">'+suppDone+'/'+suppTotal+'</div>'+
-          '<div style="font-size:11px;color:var(--muted);margin-top:2px">💊 Suplementos</div>'+
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">Suplementos</div>'+
         '</div>'+
       '</div>'+
       // Treino + Destaque (linha compacta, só se houver dados)
       (workout||highlight?
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
           (workout?'<div style="background:var(--surface);border-radius:10px;padding:8px 12px;flex:1;min-width:0">'+
-            '<div style="font-size:11px;color:var(--muted)">💪 Treino</div>'+
+            '<div style="font-size:11px;color:var(--muted)">Treino</div>'+
             '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+workout.name+'</div>'+
             '<div style="font-size:11px;color:'+(workout.done===workout.total?'var(--green)':'var(--amber)')+'">'+workout.done+'/'+workout.total+' séries</div>'+
           '</div>':'')+
@@ -1761,7 +1775,7 @@ function renderProfiles(containerId){
   h += '<span class="pname">'+name.split(' ')[0]+'</span></button>';
   // Edit button
   h += '<button id="btn-edit-profile-strip" style="display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:0 4px;flex-shrink:0">';
-  h += '<div style="width:38px;height:38px;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)">⚙️</div>';
+  h += '<div style="width:38px;height:38px;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)">'+icn('gear',16)+'</div>';
   h += '<span style="font-size:10px;color:var(--muted)">Editar</span></button>';
   el.innerHTML = h;
   document.getElementById('btn-edit-profile-strip').addEventListener('click', function(){
@@ -1824,7 +1838,7 @@ function renderHome(){
   // Setup CTA banner
   if(!profileComplete){
     h += '<div id="setup-banner" style="margin:0 20px 14px;background:linear-gradient(135deg,#e8630a,#c4621a);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">';
-    h += '<div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">👤</div>';
+    h += '<div style="width:42px;height:42px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">'+icn('user',20)+'</div>';
     h += '<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:600;margin-bottom:2px">Complete seu perfil</div>';
     h += '<div style="color:rgba(255,255,255,.75);font-size:12px">Personalize dados, objetivos e gere seu plano com IA</div></div>';
     h += '<div style="color:#fff;font-size:20px;opacity:.8">›</div>';
@@ -1842,7 +1856,7 @@ function renderHome(){
   h += '<div id="proposal-banner" style="display:none;background:var(--card);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px"></div>';
   h += '<div class="dash-hero">';
   h += '<div class="dash-hero-top">';
-  h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
+  h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'!</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
   h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?icn('lock',10,'vertical-align:-1px')+' desde '+fzHomeLbl:(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média')+'</div>';
@@ -2015,7 +2029,7 @@ function renderHome(){
   h += '<div class="section"><div class="metric-grid">';
   // IMC card — tappable to update body weight
   h += '<div class="metric-card" onclick="openBodyWeight()" style="cursor:pointer"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
-  h += '<div class="metric-label">Peso atual <span style="font-size:10px;color:var(--green)">✎</span></div>';
+  h += '<div class="metric-label">Peso atual <span style="color:var(--green)">'+icn('pencil',10)+'</span></div>';
   h += '<div class="metric-trend" style="color:'+imcColor+';display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:'+imcColor+';flex-shrink:0;display:inline-block"></span>IMC '+imc+' · '+imcLbl+'</div>';
   h += miniBar(imc,15,40,27,22,'27','22',true);
   h += '</div>';
@@ -2097,11 +2111,11 @@ function renderHome(){
   // Streak
   var streak = calcStreak();
   if(streak>0){
-    var streakMsg = streak>=30?'🔥 Incrível! '+streak+' dias!':streak>=14?'💪 '+streak+' dias seguidos!':streak>=7?'⚡ '+streak+' dias seguidos!':'🌱 '+streak+' dia'+(streak>1?'s':'')+' seguidos';
+    var streakMsg = streak>=30?'Incrível! '+streak+' dias!':streak>=14?''+streak+' dias seguidos!':streak>=7?''+streak+' dias seguidos!':''+streak+' dia'+(streak>1?'s':'')+' seguidos';
     h += '<div class="section"><div style="background:linear-gradient(135deg,#1a7a4a,#0f4f30);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">';
     h += '<div><div style="color:#fff;font-size:15px;font-weight:600">'+streakMsg+'</div>';
     h += '<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">Consistência é o segredo</div></div>';
-    h += '<div style="font-size:36px">🔥</div></div></div>';
+    h += '<div style="color:rgba(255,255,255,.85)">'+icn('flame',32)+'</div></div></div>';
   }
   // Weekly summary
   var weekly = calcWeeklySummary();
@@ -2201,7 +2215,7 @@ function analisarComposicaoCorporal(){
     });
     content.push({type:'text', text:ctx});
     chatHistory.push({role:'user', content:content});
-    addChatMsg('user', '📷 '+photos.length+' foto(s) enviada(s) para análise');
+    addChatMsg('user', ''+photos.length+' foto(s) enviada(s) para análise');
     isTyping=true; document.getElementById('send-btn').disabled=true; showTyping();
     fetch('/api/claude',{
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -2436,7 +2450,7 @@ function playTimerBeep(onEnd){
   // iOS + all: visual flash alert on screen
   var flash = document.createElement('div');
   flash.style.cssText = 'position:fixed;inset:0;background:var(--green);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .1s';
-  flash.innerHTML = '<div style="font-size:64px;margin-bottom:12px">⏱️</div>'+
+  flash.innerHTML = '<div style="margin-bottom:12px;color:#fff">'+icn('clock',56)+'</div>'+
     '<div style="font-family:Fraunces,serif;font-size:32px;color:#fff;font-weight:600">Descanse acabou!</div>'+
     '<div style="font-size:16px;color:rgba(255,255,255,.8);margin-top:8px">Próxima série</div>';
   document.body.appendChild(flash);
@@ -2461,7 +2475,7 @@ function playExerciseDone(){
   // visual flash for iOS
   var flash = document.createElement('div');
   flash.style.cssText = 'position:fixed;inset:0;background:#1a5a8a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .1s';
-  flash.innerHTML = '<div style="font-size:64px;margin-bottom:12px">💪</div>'+
+  flash.innerHTML = '<div style="margin-bottom:12px;color:#fff">'+icn('dumbbell',56)+'</div>'+
     '<div style="font-family:Fraunces,serif;font-size:28px;color:#fff;font-weight:600">Exercício completo!</div>';
   document.body.appendChild(flash);
   requestAnimationFrame(function(){ flash.style.opacity='1'; });
@@ -2493,7 +2507,7 @@ function renderTreinosDayHistory(ds){
       var full = e.done>=e.total && e.total>0;
       h += '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)">';
       h += '<div style="width:10px;height:10px;border-radius:50%;background:'+(pl.color||'var(--green)')+';flex-shrink:0"></div>';
-      h += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">'+e.name+'</div>'+(e.vol>0?'<div style="font-size:11px;color:var(--muted)">🏋️ '+fmtVol(e.vol)+'</div>':'')+'</div>';
+      h += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">'+e.name+'</div>'+(e.vol>0?'<div style="font-size:11px;color:var(--muted)">'+fmtVol(e.vol)+' levantados</div>':'')+'</div>';
       h += '<div style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+'">'+(full?'✓ ':'')+e.done+'/'+e.total+' séries</div>';
       h += '</div>';
     });
@@ -2592,7 +2606,7 @@ function renderTreinosContent(){
     h += '<div class="ex-num" style="background:'+w.cl+';color:'+w.color+'">'+(i+1)+'</div>';
     var exPR = getExercisePR(ex.n);
     var isNewPR = doneCount>0 && wval>0 && exPR>0 && wval>exPR;
-    h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+(isNewPR?' <span style="font-size:10px;background:#f0c060;color:#5a3a00;border-radius:99px;padding:1px 7px;font-weight:700;vertical-align:middle">🏆 PR!</span>':'')+'</div><div class="ex-sets">'+ex.s+(exPR>0?' · <span style="color:'+(isNewPR?'#b45309':'var(--muted)')+'">PR '+exPR+'kg</span>':'')+'</div></div>';
+    h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+(isNewPR?' <span style="font-size:10px;background:#f0c060;color:#5a3a00;border-radius:99px;padding:1px 7px;font-weight:700;vertical-align:middle">'+icn('trophy',9,'vertical-align:-1px')+' PR!</span>':'')+'</div><div class="ex-sets">'+ex.s+(exPR>0?' · <span style="color:'+(isNewPR?'#b45309':'var(--muted)')+'">PR '+exPR+'kg</span>':'')+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
     h += '<button class="food-swap" data-exedit-day="'+curPlan+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">'+icn('pencil',14)+'</button>';
     h += '<button class="food-swap" data-day="'+curPlan+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">'+icn('swap',14)+'</button>';
@@ -2626,7 +2640,7 @@ function renderTreinosContent(){
     h += 'border:1.5px solid '+(isSel?opt.color:'var(--border)')+';';
     h += 'background:'+(isSel?opt.cl:'var(--surface)')+';';
     h += 'font-size:12px;font-weight:500;color:'+(isSel?opt.color:'var(--muted)')+';cursor:pointer;flex-shrink:0" data-cid="'+opt.id+'">';
-    h += (isSel?'✓ ':'')+opt.icon+' '+opt.label+'</div>';
+    h += (isSel?'✓ ':'')+icn(opt.icon,13,'vertical-align:-2px')+' '+opt.label+'</div>';
   });
   h += '</div></div>';
 
@@ -2651,13 +2665,13 @@ function renderTreinosContent(){
         var tKcal = Math.round(tMet * p.weight * (tp.mins/60));
         h += '<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
         h += '<div style="background:'+co.color+';padding:13px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between">';
-        h += '<div><div style="font-size:15px;font-weight:500">🥾 Trilha</div><div style="font-size:12px;opacity:.8;margin-top:2px">Personalize abaixo</div></div>';
+        h += '<div><div style="font-size:15px;font-weight:500">'+icn('mountain',15,'vertical-align:-2px')+' Trilha</div><div style="font-size:12px;opacity:.8;margin-top:2px">Personalize abaixo</div></div>';
         h += '<div style="text-align:right"><div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace" id="walk-kcal">~'+tKcal+'</div><div style="font-size:10px;opacity:.8">kcal</div></div></div>';
         // difficulty selector
         h += '<div style="display:flex;gap:0;border-bottom:1px solid var(--border)">';
         ['facil','moderada','dificil'].forEach(function(d){
           var sel = (tp.dif||'moderada')===d;
-          h += '<button data-tdif="'+d+'" style="flex:1;padding:11px 4px;border:none;border-right:1px solid var(--border);background:'+(sel?'var(--amber-light)':'var(--surface)')+';font-size:13px;font-weight:'+(sel?'700':'400')+';color:'+(sel?'var(--amber)':'var(--muted)')+';cursor:pointer">'+(d==='facil'?'🟢 Fácil':d==='moderada'?'🟡 Moderada':'🔴 Difícil')+'</button>';
+          h += '<button data-tdif="'+d+'" style="flex:1;padding:11px 4px;border:none;border-right:1px solid var(--border);background:'+(sel?'var(--amber-light)':'var(--surface)')+';font-size:13px;font-weight:'+(sel?'700':'400')+';color:'+(sel?'var(--amber)':'var(--muted)')+';cursor:pointer">'+(d==='facil'?'Fácil':d==='moderada'?'Moderada':'Difícil')+'</button>';
         });
         h += '</div>';
         h += walkRow('Distância','km', tp.km, ' km', 0.5, 0.5, 50);
@@ -2778,7 +2792,7 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){
       exWeights[this.dataset.wkey] = parseFloat(this.dataset.wval);
       updateTreinoHistToday(); save();
-      showToast('Progressão: '+this.dataset.wname+' agora em '+this.dataset.wval+'kg 💪');
+      showToast('Progressão: '+this.dataset.wname+' agora em '+this.dataset.wval+'kg');
       renderTreinosContent();
     });
   });
@@ -2798,7 +2812,7 @@ function renderTreinosContent(){
           var cKey = todayStr()+'-'+exObj.n;
           if(wNow>0 && prOld>0 && wNow>prOld && !prCelebrated[cKey]){
             prCelebrated[cKey]=true;
-            setTimeout(function(){ showToast('🏆 Novo recorde pessoal: '+exObj.n+' '+wNow+'kg! (antes '+prOld+'kg)'); }, 900);
+            setTimeout(function(){ showToast('Novo recorde pessoal: '+exObj.n+' '+wNow+'kg! (antes '+prOld+'kg)'); }, 900);
           }
         }
       }
@@ -2945,7 +2959,7 @@ function openExVideo(exName){
       '<div><div style="font-size:14px;font-weight:600">Ver video no YouTube</div><div style="font-size:11px;opacity:.85">Buscar videos de execucao</div></div>',
     '</a>',
     '<button id="ex-vid-ai" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;cursor:pointer;font-family:DM Sans,sans-serif">',
-      '<span style="font-size:22px">🤖</span>',
+      '<span style="color:var(--green)">'+icn('sparkles',20)+'</span>',
       '<div style="text-align:left"><div style="font-size:14px;font-weight:600;color:var(--text)">Dicas do AI</div><div style="font-size:11px;color:var(--muted)">Execucao, erros e variacoes</div></div>',
     '</button>',
   ].join('');
@@ -3122,7 +3136,7 @@ function renderDietaContent(){
     p.supps.forEach(function(s,i){
       var key = curP+'-'+i; var done = !!suppDone[key];
       h += '<div class="supp-item" data-skey="'+key+'">';
-      h += '<div class="supp-icon-wrap" style="background:'+s.tBg+'">'+s.icon+'</div>';
+      h += '<div class="supp-icon-wrap" style="background:'+s.tBg+';color:'+s.tCl+'">'+icn('pill',16)+'</div>';
       h += '<div class="supp-info"><div class="supp-name" style="'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+s.n+'</div><div class="supp-detail">'+s.dose+'</div></div>';
       h += '<div class="supp-time" style="background:'+s.tBg+';color:'+s.tCl+'">'+s.time+'</div>';
       h += '<button class="food-swap" data-suppedit="'+i+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">'+icn('pencil',14)+'</button>';
@@ -3444,7 +3458,7 @@ function substituirSuplemento(idx){
       '<button id="ssub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button>'+
     '</div>'+
     '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">'+
-      '<div style="background:'+supp.tBg+';width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+supp.icon+'</div>'+
+      '<div style="background:'+supp.tBg+';width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:'+(supp.tCl||'var(--green)')+'">'+icn('pill',16)+'</div>'+
       '<div><div style="font-size:14px;font-weight:500">'+supp.n+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+supp.dose+'</div></div>'+
     '</div>'+
     '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Substituir por (deixe em branco para IA sugerir):</div>'+
@@ -3923,7 +3937,7 @@ function renderExamesContent(){
 
   h += '<div class="section" style="display:flex;gap:10px">';
   h += '<button id="e-add-new" style="flex:1;padding:13px;border:2px dashed var(--coral);border-radius:var(--radius-sm);background:none;color:var(--coral);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Nova medicao</button>';
-  h += '<button id="e-upload-exam" style="flex:1;padding:13px;border:2px dashed var(--blue);border-radius:var(--radius-sm);background:none;color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">📎 Enviar exame</button>';
+  h += '<button id="e-upload-exam" style="flex:1;padding:13px;border:2px dashed var(--blue);border-radius:var(--radius-sm);background:none;color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Enviar exame</button>';
   h += '</div>';
 
   var allVals = EXAM_MARKER_DEFS.map(function(m){ return {m:m,v:parseFloat(current[m.key])}; }).filter(function(x){ return !isNaN(x.v); });
@@ -3933,7 +3947,7 @@ function renderExamesContent(){
 
   if(allVals.length===0){
     h += '<div class="section"><div style="text-align:center;padding:40px 20px">';
-    h += '<div style="font-size:48px;margin-bottom:12px">🧪</div>';
+    h += '<div style="margin-bottom:12px;color:var(--muted)">'+icn('flask',44)+'</div>';
     h += '<div style="font-size:16px;font-weight:500;margin-bottom:8px">Sem exames registrados</div>';
     h += '<div style="font-size:13px;color:var(--muted);margin-bottom:20px">Adicione seus resultados para acompanhar a evolucao e receber recomendacoes personalizadas da IA.</div>';
     h += '<button id="e-add-first" style="background:var(--coral);color:#fff;border:none;border-radius:var(--radius-sm);padding:13px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">+ Adicionar exames</button>';
@@ -4040,7 +4054,7 @@ function openAddExam(){
   h += '<div style="font-family:Fraunces,serif;font-size:20px">Nova <em>medicao</em></div>';
   h += '<button id="add-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
   EXAM_GROUPS_ADD.forEach(function(g){
-    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+icn('flask',12,'vertical-align:-2px')+' '+g.title.toUpperCase()+'</div>';
     g.markers.forEach(function(m){
       h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
       h += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+m.n+'</div><div style="font-size:11px;color:var(--muted)">Ref: '+m.ref+' '+m.u+'</div></div>';
@@ -4094,7 +4108,7 @@ function openEditExam(idx, entry, onSave){
   h += '<button id="edit-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+entry.dateLabel+'</div>';
   EXAM_GROUPS_ADD.forEach(function(g){
-    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+icn('flask',12,'vertical-align:-2px')+' '+g.title.toUpperCase()+'</div>';
     g.markers.forEach(function(m){
       var cur = vals[m.key]!=null ? vals[m.key] : '';
       h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
@@ -4473,7 +4487,7 @@ function renderEvolucao(){
   h+='</div></div>';
   h+='<div style="padding:6px 16px;font-size:11px;color:var(--muted)">'+allHist.length+' registros salvos · mostrando '+hist.length+'</div>';
   if(hist.length===0){
-    h+='<div class="section"><div class="card" style="padding:32px 20px;text-align:center"><div style="font-size:40px;margin-bottom:12px">📊</div><div style="font-size:15px;font-weight:500;margin-bottom:8px">Sem historico ainda</div><div style="font-size:13px;color:var(--muted)">Salve seu perfil ou adicione uma medicao para comecar a acompanhar sua evolucao.</div></div></div>';
+    h+='<div class="section"><div class="card" style="padding:32px 20px;text-align:center"><div style="margin-bottom:12px;color:var(--muted)">'+icn('chart',40)+'</div><div style="font-size:15px;font-weight:500;margin-bottom:8px">Sem historico ainda</div><div style="font-size:13px;color:var(--muted)">Salve seu perfil ou adicione uma medicao para comecar a acompanhar sua evolucao.</div></div></div>';
   } else {
     // Scores
     h+='<div class="section"><div class="sec-label">Scores de saude · meta: top 20% da sua faixa</div>';
@@ -4601,7 +4615,7 @@ function openResetHistory(){
   overlay.innerHTML=
     '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
       '<div style="padding:18px 20px;border-bottom:1px solid var(--border)">'+
-        '<div style="font-size:17px;font-weight:700;color:var(--coral)">🗑️ Zerar histórico</div>'+
+        '<div style="font-size:17px;font-weight:700;color:var(--coral)">'+icn('trash',15,'vertical-align:-2px')+' Zerar histórico</div>'+
         '<div style="font-size:13px;color:var(--muted);margin-top:4px">Recomeçar o acompanhamento de '+p.name+' do zero.</div>'+
       '</div>'+
       '<div style="padding:16px 20px;font-size:13px;line-height:1.6">'+
@@ -4642,7 +4656,7 @@ function doResetHistory(){
   localStorage.setItem('mh_reset_date', todayK); // evita restauração do estado diário pela nuvem
   save(true); // persiste imediatamente no Firebase
   syncSpecialistView(); // personal passa a ver o histórico limpo
-  showToast('Histórico zerado — recomeçando do zero! 🌱');
+  showToast('Histórico zerado — recomeçando do zero!');
   renderEvolucao();
 }
 
@@ -4666,7 +4680,7 @@ function openAddHistory(){
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Os scores e sono sao capturados automaticamente</div></div>'+
     '<button id="hadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>'+
     fieldsH+
-    (hasPhotos ? '<button id="hadd-ai" style="width:100%;padding:11px;background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;color:var(--green);margin-bottom:8px">🤖 Estimar % gordura com IA + fotos</button>' : '')+
+    (hasPhotos ? '<button id="hadd-ai" style="width:100%;padding:11px;background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;color:var(--green);margin-bottom:8px">Estimar % gordura com IA + fotos</button>' : '')+
     '<button id="hadd-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Salvar medicao</button>';
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
@@ -4674,7 +4688,7 @@ function openAddHistory(){
   overlay.addEventListener('click',function(e){ if(e.target===overlay) overlay.remove(); });
   var haddAI = document.getElementById('hadd-ai');
   if(haddAI) haddAI.addEventListener('click', function(){
-    var btn=this; btn.disabled=true; btn.textContent='🤖 Analisando fotos...';
+    var btn=this; btn.disabled=true; btn.textContent='Analisando fotos...';
     var photos = p.progressPhotos.filter(function(ph){ return ph&&ph.img; });
     var wCur = parseFloat(document.getElementById('hf-weight').value)||p.weight;
     var imc2 = parseFloat((wCur/Math.pow(p.height/100,2)).toFixed(1));
@@ -4693,7 +4707,7 @@ function openAddHistory(){
           btn.style.background='var(--green-light)';
         } else { throw new Error(); }
       } else { throw new Error(); }
-    }).catch(function(){ btn.disabled=false; btn.textContent='🤖 Estimar % gordura com IA + fotos'; showToast('Erro ao estimar. Tente novamente.'); });
+    }).catch(function(){ btn.disabled=false; btn.textContent='Estimar % gordura com IA + fotos'; showToast('Erro ao estimar. Tente novamente.'); });
   });
   document.getElementById('hadd-save').addEventListener('click',function(){
     var wVal=parseFloat(document.getElementById('hf-weight').value.replace(',','.'));
@@ -4906,7 +4920,7 @@ document.getElementById('file-meal-photo').addEventListener('change', function(e
     document.getElementById('chat-qps').innerHTML = '';
     document.getElementById('chat-clear').style.display = 'none';
     document.getElementById('chat-back').classList.add('open');
-    addChatMsg('assistant', 'Foto das '+photoTimeStr+' recebida! Analisando os alimentos... 🔍');
+    addChatMsg('assistant', 'Foto das '+photoTimeStr+' recebida! Analisando os alimentos...');
     showTyping();
     var sysProm2 = 'Voce e um nutricionista especialista em analise de alimentos por imagem. Perfil: '+p.name+', '+p.age+' anos, '+p.weight+'kg, objetivo: '+p.goal+'. Meta calorica diaria: '+p.calories+'kcal, proteina: '+p.protein+'g.';
     var userMsg = [
@@ -4925,7 +4939,7 @@ document.getElementById('file-meal-photo').addEventListener('change', function(e
         // Add to meal button
         var addBtn = document.createElement('button');
         addBtn.style.cssText = 'display:block;width:100%;margin-top:8px;padding:11px 14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;text-align:center';
-        addBtn.textContent = '➕ Adicionar a uma refeicao';
+        addBtn.textContent = 'Adicionar a uma refeicao';
         var lastMsg = document.getElementById('chat-msgs').lastChild;
         if(lastMsg) lastMsg.appendChild(addBtn);
         addBtn.addEventListener('click', function(){
@@ -5002,9 +5016,9 @@ function openConfirmExamUpload(parsed, filename){
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
   h += '<div style="font-family:Fraunces,serif;font-size:20px">Confirmar <em>exame</em></div>';
   h += '<button id="conf-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
-  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">📎 '+filename+' — edite se necessario</div>';
+  h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+filename+' — edite se necessario</div>';
   EXAM_GROUPS_ADD.forEach(function(g){
-    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
+    h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+icn('flask',12,'vertical-align:-2px')+' '+g.title.toUpperCase()+'</div>';
     g.markers.forEach(function(m){
       var val = parsed[m.key]!=null ? parsed[m.key] : '';
       var found = parsed[m.key]!=null;
@@ -5092,7 +5106,7 @@ function getExamInputsText(){
   EXAM_MARKER_DEFS.forEach(function(m){
     var v = parseFloat(inputs[m.key]);
     if(isNaN(v)) return;
-    var flag = v < m.refLow ? '⚠️ BAIXO' : v > m.refHigh ? '⚠️ ALTO' : '✓ OK';
+    var flag = v < m.refLow ? 'BAIXO' : v > m.refHigh ? 'ALTO' : '✓ OK';
     lines.push(m.n+': '+v+' '+m.u+' (ref: '+m.refLow+'–'+m.refHigh+') '+flag);
   });
   if(!lines.length) return '';
@@ -5108,7 +5122,7 @@ function getExamsText(p){
   var lines = ['Exames laboratoriais (perfil base):'];
   p.exams.forEach(function(ex){
     var markers = ex.markers.map(function(m){
-      var flag = m.c==='#c0392b'?'⚠️ BAIXO':m.c==='#c47a1a'?'⚠️ LIMÍTROFE':'✓ OK';
+      var flag = m.c==='#c0392b'?'BAIXO':m.c==='#c47a1a'?'LIMÍTROFE':'✓ OK';
       return m.n+': '+m.v+' '+m.u+' (ref: '+m.ref+') '+flag;
     }).join(', ');
     lines.push('- '+ex.name+' ['+ex.date+']: '+markers);
@@ -5127,8 +5141,8 @@ function getUserExamsText(){
   EXAM_MARKER_DEFS.forEach(function(m){
     var v = latest.values[m.key];
     if(v==null) return;
-    var flag = v < m.refLow ? '⚠️ ABAIXO do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
-               v > m.refHigh ? '⚠️ ACIMA do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
+    var flag = v < m.refLow ? 'ABAIXO do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
+               v > m.refHigh ? 'ACIMA do ideal (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')' :
                '✓ OK (ref: '+m.refLow+'–'+m.refHigh+' '+m.u+')';
     lines.push(m.n+': '+v+' '+m.u+' — '+flag);
   });
@@ -5220,7 +5234,7 @@ function openChat(ctx, initialMsg, customGreeting){
     }
   } else {
     chatHistory = [];
-    var greeting = customGreeting || ('Olá '+p.name.split(' ')[0]+'! Como posso ajudar? 💪');
+    var greeting = customGreeting || ('Olá '+p.name.split(' ')[0]+'! Como posso ajudar?');
     addChatMsg('assistant', greeting);
     if(initialMsg){
       setTimeout(function(){ document.getElementById('chat-inp').value=initialMsg; sendMsg(); }, 400);
@@ -5239,7 +5253,7 @@ document.getElementById('chat-clear').addEventListener('click', function(){
   save();
   var msgs = document.getElementById('chat-msgs');
   msgs.innerHTML = '';
-  addChatMsg('assistant','Historico apagado. Como posso ajudar? 💪');
+  addChatMsg('assistant','Historico apagado. Como posso ajudar?');
 });
 
 function addChatMsg(role, text, showApply){
@@ -5298,7 +5312,7 @@ function sendMsg(){
       {type:'image', source:{type:'base64', media_type:'image/jpeg', data:chatPhotoB64}},
       {type:'text', text: text||'Analise esta imagem no contexto do meu perfil de saúde.'}
     ];
-    addChatMsg('user', (text||'📷 Foto enviada'));
+    addChatMsg('user', (text||'Foto enviada'));
     clearChatPhoto();
   } else {
     userContent = text;
@@ -5499,7 +5513,7 @@ function spRender(){
     backBtn.onclick = spPrev;
   }
   var nxt = document.getElementById('sp-next');
-  nxt.textContent = spStep===SP_TOTAL ? 'Gerar meu plano ✨' : 'Continuar →';
+  nxt.textContent = spStep===SP_TOTAL ? 'Gerar meu plano ' : 'Continuar →';
   nxt.onclick = spStep===SP_TOTAL ? spGenerate : spNext;
 
   // Show "Salvar e sair" from step 2 onwards
@@ -5635,7 +5649,7 @@ function spS3(){
 function spS4(){
   var goalsH = GOALS.map(function(g){ return '<div class="chip full'+(P.goals.includes(g.v)?' sel':'')+'" data-ma="goals" data-mv="'+g.v+'"><span class="chip-ic">'+g.i+'</span>'+g.l+'</div>'; }).join('');
   return '<div class="section">' +
-    '<div class="hint-box"><span style="font-size:18px">💡</span><div class="hint-txt">Todos selecionados por padrão. <strong>Desmarque</strong> os que não se aplicam a você.</div></div>' +
+    '<div class="hint-box"><span style="font-size:18px"></span><div class="hint-txt">Todos selecionados por padrão. <strong>Desmarque</strong> os que não se aplicam a você.</div></div>' +
     '<div class="chips col">'+goalsH+'</div></div>';
 }
 
@@ -5646,7 +5660,7 @@ function spS5(){
     '<input type="range" min="2" max="7" step="1" value="'+P.trainingDays+'" oninput="P.trainingDays=this.value;document.getElementById(\'td-val\').textContent=this.value+\' dias/semana\'">' +
     '<div class="sldr-val" id="td-val">'+P.trainingDays+' dias/semana</div></div></div>' +
     '<div class="field"><label class="field-lbl">Nivel de treino</label><div class="chips">' +
-    [{v:'iniciante',i:'🌱',l:'Iniciante'},{v:'intermediario',i:'💪',l:'Intermediario'},{v:'avancado',i:'🏆',l:'Avancado'},{v:'atleta',i:'⚡',l:'Atleta'}].map(function(o){ return '<div class="chip'+(P.trainingLevel===o.v?' sel':'')+'" data-sf="trainingLevel" data-sv="'+o.v+'"><span class="chip-ic">'+o.i+'</span>'+o.l+'</div>'; }).join('') +
+    [{v:'iniciante',i:icn('leaf',13),l:'Iniciante'},{v:'intermediario',i:icn('dumbbell',13),l:'Intermediario'},{v:'avancado',i:icn('trophy',13),l:'Avancado'},{v:'atleta',i:'⚡',l:'Atleta'}].map(function(o){ return '<div class="chip'+(P.trainingLevel===o.v?' sel':'')+'" data-sf="trainingLevel" data-sv="'+o.v+'"><span class="chip-ic">'+o.i+'</span>'+o.l+'</div>'; }).join('') +
     '</div></div>' +
     '<div class="field"><label class="field-lbl">Sono atual</label>' +
     '<div class="sldr-wrap"><div class="sldr-lbls"><span>4h</span><span>10h</span></div>' +
@@ -5699,7 +5713,7 @@ function spS7(){
 
   EXAM_GROUPS.forEach(function(g){
     h += '<div style="margin-bottom:20px">';
-    h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">'+g.icon+' '+g.title+'</div>';
+    h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">'+icn('flask',12,'vertical-align:-2px')+' '+g.title+'</div>';
     h += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+g.why+'</div>';
     g.markers.forEach(function(m){
       var val = P.examInputs[m.key]||'';
@@ -5731,7 +5745,7 @@ function spS8(){
     '</div>' +
     '<div class="ai-gen-box" id="ai-gen-box">' +
     '<div class="ai-gen-spin" id="ai-gen-spin"></div>' +
-    '<div class="ai-gen-icon" id="ai-gen-icon">✨</div>' +
+    '<div class="ai-gen-icon" id="ai-gen-icon"></div>' +
     '<div class="ai-gen-ttl" id="ai-gen-ttl">Pronto para gerar seu plano</div>' +
     '<div class="ai-gen-sub" id="ai-gen-sub">O Claude vai cruzar seus dados e objetivos para criar um plano 100% personalizado.</div>' +
     '<div class="ai-gen-result" id="ai-gen-result"></div>' +
@@ -5741,19 +5755,19 @@ function spS8(){
 
 function spS2(){
   return '<div class="section">' +
-    '<div class="hint-box"><span style="font-size:18px">📸</span><div class="hint-txt">Uma foto de rosto para aparecer no app. Voce pode adicionar depois tambem.</div></div>' +
+    '<div class="hint-box"><span style="font-size:18px"></span><div class="hint-txt">Uma foto de rosto para aparecer no app. Voce pode adicionar depois tambem.</div></div>' +
     '<div style="display:flex;flex-direction:column;align-items:center;gap:16px">' +
     '<div style="position:relative;cursor:pointer" id="sp-av-wrap">' +
     '<div style="width:110px;height:110px;border-radius:50%;background:'+P.avatarBg+';color:'+P.avatarCl+';display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;border:3px solid var(--green);overflow:hidden" id="sp-av2">' +
     (P.avatarImg ? '<img src="'+P.avatarImg+'" style="width:100%;height:100%;object-fit:cover">' : (P.initials||'?')) +
     '</div>' +
-    '<div style="position:absolute;bottom:4px;right:4px;width:28px;height:28px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;border:2px solid white">📷</div>' +
+    '<div style="position:absolute;bottom:4px;right:4px;width:28px;height:28px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;border:2px solid white">'+icn('camera',13)+'</div>' +
     '</div>' +
     '<div style="text-align:center">' +
     '<div style="font-size:15px;font-weight:500;margin-bottom:4px">'+(P.name||'Seu nome')+'</div>' +
     '<div style="font-size:13px;color:var(--muted)">Toque na foto para adicionar</div>' +
     '</div>' +
-    '<button style="padding:12px 24px;background:var(--green-light);color:var(--green-deep);border:1px solid rgba(26,122,74,.2);border-radius:99px;font-size:14px;font-weight:500;font-family:DM Sans,sans-serif;cursor:pointer" id="sp-av-upload-btn">📷 Escolher foto</button>' +
+    '<button style="padding:12px 24px;background:var(--green-light);color:var(--green-deep);border:1px solid rgba(26,122,74,.2);border-radius:99px;font-size:14px;font-weight:500;font-family:DM Sans,sans-serif;cursor:pointer" id="sp-av-upload-btn">'+icn('camera',14,'vertical-align:-2px')+' Escolher foto</button>' +
     (P.avatarImg ? '<div style="font-size:12px;color:var(--green);font-weight:500">✓ Foto adicionada</div>' : '') +
     '</div></div>';
 }
@@ -5769,7 +5783,7 @@ function spS6(){
     return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">' +
       '<div style="width:100px;height:140px;border-radius:var(--radius-sm);border:2px dashed '+(hasPhoto?'var(--green)':'var(--border)')+';background:'+(hasPhoto?'var(--green-light)':'var(--surface)')+';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;overflow:hidden" data-angle="'+a.key+'" id="body-slot-'+a.key+'">' +
       (hasPhoto ? '<img src="'+P.bodyPhotos[a.key]+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">' : '') +
-      (hasPhoto ? '<div style="position:absolute;bottom:4px;right:4px;background:var(--green);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;z-index:1">✓</div>' : '<span style="font-size:28px">'+a.icon+'</span><span style="font-size:11px;color:var(--muted);text-align:center">'+a.hint+'</span>') +
+      (hasPhoto ? '<div style="position:absolute;bottom:4px;right:4px;background:var(--green);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;z-index:1">✓</div>' : '<span style="color:var(--muted)">'+icn('user',26)+'</span><span style="font-size:11px;color:var(--muted);text-align:center">'+a.hint+'</span>') +
       '</div>' +
       '<span style="font-size:12px;font-weight:500;color:'+(hasPhoto?'var(--green)':'var(--muted)')+'">'+a.label+(hasPhoto?' ✓':'')+'</span>' +
       '</div>';
@@ -5777,9 +5791,9 @@ function spS6(){
 
   var allDone = P.bodyPhotos.frente && P.bodyPhotos.lado && P.bodyPhotos.costas;
   return '<div class="section">' +
-    '<div class="hint-box"><span style="font-size:18px">🤖</span><div class="hint-txt">A IA analisa sua <strong>composicao corporal</strong> e personaliza treino e dieta com base no que ve. Quanto mais nitidas as fotos, melhor o resultado.</div></div>' +
+    '<div class="hint-box"><span style="color:var(--green)">'+icn('sparkles',17)+'</span><div class="hint-txt">A IA analisa sua <strong>composicao corporal</strong> e personaliza treino e dieta com base no que ve. Quanto mais nitidas as fotos, melhor o resultado.</div></div>' +
     '<div style="display:flex;justify-content:space-around;gap:10px;margin-bottom:16px">' + slotsH + '</div>' +
-    '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px 16px;font-size:12px;color:var(--muted);line-height:1.5">💡 <strong>Dica:</strong> Use roupa justa ou de academia. Iluminacao boa e fundo claro ajudam a IA a identificar melhor os grupos musculares.' +
+    '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px 16px;font-size:12px;color:var(--muted);line-height:1.5"> <strong>Dica:</strong> Use roupa justa ou de academia. Iluminacao boa e fundo claro ajudam a IA a identificar melhor os grupos musculares.' +
     (allDone ? '<br><br><span style="color:var(--green);font-weight:500">✓ Todas as fotos adicionadas! A IA vai analisar na proxima etapa.</span>' : '') +
     '</div>' +
     '<div style="margin-top:12px;font-size:12px;color:var(--muted);text-align:center">As fotos ficam salvas apenas no seu dispositivo.</div>' +
@@ -5827,7 +5841,7 @@ function spGenerate(){
     }).then(function(data){
       spin.style.display='none';
       if(data.content&&data.content[0]&&data.content[0].text){
-        ttl.textContent='✨ Plano gerado!'; sub.textContent='Salve para comecar a usar.';
+        ttl.textContent=' Plano gerado!'; sub.textContent='Salve para comecar a usar.';
         res.innerHTML = data.content[0].text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
         res.style.display='block';
         var nxt = document.getElementById('sp-next');
@@ -6087,7 +6101,7 @@ function editarExercicio(dayIdx, exIdx){
   overlay.innerHTML=
     '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
       '<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
-        '<div style="font-size:15px;font-weight:700">✏️ Editar exercício</div>'+
+        '<div style="font-size:15px;font-weight:700">'+icn('pencil',14,'vertical-align:-2px')+' Editar exercício</div>'+
         '<button id="ee-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
@@ -6195,10 +6209,6 @@ function editarSuplemento(idx){
         '<button id="es-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
-        '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
-        '<div id="es-icons" style="display:flex;flex-wrap:wrap;gap:8px">'+
-          SUPP_ICONS.map(function(ic){ return '<button data-icon="'+ic+'" style="width:40px;height:40px;border-radius:10px;border:2px solid '+(ic===selIcon?'var(--green)':'var(--border)')+';background:'+(ic===selIcon?'var(--green-light)':'var(--surface)')+';font-size:20px;cursor:pointer">'+ic+'</button>'; }).join('')+
-        '</div></div>'+
         '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>'+
         '<input id="es-name" value="'+s.n.replace(/"/g,'&quot;')+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
         '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Dose</div>'+
@@ -6256,10 +6266,6 @@ function openAddSupp(){
         '<button id="as-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
-        '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
-        '<div id="as-icons" style="display:flex;flex-wrap:wrap;gap:8px">'+
-          SUPP_ICONS.map(function(ic){ return '<button data-icon="'+ic+'" style="width:40px;height:40px;border-radius:10px;border:2px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer">'+ ic+'</button>'; }).join('')+
-        '</div></div>'+
         '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>'+
         '<input id="as-name" type="text" placeholder="Ex: Whey Protein" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px 12px;outline:none"></div>'+
         '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Dose</div>'+
@@ -6362,7 +6368,7 @@ function openEditDay(){
   overlay.innerHTML=
     '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;display:flex;flex-direction:column">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
-        '<div style="font-size:16px;font-weight:700">✏️ Editar '+(w.name||'treino')+'</div>'+
+        '<div style="font-size:16px;font-weight:700">'+icn('pencil',14,'vertical-align:-2px')+' Editar '+(w.name||'treino')+'</div>'+
         '<button id="edit-day-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div id="edit-day-body" style="overflow-y:auto;padding:16px;flex:1"></div>'+
@@ -6407,7 +6413,7 @@ function openEditMetas(ctx){
 
   var overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px';
-  var title = ctx==='sono' ? '🌙 Meta de sono' : '🥗 Metas da dieta';
+  var title = ctx==='sono' ? 'Meta de sono' : 'Metas da dieta';
   var fieldsH = fields.map(function(f){
     return '<div style="margin-bottom:12px">'+
       '<div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">'+f.label+'</div>'+
@@ -6603,7 +6609,7 @@ function renderProposalBanner(){
   var pName = pendingProposal.specialistName || pendingProposal.specialistEmail || 'Personal';
   el.style.display='block';
   el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;cursor:pointer" id="prop-banner-tap">' +
-    '<div style="font-size:24px">💪</div>' +
+    '<div style="color:var(--green)">'+icn('dumbbell',22)+'</div>' +
     '<div><div style="font-size:13px;font-weight:600">Proposta de '+pName+'</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Toque para ver e aprovar</div></div>' +
     '<div style="margin-left:auto;background:var(--coral);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:99px">1</div>' +
@@ -6617,7 +6623,7 @@ function openProposalReview(){
   var pName = p.specialistName || p.specialistEmail || 'Personal';
   var pDate = new Date(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
   // update modal title with trainer name
-  document.getElementById('pro-prop-back').querySelector('.wmodal-title').textContent = '💪 '+pName;
+  document.getElementById('pro-prop-back').querySelector('.wmodal-title').textContent = ''+pName;
   var h = '';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Enviado em '+pDate+'</div>';
   h += '<div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.5">'+p.message+'</div>';
@@ -6628,7 +6634,7 @@ function openProposalReview(){
     h+='<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:600">'+(w.name||('Treino '+(i+1)))+'</div>';
     (w.exs||[]).forEach(function(ex){ h+='<div style="font-size:11px;color:var(--muted);padding-left:8px">· '+ex.n+' '+ex.s+(ex.w>0?' @ '+ex.w+'kg':'')+'</div>'; });
     var cKey = curP+'-'+i; var cId = p.cardioSel&&p.cardioSel[cKey];
-    if(cId) h+='<div style="font-size:11px;color:var(--green);padding-left:8px;margin-top:2px">🏃 Cardio: '+(CARDIO_LABELS[cId]||cId)+'</div>';
+    if(cId) h+='<div style="font-size:11px;color:var(--green);padding-left:8px;margin-top:2px">Cardio: '+(CARDIO_LABELS[cId]||cId)+'</div>';
     h+='</div>';
   });
   document.getElementById('pro-prop-content').innerHTML = h;
@@ -6704,7 +6710,7 @@ function doApproveProposal(msg){
   save();
   syncSpecialistView();
   closeProposalModal();
-  showToast('Plano de '+pName+' aprovado! 💪');
+  showToast('Plano de '+pName+' aprovado!');
   if(curScreen==='treinos') renderTreinos();
   else if(curScreen==='home') renderHome();
 }
@@ -6768,7 +6774,7 @@ function checkAdminMessages(){
         // show above any proposal banner
         var msgDiv = document.createElement('div');
         msgDiv.style.cssText='background:var(--card);border:1.5px solid var(--amber);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;cursor:pointer';
-        msgDiv.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:4px">📢 '+m.subject+'</div>'+
+        msgDiv.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:4px">'+m.subject+'</div>'+
           '<div style="font-size:12px;color:var(--muted)">'+m.body+'</div>';
         msgDiv.addEventListener('click', function(){
           // mark as read
@@ -6867,7 +6873,7 @@ function showBlockedScreen(){
   document.getElementById('bottom-nav').style.display='none';
   var d = document.createElement('div');
   d.style.cssText='position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;z-index:200';
-  d.innerHTML='<div style="font-size:56px;margin-bottom:16px">🔒</div><div style="font-size:22px;font-weight:700;margin-bottom:8px;color:var(--text)">Conta suspensa</div><div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">Sua conta foi suspensa pelo administrador.<br>Entre em contato para mais informações.</div><button onclick="fbAuth.signOut()" style="background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Sair</button>';
+  d.innerHTML='<div style="margin-bottom:16px;color:var(--muted)">'+icn('lock',48)+'</div><div style="font-size:22px;font-weight:700;margin-bottom:8px;color:var(--text)">Conta suspensa</div><div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6">Sua conta foi suspensa pelo administrador.<br>Entre em contato para mais informações.</div><button onclick="fbAuth.signOut()" style="background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Sair</button>';
   document.body.appendChild(d);
 }
 
@@ -6973,7 +6979,7 @@ function doAuth(){
         currentUser = cred.user;
         btn.textContent = 'Entrar'; btn.disabled = false;
         var nome = (cred.user.displayName || cred.user.email).split(' ')[0];
-        showToast('Bem-vindo, ' + nome + '! 👋');
+        showToast('Bem-vindo, ' + nome + '!');
         loadUserData(cred.user.uid, function(){ showScreen('home'); });
       })
       .catch(function(err){
@@ -7202,7 +7208,7 @@ function showDataSummary(){
   });
   var daily = null;
   try{ daily = JSON.parse(localStorage.getItem('mh_daily')||'{}'); }catch(e){}
-  var dailyDate = daily&&daily.date===todayStr()?'✅':'❌';
+  var dailyDate = daily&&daily.date===todayStr()?'OK':'—';
   var overlay = document.createElement('div');
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0';
   var panel = document.createElement('div');
@@ -7220,13 +7226,13 @@ function showDataSummary(){
       '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+suppMarked+'/'+p.supps.length+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">suplementos</div></div>'+
     '</div>'+
     '<div style="background:var(--surface);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px">'+
-      '<div style="font-weight:600;margin-bottom:6px">📦 Estado dos backups:</div>'+
+      '<div style="font-weight:600;margin-bottom:6px">Estado dos backups:</div>'+
       '<div>'+dailyDate+' Backup local (mh_daily) — '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div>'+
-      '<div>✅ localStorage (mh_v4)</div>'+
-      '<div id="ds-firebase-status">⏳ Firebase a verificar...</div>'+
+      '<div>localStorage (mh_v4)</div>'+
+      '<div id="ds-firebase-status">Firebase a verificar...</div>'+
     '</div>'+
-    '<button id="ds-close-day" style="width:100%;padding:13px;background:var(--amber);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:8px">📋 Fechar dia de ontem agora</button>'+
-    '<button id="ds-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">💾 Forçar save agora</button>';
+    '<button id="ds-close-day" style="width:100%;padding:13px;background:var(--amber);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;margin-bottom:8px">Fechar dia de ontem agora</button>'+
+    '<button id="ds-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">Forçar save agora</button>';
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
   document.getElementById('ds-close').addEventListener('click', function(){ overlay.remove(); });
@@ -7239,9 +7245,9 @@ function showDataSummary(){
     handleDayChange(yesterday.toISOString().slice(0,10));
   });
   document.getElementById('ds-save').addEventListener('click', function(){
-    var btn=this; btn.textContent='⏳ Salvando...'; btn.disabled=true;
+    var btn=this; btn.textContent='Salvando...'; btn.disabled=true;
     saveToCloud();
-    setTimeout(function(){ btn.textContent='✅ Salvo com sucesso!'; btn.style.background='var(--green)'; }, 2000);
+    setTimeout(function(){ btn.textContent='Salvo com sucesso!'; btn.style.background='var(--green)'; }, 2000);
   });
   // check Firebase status
   if(fbAuth&&fbAuth.currentUser&&fbDb){
@@ -7250,12 +7256,12 @@ function showDataSummary(){
       if(doc.exists&&doc.data().appState){
         var fDate=doc.data().appState.lastSavedDate;
         var fFood=Object.keys(doc.data().appState.foodDone||{}).filter(function(k){return doc.data().appState.foodDone[k]===true;}).length;
-        el.textContent='✅ Firebase — '+fDate+' · '+fFood+' alimentos';
+        el.textContent='Firebase — '+fDate+' · '+fFood+' alimentos';
         el.style.color='var(--green)';
       }
     }).catch(function(){ var el=document.getElementById('ds-firebase-status'); if(el) el.textContent='⚠ Firebase não acessível agora'; });
   } else {
-    var el=document.getElementById('ds-firebase-status'); if(el) el.textContent='ℹ️ Não autenticado (só local)';
+    var el=document.getElementById('ds-firebase-status'); if(el) el.textContent='Não autenticado (só local)';
   }
 }
 
@@ -7263,10 +7269,10 @@ function setSyncStatus(status){
   var el = document.getElementById('sync-status');
   if(!el) return;
   var now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  if(status==='saving'){ el.textContent='⏳ salvando...'; el.style.color='var(--muted)'; }
+  if(status==='saving'){ el.textContent='salvando...'; el.style.color='var(--muted)'; }
   else if(status==='ok'){ el.textContent='✓ salvo às '+now; el.style.color='var(--green)'; el.title='Salvo no Firebase às '+now; }
   else if(status==='error'){ el.textContent='⚠ erro ao salvar'; el.style.color='var(--coral)'; }
-  else if(status==='local'){ el.textContent='💾 local '+now; el.style.color='var(--muted)'; }
+  else if(status==='local'){ el.textContent='local '+now; el.style.color='var(--muted)'; }
 }
 
 function saveToCloud(){
@@ -7346,7 +7352,7 @@ function openCommunity(){
         : '<div class="cmember-avatar">'+initials+'</div>';
       var score=m.score||0;
       var scoreColor=score>=80?'#1a7a4a':score>=60?'#c47a1a':'#e05252';
-      var rankLabel = i===0?'🥇 1º':i===1?'🥈 2º':i===2?'🥉 3º':(i+1)+'º';
+      var rankLabel = (i+1)+'º';
       var trend=m.weightTrend>0?'↑ peso':m.weightTrend<0?'↓ peso':'';
       var trendColor=m.weightTrend>0?'#e05252':m.weightTrend<0?'#1a7a4a':'var(--muted)';
       h+='<div class="cmember-card">';
@@ -7356,8 +7362,8 @@ function openCommunity(){
       h+='<div style="font-size:28px;font-weight:700;font-family:DM Mono,monospace;color:'+scoreColor+'">'+score+'</div>';
       h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">score</div>';
       h+='<div style="display:flex;justify-content:center;gap:8px;font-size:11px;color:var(--muted)">';
-      if(m.weight) h+='<span>⚖️ '+m.weight+'kg</span>';
-      if(m.streak) h+='<span>🔥 '+m.streak+'d</span>';
+      if(m.weight) h+='<span>'+m.weight+'kg</span>';
+      if(m.streak) h+='<span>'+m.streak+'d</span>';
       if(trend) h+='<span style="color:'+trendColor+'">'+trend+'</span>';
       h+='</div></div>';
     });
@@ -7502,7 +7508,7 @@ function requestNotifPermission(onGranted, verbose){
   if(!('Notification' in window)){
     if(verbose){
       var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-      showToast(standalone ? 'Este navegador não suporta notificações.' : '📱 No iPhone, notificações só funcionam no app instalado — adicione à Tela de Início e ative por lá.');
+      showToast(standalone ? 'Este navegador não suporta notificações.' : 'No iPhone, notificações só funcionam no app instalado — adicione à Tela de Início e ative por lá.');
     }
     return;
   }
@@ -7512,7 +7518,7 @@ function requestNotifPermission(onGranted, verbose){
     return;
   }
   Notification.requestPermission().then(function(p){
-    if(p==='granted'){ if(verbose) showToast('Notificações ativadas! 🔔'); if(onGranted) onGranted(); }
+    if(p==='granted'){ if(verbose) showToast('Notificações ativadas!'); if(onGranted) onGranted(); }
     else if(verbose) showToast('Permissão não concedida — ative em Ajustes → Notificações → MyHealth.');
   });
 }
@@ -7538,27 +7544,27 @@ function scheduleNotifications(){
   function msUntil(h,m){ var t=new Date(); t.setHours(h,m,0,0); var d=t-now; return d>0?d:null; }
   var totalGlasses = Math.round(p.water/250);
   var waterMsgs = [
-    'Beba um copo agora! Meta: '+totalGlasses+' copos no dia 💧',
-    'Hidratação em dia? Tome um copo de água agora 💧',
-    'Seu corpo agradece! Um copo de água 💧',
-    'Não se esqueça da água — '+(Math.round(totalGlasses/2))+' copos até agora? 💧',
-    'Metade do dia passou — está hidratado? 💧',
-    'Mais um copo de água! Faltam poucas horas 💧',
-    'Último lembrete de água do dia — beba agora! 💧',
+    'Beba um copo agora! Meta: '+totalGlasses+' copos no dia',
+    'Hidratação em dia? Tome um copo de água agora',
+    'Seu corpo agradece! Um copo de água',
+    'Não se esqueça da água — '+(Math.round(totalGlasses/2))+' copos até agora?',
+    'Metade do dia passou — está hidratado?',
+    'Mais um copo de água! Faltam poucas horas',
+    'Último lembrete de água do dia — beba agora!',
   ];
   var reminders = [
-    {h:8,  m:0,  title:'🌅 Café da manhã', body:'Hora do café da manhã! Registre o que comeu.'},
-    {h:9,  m:0,  title:'💧 Água', body:waterMsgs[0], tag:'water'},
-    {h:10, m:30, title:'🥜 Lanche da manhã', body:'Lanche da manhã — não esqueça de registrar.'},
-    {h:11, m:30, title:'💧 Água', body:waterMsgs[1], tag:'water'},
-    {h:13, m:0,  title:'🍽️ Almoço', body:'Hora do almoço! Marque suas refeições.'},
-    {h:14, m:30, title:'💧 Água', body:waterMsgs[2], tag:'water'},
-    {h:16, m:0,  title:'🍎 Lanche da tarde', body:'Lanche da tarde — mantenha o plano!'},
-    {h:17, m:30, title:'💧 Água', body:waterMsgs[3], tag:'water'},
-    {h:19, m:0,  title:'💧 Água', body:waterMsgs[4], tag:'water'},
-    {h:20, m:0,  title:'🍴 Jantar', body:'Hora do jantar. Registre o que comeu.'},
-    {h:21, m:0,  title:'💧 Água', body:waterMsgs[5], tag:'water'},
-    {h:22, m:0,  title:'😴 Hora de dormir', body:'Meta de sono: '+p.sleepTarget+'h. Boa noite!'},
+    {h:8,  m:0,  title:'Café da manhã', body:'Hora do café da manhã! Registre o que comeu.'},
+    {h:9,  m:0,  title:'Água', body:waterMsgs[0], tag:'water'},
+    {h:10, m:30, title:'Lanche da manhã', body:'Lanche da manhã — não esqueça de registrar.'},
+    {h:11, m:30, title:'Água', body:waterMsgs[1], tag:'water'},
+    {h:13, m:0,  title:'Almoço', body:'Hora do almoço! Marque suas refeições.'},
+    {h:14, m:30, title:'Água', body:waterMsgs[2], tag:'water'},
+    {h:16, m:0,  title:'Lanche da tarde', body:'Lanche da tarde — mantenha o plano!'},
+    {h:17, m:30, title:'Água', body:waterMsgs[3], tag:'water'},
+    {h:19, m:0,  title:'Água', body:waterMsgs[4], tag:'water'},
+    {h:20, m:0,  title:'Jantar', body:'Hora do jantar. Registre o que comeu.'},
+    {h:21, m:0,  title:'Água', body:waterMsgs[5], tag:'water'},
+    {h:22, m:0,  title:'Hora de dormir', body:'Meta de sono: '+p.sleepTarget+'h. Boa noite!'},
   ];
   var scheduled = [];
   reminders.forEach(function(r){
@@ -7606,7 +7612,7 @@ load();
 function applyDarkMode(dark){
   document.documentElement.classList.toggle('dark', dark);
   var btn = document.getElementById('dark-toggle');
-  if(btn) btn.textContent = dark ? '☀️' : '🌙';
+  if(btn) btn.innerHTML = icn(dark?'sun':'moon',15);
 }
 var darkMode = localStorage.getItem('mh_dark')==='1';
 applyDarkMode(darkMode);
@@ -7637,7 +7643,7 @@ function testDaySummary(){
 function testNotification(){
   requestNotifPermission(function(){
     setTimeout(function(){
-      sendNotif('🔔 Teste de notificação', 'Funcionou! Notificações estão ativas no MyHealth.', 'test');
+      sendNotif('Teste de notificação', 'Funcionou! Notificações estão ativas no MyHealth.', 'test');
     }, 5000);
     showToast('Notificação chegará em 5 segundos...');
   });

@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email in ['camposwalter@gmail.com', 'walter@camposhq.com'];
+    }
+
+    // Dados de saúde: cada usuário só acessa o próprio documento
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+
+    match /messages/{msgId} {
+      allow read: if request.auth != null &&
+                  (resource.data.toUid == request.auth.uid ||
+                   resource.data.toUid == 'all' ||
+                   isAdmin());
+      allow create: if isAdmin();
+      allow update: if request.auth != null && resource.data.toUid == request.auth.uid;
+    }
+
+    // Visão do personal trainer: dono ou e-mail autorizado; criação só do próprio uid
+    match /specialistViews/{token} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == resource.data.uid ||
+                   request.auth.token.email == resource.data.allowedEmail);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // Propostas: atleta (dono) e o personal que enviou podem ler;
+    // criação exige que o specialistEmail seja de quem cria (impede proposta em nome de outro)
+    match /proposals/{id} {
+      allow read: if request.auth != null &&
+                  (resource.data.uid == request.auth.uid ||
+                   resource.data.specialistEmail == request.auth.token.email);
+      allow create: if request.auth != null &&
+                    request.resource.data.specialistEmail == request.auth.token.email;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    match /community/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Convites: validar um token específico é permitido (get);
+    // LISTAR todos é só admin — impede enumerar convites válidos e furar o invite-only.
+    // Quem entra pode marcar o PRÓPRIO convite como usado (transição pending→used, uid dele)
+    match /invites/{token} {
+      allow get: if request.auth != null;
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+                    (request.auth != null &&
+                     resource.data.status == 'pending' &&
+                     request.resource.data.status == 'used' &&
+                     request.resource.data.uid == request.auth.uid &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'uid', 'joinedAt']));
+    }
+
+  }
+}

@@ -13,6 +13,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Backups diários automáticos do estado (proteção contra perda de dados)
+    match /users/{userId}/backups/{day} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+
     match /messages/{msgId} {
       allow read: if request.auth != null &&
                   (resource.data.toUid == request.auth.uid ||

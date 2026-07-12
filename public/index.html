@@ -7734,7 +7734,31 @@ function saveToCloud(){
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})
-    .then(function(){ setSyncStatus('ok'); syncCommunitySnapshot(); })
+    .then(function(){
+      setSyncStatus('ok'); syncCommunitySnapshot();
+      // ── backup diário automático: só grava quando a sessão TEM dados reais do dia,
+      // então uma sessão que bootou vazia (bug/cache) nunca sobrescreve o backup bom
+      try{
+        var temDados = Object.keys(exSets).some(function(k){ return exSets[k]; }) ||
+                       Object.keys(foodDone).some(function(k){ return foodDone[k]===true; }) ||
+                       (waterGlasses[curP+'-water']||0) > 0 ||
+                       (treinoHist[curP]||[]).some(function(e){ return e.date===todayStr(); });
+        if(temDados){
+          fbDb.collection('users').doc(uid).collection('backups').doc(todayStr())
+            .set({appState:appState, savedAt:firebase.firestore.FieldValue.serverTimestamp()})
+            .catch(function(){});
+          // mantém só os últimos 14 backups (limpeza oportunista 1x/dia)
+          if(localStorage.getItem('mh_bak_prune') !== todayStr()){
+            localStorage.setItem('mh_bak_prune', todayStr());
+            var cut = new Date(); cut.setDate(cut.getDate()-14);
+            var cutStr = dateStrLocal(cut);
+            fbDb.collection('users').doc(uid).collection('backups').get().then(function(snap){
+              snap.docs.forEach(function(d){ if(d.id < cutStr) d.ref.delete().catch(function(){}); });
+            }).catch(function(){});
+          }
+        }
+      }catch(e){}
+    })
     .catch(function(e){ setSyncStatus('error'); console.log('Firestore save error:', e); });
 }
 

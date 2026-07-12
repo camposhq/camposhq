@@ -1054,19 +1054,25 @@ function weekDates(){
   return out;
 }
 // Atualiza o histórico de treinos de hoje (chamado a cada série marcada)
+// reps por série a partir de "4x10-12" → 10 (primeiro número após o x)
+function repsFromSets(s){ var m=(s||'').match(/x(\d+)/); return m?parseInt(m[1]):10; }
 function updateTreinoHistToday(){
   var p = PD[curP]; var today = todayStr();
   if(!treinoHist[curP]) treinoHist[curP] = [];
   (p.weekly||[]).forEach(function(w,pi){
-    var done=0, total=0;
+    var done=0, total=0, vol=0, exDetail=[];
     (w.exs||[]).forEach(function(ex,i){
       var k=curP+'-'+pi+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-      total+=ns;
-      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) done++; }
+      var wval = exWeights[k]!==undefined ? exWeights[k] : (ex.w||0);
+      var dc=0;
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) dc++; }
+      total+=ns; done+=dc;
+      if(wval>0) vol += dc * repsFromSets(ex.s) * wval;
+      if(dc>0) exDetail.push({n:ex.n, done:dc, ns:ns, w:wval});
     });
     var idx = treinoHist[curP].findIndex(function(e){ return e.date===today && e.plan===pi; });
     if(done>0){
-      var entry = {date:today, plan:pi, name:w.name, done:done, total:total};
+      var entry = {date:today, plan:pi, name:w.name, done:done, total:total, vol:Math.round(vol), exs:exDetail};
       if(idx>=0) treinoHist[curP][idx]=entry; else treinoHist[curP].push(entry);
       if(done>=total && total>0) lastPlanDone[curP] = {plan:pi, date:today};
     } else if(idx>=0){
@@ -1078,6 +1084,26 @@ function updateTreinoHistToday(){
   // manter só os últimos 120 registros por perfil
   if(treinoHist[curP].length>120) treinoHist[curP] = treinoHist[curP].slice(-120);
 }
+// Progressão de carga: exercício 100% completo nas últimas 2 sessões deste treino,
+// na mesma carga atual → sugere o próximo incremento
+function getProgressSuggestion(planIdx, exIdx, ex){
+  var key = wk(curP,planIdx,exIdx);
+  var wval = exWeights[key]!==undefined ? exWeights[key] : (ex.w||0);
+  if(!(wval>0)) return null; // peso corporal: sem sugestão
+  var sessions = (treinoHist[curP]||[])
+    .filter(function(e){ return e.plan===planIdx && e.date<todayStr() && e.exs && e.exs.length; })
+    .sort(function(a,b){ return a.date<b.date?-1:1; })
+    .slice(-2);
+  if(sessions.length<2) return null;
+  var completedBoth = sessions.every(function(e){
+    var d = e.exs.find(function(x){ return x.n===ex.n; });
+    return d && d.done>=d.ns && Math.abs((d.w||0)-wval)<0.01;
+  });
+  if(!completedBoth) return null;
+  var inc = wval>=40 ? 2.5 : wval>=10 ? 2 : 1;
+  return Math.round((wval+inc)*10)/10;
+}
+function fmtVol(v){ return (v||0).toLocaleString('pt-BR')+' kg'; }
 
 // Setup wizard state
 let spStep = 1;
@@ -2408,7 +2434,7 @@ function renderTreinosDayHistory(ds){
       var full = e.done>=e.total && e.total>0;
       h += '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)">';
       h += '<div style="width:10px;height:10px;border-radius:50%;background:'+(pl.color||'var(--green)')+';flex-shrink:0"></div>';
-      h += '<div style="flex:1;font-size:14px;font-weight:600">'+e.name+'</div>';
+      h += '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">'+e.name+'</div>'+(e.vol>0?'<div style="font-size:11px;color:var(--muted)">🏋️ '+fmtVol(e.vol)+'</div>':'')+'</div>';
       h += '<div style="font-size:13px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+'">'+(full?'✓ ':'')+e.done+'/'+e.total+' séries</div>';
       h += '</div>';
     });
@@ -2512,7 +2538,9 @@ function renderTreinosContent(){
     h += '<button class="food-swap" data-exrem-day="'+curPlan+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
-    h += '<div style="display:flex;gap:6px;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+'</div>';
+    var prog = getProgressSuggestion(curPlan, i, ex);
+    var progBtn = prog ? '<button class="prog-sug" data-wkey="'+key+'" data-wval="'+prog+'" data-wname="'+ex.n.replace(/"/g,'&quot;')+'" style="margin-left:auto;background:var(--green-light);border:1.5px solid var(--green);color:var(--green);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0">↑ '+prog+'kg</button>' : '';
+    h += '<div style="display:flex;gap:6px;align-items:center;padding:6px 16px 10px 46px;border-bottom:1px solid var(--border)">'+bubbles+progBtn+'</div>';
   });
   h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
   h += '<button class="food-swap" data-exadd-day="'+curPlan+'" style="color:var(--green);border-color:var(--green);width:100%;justify-content:center;display:flex;align-items:center;gap:4px;padding:6px 8px">+ Adicionar exercicio</button>';
@@ -2616,12 +2644,17 @@ function renderTreinosContent(){
   h += '</div>';
 
   // ── Total kcal ──
-  var totalSetsDone = 0;
+  var totalSetsDone = 0, volToday = 0;
   exs.forEach(function(ex,i){
     var key=wk(curP,curPlan,i);
     var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-    for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) totalSetsDone++; }
+    var wv = exWeights[key]!==undefined ? exWeights[key] : (ex.w||0);
+    var dc=0;
+    for(var si=0;si<ns;si++){ if(exSets[key+'-s'+si]) dc++; }
+    totalSetsDone+=dc;
+    if(wv>0) volToday += dc * repsFromSets(ex.s) * wv;
   });
+  volToday = Math.round(volToday);
   var musKcal = calcMusKcal(p.weight, totalSetsDone);
   var cardioKcal = calcCardioKcalFromIds(selIds, p.weight, cselKey);
   var totalKcal = musKcal + cardioKcal;
@@ -2644,6 +2677,7 @@ function renderTreinosContent(){
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
   h += '<span style="font-size:13px;font-weight:600">📋 Progresso de hoje</span>';
   h += '<span style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+totalSetsDone+'/'+totalSetsPlanned+' séries · '+setsPct+'%</span></div>';
+  if(volToday>0) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">🏋️ Volume levantado hoje: <strong style="color:var(--text);font-family:DM Mono,monospace">'+fmtVol(volToday)+'</strong></div>';
   h += '<div style="height:8px;border-radius:99px;background:#f0f0ed;overflow:hidden"><div style="height:100%;border-radius:99px;background:var(--green);width:'+setsPct+'%;transition:width .4s"></div></div>';
   h += '</div>';
   h += '<div class="section"><div class="stats">';
@@ -2663,7 +2697,7 @@ function renderTreinosContent(){
       h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)">';
       h += '<div style="width:10px;height:10px;border-radius:50%;background:'+(pl.color||'var(--green)')+';flex-shrink:0"></div>';
       h += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.name+'</div>';
-      h += '<div style="font-size:11px;color:var(--muted)">'+dLbl+'</div></div>';
+      h += '<div style="font-size:11px;color:var(--muted)">'+dLbl+(e.vol>0?' · '+fmtVol(e.vol):'')+'</div></div>';
       h += '<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+';flex-shrink:0">'+(full?'✓ ':'')+e.done+'/'+e.total+'</div>';
       h += '</div>';
     });
@@ -2679,6 +2713,14 @@ function renderTreinosContent(){
 
   document.getElementById('treinos-content').innerHTML = h;
 
+  document.querySelectorAll('.prog-sug').forEach(function(el){
+    el.addEventListener('click', function(){
+      exWeights[this.dataset.wkey] = parseFloat(this.dataset.wval);
+      updateTreinoHistToday(); save();
+      showToast('Progressão: '+this.dataset.wname+' agora em '+this.dataset.wval+'kg 💪');
+      renderTreinosContent();
+    });
+  });
   document.querySelectorAll('.ex-set-dot').forEach(function(el){
     el.addEventListener('click', function(){
       prepareBeeps(); // prepare Audio during user gesture so iOS allows play later

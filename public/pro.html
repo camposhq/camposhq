@@ -391,7 +391,7 @@ function showMain(data){
       var dLbl=new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
       var full=e.done>=e.total&&e.total>0;
       h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">';
-      h+='<div style="flex:1;font-size:13px;font-weight:500">'+(e.name||'Treino')+'</div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+(e.name||'Treino')+'</div>'+(e.vol>0?'<div style="font-size:11px;color:var(--muted)">'+e.vol.toLocaleString('pt-BR')+' kg levantados</div>':'')+'</div>';
       h+='<div style="font-size:11px;color:var(--muted)">'+dLbl+'</div>';
       h+='<div style="font-size:12px;font-weight:600;font-family:DM Mono,monospace;color:'+(full?'var(--green)':'var(--amber)')+'">'+e.done+'/'+e.total+'</div>';
       h+='</div>';

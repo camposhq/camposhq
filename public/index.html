@@ -7492,14 +7492,14 @@ function loadUserData(uid, callback){
             // only merge daily tracking if Firebase data is from TODAY
             // if Firebase is from a previous day, daily state was already reset — don't restore old data
             var firebaseIsToday = (s.lastSavedDate === todayStr());
-            // Never restore daily tracking if reset already happened today
-            var resetDoneToday = localStorage.getItem('mh_reset_date') === todayStr();
-            if(firebaseIsToday && !resetDoneToday){
+            // a união (mergeObj) só ADICIONA marcações — nunca perde; se a nuvem é de
+            // hoje, sempre restaura (o rollover de dia já é protegido pelo lastSavedDate)
+            if(firebaseIsToday){
               mealDone = mergeObj(mealDone, s.mealDone);
               foodDone = mergeObj(foodDone, s.foodDone);
               suppDone = mergeObj(suppDone, s.suppDone);
               habitDone = mergeObj(habitDone, s.habitDone);
-              waterGlasses = mergeObj(waterGlasses, s.waterGlasses);
+              (function(){ var rw=s.waterGlasses||{}; Object.keys(rw).forEach(function(k){ if(typeof rw[k]==='number') waterGlasses[k]=Math.max(waterGlasses[k]||0, rw[k]); else if(!(k in waterGlasses)) waterGlasses[k]=rw[k]; }); })();
               exChecked = mergeObj(exChecked, s.exChecked);
               exSets = mergeObj(exSets, s.exSets);
             } else {
@@ -7508,7 +7508,7 @@ function loadUserData(uid, callback){
               cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
               walkParams = Object.assign({}, s.walkParams||{}, walkParams);
             }
-            if(firebaseIsToday && !resetDoneToday){
+            if(firebaseIsToday){
               exWeights = Object.assign({}, s.exWeights||{}, exWeights);
               cardioSel = Object.assign({}, s.cardioSel||{}, cardioSel);
               cardioChecked = mergeObj(cardioChecked, s.cardioChecked);

@@ -3092,48 +3092,54 @@ async function shareTreinoCard(){
     .sort(function(a,b){ return b.done-a.done; })[0];
   if(!e){ showToast('Treine primeiro — depois compartilhe!'); return; }
   var w = p.weekly[e.plan]||{color:'#1a7a4a'};
-  try{ await Promise.all([document.fonts.load('700 90px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"'), document.fonts.load('700 40px "DM Sans"')]); }catch(err){}
-  var b = shareCanvasBase(); var g=b.g, W=b.W;
-  // glow da cor do treino
-  var glow=g.createRadialGradient(W/2,520,60,W/2,520,620);
-  glow.addColorStop(0, w.color+'55'); glow.addColorStop(1,'transparent');
-  g.fillStyle=glow; g.fillRect(0,0,W,1100);
+  try{ await Promise.all([document.fonts.load('700 100px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"'), document.fonts.load('700 40px "DM Sans"')]); }catch(err){}
+  var b = shareCanvasBase(); var g=b.g, W=b.W, H=b.H;
+  // glow central na cor do treino
+  var glow=g.createRadialGradient(W/2,860,80,W/2,860,760);
+  glow.addColorStop(0, w.color+'44'); glow.addColorStop(1,'transparent');
+  g.fillStyle=glow; g.fillRect(0,200,W,1400);
   shareHeader(g, W, new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
-  // nome do treino
+
+  // tipo de treino
   g.textAlign='center';
-  g.fillStyle='rgba(255,255,255,.55)'; g.font='600 30px "DM Sans", sans-serif';
-  g.fillText('T R E I N O   D O   D I A', W/2, 360);
-  g.fillStyle='#fff'; g.font='700 92px Fraunces, Georgia, serif';
-  g.fillText(e.name, W/2, 470);
-  // volume em destaque
-  g.fillStyle=w.color; g.font='700 150px "DM Mono", monospace';
-  g.fillText((e.vol||0).toLocaleString('pt-BR'), W/2, 720);
-  g.fillStyle='rgba(255,255,255,.6)'; g.font='500 38px "DM Sans", sans-serif';
-  g.fillText('kg levantados', W/2, 780);
-  // stats
+  g.fillStyle='rgba(255,255,255,.5)'; g.font='600 30px "DM Sans", sans-serif';
+  g.fillText('M U S C U L A Ç Ã O', W/2, 420);
+  g.fillStyle='#fff'; g.font='700 100px Fraunces, Georgia, serif';
+  g.fillText(e.name, W/2, 540);
+  // aeróbico do dia (cardio do plano treinado)
+  var ck = curP+'-'+e.plan;
+  var cardioNames = getCardioIds(ck).map(function(id){
+    var co=CARDIO_OPTS.find(function(o){ return o.id===id; }); return co?co.label:null;
+  }).filter(Boolean);
+  if(cardioNames.length){
+    g.fillStyle='rgba(255,255,255,.55)'; g.font='500 36px "DM Sans", sans-serif';
+    g.fillText('+  aeróbico  ·  '+cardioNames.join('  ·  '), W/2, 620);
+  }
+
+  // volume gigante
+  g.fillStyle=w.color; g.font='700 190px "DM Mono", monospace';
+  g.fillText((e.vol||0).toLocaleString('pt-BR'), W/2, 940);
+  g.fillStyle='rgba(255,255,255,.65)'; g.font='500 42px "DM Sans", sans-serif';
+  g.fillText('kg levantados', W/2, 1010);
+
+  // grid 2×2 de stats
   var kcalT = calcWorkoutKcalToday(curP);
   var prs = 0;
   (e.exs||[]).forEach(function(d){ var pr=getExercisePR(d.n); if(d.w>0 && pr>0 && d.w>pr) prs++; });
-  shareStat(g, W/2-330, 950, e.done+'/'+e.total, 'séries', '#fff');
-  shareStat(g, W/2, 950, kcalT>0?kcalT:'—', 'kcal', '#fff');
-  shareStat(g, W/2+330, 950, prs>0?prs+' PR'+(prs>1?'s':''):'—', 'recordes', prs>0?'#f0c060':'#fff');
-  // linha divisória
-  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
-  g.beginPath(); g.moveTo(140,1060); g.lineTo(W-140,1060); g.stroke();
-  // exercícios (top 8 por volume)
-  var exs = (e.exs||[]).slice().sort(function(a,b){ return (b.done*b.w)-(a.done*a.w); }).slice(0,8);
-  g.textAlign='left';
-  var y=1150;
-  exs.forEach(function(d){
-    g.fillStyle='rgba(255,255,255,.85)'; g.font='500 36px "DM Sans", sans-serif';
-    var nome = d.n.length>30 ? d.n.slice(0,29)+'…' : d.n;
-    g.fillText(nome, 140, y);
-    g.textAlign='right';
-    g.fillStyle='rgba(255,255,255,.55)'; g.font='600 34px "DM Mono", monospace';
-    g.fillText(d.done+'×'+(d.w>0?' '+d.w+'kg':''), W-140, y);
-    g.textAlign='left';
-    y+=74;
-  });
+  // tempo estimado: séries feitas × 1.75min + 1min/exercício + cardio
+  var mins = Math.round(e.done*1.75) + (e.exs?e.exs.length:0);
+  if(cardioNames.length) mins += 30;
+  var tempoStr = mins>=60 ? Math.floor(mins/60)+'h'+(mins%60>0?(mins%60<10?'0':'')+mins%60:'') : mins+'min';
+  var gy1=1230, gy2=1450;
+  shareStat(g, W/2-270, gy1, e.done+'/'+e.total, 'séries', '#fff');
+  shareStat(g, W/2+270, gy1, kcalT>0?kcalT+'':'—', 'kcal queimadas', '#fff');
+  shareStat(g, W/2-270, gy2, '~'+tempoStr, 'de treino', '#fff');
+  shareStat(g, W/2+270, gy2, prs>0?prs+' PR'+(prs>1?'s':''):'0', 'recordes', prs>0?'#f0c060':'#fff');
+  // divisores sutis do grid
+  g.strokeStyle='rgba(255,255,255,.1)'; g.lineWidth=2;
+  g.beginPath(); g.moveTo(W/2,1150); g.lineTo(W/2,1500); g.stroke();
+  g.beginPath(); g.moveTo(200,1330); g.lineTo(W-200,1330); g.stroke();
+
   // rodapé
   g.textAlign='center';
   g.fillStyle='rgba(255,255,255,.3)'; g.font='500 26px "DM Sans", sans-serif';

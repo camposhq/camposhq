@@ -2224,6 +2224,8 @@ function renderHome(){
     }
     h += '</div></div></div>';
   }
+  // Compartilhar o dia (story)
+  h += '<div class="section"><button id="home-share-dia" style="width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;display:flex;align-items:center;justify-content:center;gap:7px">'+icn('camera',15)+' Compartilhar meu dia</button></div>';
   // Notification status + test
   var notifStatus = ('Notification' in window) ? Notification.permission : 'unsupported';
   if(notifStatus !== 'granted'){
@@ -2281,6 +2283,8 @@ function renderHome(){
     requestNotifPermission(function(){ scheduleNotifications(); renderHome(); }, true);
   });
 
+  var hsd = document.getElementById('home-share-dia');
+  if(hsd) hsd.addEventListener('click', shareDiaCard);
   var btnBodyAI = document.getElementById('btn-body-ai');
   if(btnBodyAI) btnBodyAI.addEventListener('click', analisarComposicaoCorporal);
 }
@@ -2872,6 +2876,7 @@ function renderTreinosContent(){
   h += '<button class="act-btn" id="t-ajustar"><span class="act-icon">'+icn('target',19)+'</span><span class="act-lbl">Ajustar treino</span><span class="act-sub">Cargas e series</span></button>';
   h += '<button class="act-btn" id="t-gerar"><span class="act-icon">'+icn('sparkles',19)+'</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novos treinos</span></button>';
   h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">'+icn('link',19)+'</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
+  h += '<button class="act-btn" id="t-share-insta"><span class="act-icon">'+icn('camera',19)+'</span><span class="act-lbl">Postar treino</span><span class="act-sub">Story do Instagram</span></button>';
   h += '</div></div>';
 
   document.getElementById('treinos-content').innerHTML = h;
@@ -3035,8 +3040,150 @@ function renderTreinosContent(){
   });
   var tsp = document.getElementById('t-share-personal');
   if(tsp) tsp.addEventListener('click', openSharePersonal);
+  var tsi = document.getElementById('t-share-insta');
+  if(tsi) tsi.addEventListener('click', shareTreinoCard);
 }
 
+// ══════════════════════════════════════════════════════════════
+// COMPARTILHAR NO INSTAGRAM — card 1080×1920 (story) via canvas + share sheet
+// ══════════════════════════════════════════════════════════════
+function shareCanvasBase(){
+  var W=1080, H=1920;
+  var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  var g=cv.getContext('2d');
+  var grad=g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#121713'); grad.addColorStop(.55,'#0c0f0d'); grad.addColorStop(1,'#090b0a');
+  g.fillStyle=grad; g.fillRect(0,0,W,H);
+  return {cv:cv, g:g, W:W, H:H};
+}
+function shareHeader(g, W, subtitle){
+  // anel + wordmark
+  g.strokeStyle='rgba(255,255,255,.9)'; g.lineWidth=5;
+  g.beginPath(); g.arc(W/2-118,132,26,0,Math.PI*2); g.stroke();
+  g.beginPath(); g.arc(W/2-118,132,15,0,Math.PI*2); g.stroke();
+  g.fillStyle='#fff'; g.font='700 44px Fraunces, Georgia, serif'; g.textAlign='left';
+  g.fillText('MyHealth', W/2-72, 148);
+  g.textAlign='center';
+  g.fillStyle='rgba(255,255,255,.45)'; g.font='500 30px "DM Sans", sans-serif';
+  g.fillText(subtitle, W/2, 216);
+}
+function shareStat(g, x, y, val, lbl, color){
+  g.textAlign='center';
+  g.fillStyle=color||'#fff'; g.font='700 64px "DM Mono", monospace';
+  g.fillText(val, x, y);
+  g.fillStyle='rgba(255,255,255,.45)'; g.font='500 28px "DM Sans", sans-serif';
+  g.fillText(lbl, x, y+44);
+}
+function shareSend(cv, nome){
+  cv.toBlob(function(blob){
+    if(!blob){ showToast('Erro ao gerar imagem.'); return; }
+    var file = new File([blob], nome, {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file]}).catch(function(){});
+    } else {
+      var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; a.click();
+      showToast('Imagem salva — poste no Instagram!');
+    }
+  }, 'image/png');
+}
+async function shareTreinoCard(){
+  var p = PD[curP]; var today = todayStr();
+  var e = (treinoHist[curP]||[]).filter(function(x){ return x.date===today && x.done>0; })
+    .sort(function(a,b){ return b.done-a.done; })[0];
+  if(!e){ showToast('Treine primeiro — depois compartilhe!'); return; }
+  var w = p.weekly[e.plan]||{color:'#1a7a4a'};
+  try{ await Promise.all([document.fonts.load('700 90px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"'), document.fonts.load('700 40px "DM Sans"')]); }catch(err){}
+  var b = shareCanvasBase(); var g=b.g, W=b.W;
+  // glow da cor do treino
+  var glow=g.createRadialGradient(W/2,520,60,W/2,520,620);
+  glow.addColorStop(0, w.color+'55'); glow.addColorStop(1,'transparent');
+  g.fillStyle=glow; g.fillRect(0,0,W,1100);
+  shareHeader(g, W, new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
+  // nome do treino
+  g.textAlign='center';
+  g.fillStyle='rgba(255,255,255,.55)'; g.font='600 30px "DM Sans", sans-serif';
+  g.fillText('T R E I N O   D O   D I A', W/2, 360);
+  g.fillStyle='#fff'; g.font='700 92px Fraunces, Georgia, serif';
+  g.fillText(e.name, W/2, 470);
+  // volume em destaque
+  g.fillStyle=w.color; g.font='700 150px "DM Mono", monospace';
+  g.fillText((e.vol||0).toLocaleString('pt-BR'), W/2, 720);
+  g.fillStyle='rgba(255,255,255,.6)'; g.font='500 38px "DM Sans", sans-serif';
+  g.fillText('kg levantados', W/2, 780);
+  // stats
+  var kcalT = calcWorkoutKcalToday(curP);
+  var prs = 0;
+  (e.exs||[]).forEach(function(d){ var pr=getExercisePR(d.n); if(d.w>0 && pr>0 && d.w>pr) prs++; });
+  shareStat(g, W/2-330, 950, e.done+'/'+e.total, 'séries', '#fff');
+  shareStat(g, W/2, 950, kcalT>0?kcalT:'—', 'kcal', '#fff');
+  shareStat(g, W/2+330, 950, prs>0?prs+' PR'+(prs>1?'s':''):'—', 'recordes', prs>0?'#f0c060':'#fff');
+  // linha divisória
+  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
+  g.beginPath(); g.moveTo(140,1060); g.lineTo(W-140,1060); g.stroke();
+  // exercícios (top 8 por volume)
+  var exs = (e.exs||[]).slice().sort(function(a,b){ return (b.done*b.w)-(a.done*a.w); }).slice(0,8);
+  g.textAlign='left';
+  var y=1150;
+  exs.forEach(function(d){
+    g.fillStyle='rgba(255,255,255,.85)'; g.font='500 36px "DM Sans", sans-serif';
+    var nome = d.n.length>30 ? d.n.slice(0,29)+'…' : d.n;
+    g.fillText(nome, 140, y);
+    g.textAlign='right';
+    g.fillStyle='rgba(255,255,255,.55)'; g.font='600 34px "DM Mono", monospace';
+    g.fillText(d.done+'×'+(d.w>0?' '+d.w+'kg':''), W-140, y);
+    g.textAlign='left';
+    y+=74;
+  });
+  // rodapé
+  g.textAlign='center';
+  g.fillStyle='rgba(255,255,255,.3)'; g.font='500 26px "DM Sans", sans-serif';
+  g.fillText('◎  M Y H E A L T H', W/2, 1830);
+  shareSend(b.cv, 'myhealth-treino.png');
+}
+async function shareDiaCard(){
+  var p = PD[curP];
+  try{ await Promise.all([document.fonts.load('700 90px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"')]); }catch(err){}
+  var b = shareCanvasBase(); var g=b.g, W=b.W;
+  var glow=g.createRadialGradient(W/2,520,60,W/2,520,620);
+  glow.addColorStop(0,'#f9731650'); glow.addColorStop(1,'transparent');
+  g.fillStyle=glow; g.fillRect(0,0,W,1100);
+  shareHeader(g, W, new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
+  g.textAlign='center';
+  g.fillStyle='rgba(255,255,255,.55)'; g.font='600 30px "DM Sans", sans-serif';
+  g.fillText('M E U   D I A', W/2, 380);
+  // score em destaque
+  var fz=null; try{ fz=getFrozenScores(curP); }catch(err){}
+  var score = fz?fz.scores.Geral:'—';
+  g.fillStyle='#f97316'; g.font='700 230px "DM Mono", monospace';
+  g.fillText(score, W/2, 660);
+  g.fillStyle='rgba(255,255,255,.6)'; g.font='500 38px "DM Sans", sans-serif';
+  g.fillText('score geral', W/2, 730);
+  // grid de métricas do dia
+  var today = todayStr();
+  var e = (treinoHist[curP]||[]).filter(function(x){ return x.date===today && x.done>0; })[0];
+  var kcalC = kcalConsumedToday();
+  var gasto = getBasalKcal(p)+calcWorkoutKcalToday(curP);
+  var glasses = waterGlasses[curP+'-water']||0;
+  var sonoH = 0;
+  if(curP===0 && ouraData){ var hb=ouraHoursByDay(); var k=isoDay(new Date()); if(hb[k]) sonoH=hb[k]/3600; }
+  if(!sonoH && sleepData[curP] && sleepData[curP].hours>0) sonoH=sleepData[curP].hours;
+  shareStat(g, W/2-330, 950, e?(e.done+'/'+e.total):'—', e?'séries · '+e.name.split(' ')[0]:'treino', '#fff');
+  shareStat(g, W/2, 950, sonoH>0?fmtH(sonoH):'—', 'sono', '#fff');
+  shareStat(g, W/2+330, 950, glasses>0?(glasses*250/1000).toFixed(1).replace('.',',')+'L':'—', 'água', '#fff');
+  shareStat(g, W/2-180, 1150, kcalC>0?kcalC:'—', 'kcal consumidas', '#fff');
+  shareStat(g, W/2+180, 1150, gasto, 'kcal gastas', '#fff');
+  if(e && e.vol>0){
+    g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(140,1270); g.lineTo(W-140,1270); g.stroke();
+    g.fillStyle='#1db06b'; g.font='700 110px "DM Mono", monospace';
+    g.fillText(e.vol.toLocaleString('pt-BR')+' kg', W/2, 1420);
+    g.fillStyle='rgba(255,255,255,.5)'; g.font='500 34px "DM Sans", sans-serif';
+    g.fillText('volume levantado em '+e.name, W/2, 1480);
+  }
+  g.fillStyle='rgba(255,255,255,.3)'; g.font='500 26px "DM Sans", sans-serif';
+  g.fillText('◎  M Y H E A L T H', W/2, 1830);
+  shareSend(b.cv, 'myhealth-dia.png');
+}
 function openExVideo(exName){
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';

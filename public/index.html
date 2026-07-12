@@ -981,18 +981,23 @@ function cardioFoiFeito(selId, cselKey){
 function calcWorkoutKcalToday(pi){
   var idx = pi!=null?pi:curP; var p = PD[idx];
   // conta séries feitas hoje em TODOS os treinos (exSets é zerado diariamente)
-  var sets=0;
+  var sets=0, setsByPlan={};
   (p.weekly||[]).forEach(function(w,pl){
+    var sp=0;
     (w.exs||[]).forEach(function(ex,i){
       var k=idx+'-'+pl+'-'+i; var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3;
-      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sets++; }
+      for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) sp++; }
     });
+    setsByPlan[pl]=sp; sets+=sp;
   });
   var musK = calcMusKcal(p.weight, sets);
+  // aeróbico: o cardio selecionado num treino conta no dia em que aquele treino
+  // teve séries marcadas (fez o treino = fez o cardio junto) OU em que houve
+  // interação direta com o cardio (selecionar/marcar passo/ajustar)
   var cardK = 0;
   (p.weekly||[]).forEach(function(w,pl){
     var ck = idx+'-'+pl;
-    var ids = getCardioIds(ck).filter(function(id){ return cardioFoiFeito(id, ck); });
+    var ids = getCardioIds(ck).filter(function(id){ return setsByPlan[pl]>0 || cardioFoiFeito(id, ck); });
     cardK += calcCardioKcalFromIds(ids, p.weight, ck);
   });
   return musK + cardK;

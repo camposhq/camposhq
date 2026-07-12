@@ -3153,23 +3153,75 @@ async function shareTreinoCard(){
 }
 async function shareDiaCard(){
   var p = PD[curP];
-  try{ await Promise.all([document.fonts.load('700 90px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"')]); }catch(err){}
+  try{ await Promise.all([document.fonts.load('700 90px Fraunces'), document.fonts.load('700 64px "DM Mono"'), document.fonts.load('500 30px "DM Sans"'), document.fonts.load('700 40px "DM Sans"')]); }catch(err){}
   var b = shareCanvasBase(); var g=b.g, W=b.W;
-  var glow=g.createRadialGradient(W/2,520,60,W/2,520,620);
-  glow.addColorStop(0,'#f9731650'); glow.addColorStop(1,'transparent');
-  g.fillStyle=glow; g.fillRect(0,0,W,1100);
+  var glow=g.createRadialGradient(W/2,560,60,W/2,560,640);
+  glow.addColorStop(0,'#f9731648'); glow.addColorStop(1,'transparent');
+  g.fillStyle=glow; g.fillRect(0,100,W,1100);
   shareHeader(g, W, new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}));
   g.textAlign='center';
-  g.fillStyle='rgba(255,255,255,.55)'; g.font='600 30px "DM Sans", sans-serif';
+  g.fillStyle='rgba(255,255,255,.5)'; g.font='600 30px "DM Sans", sans-serif';
   g.fillText('M E U   D I A', W/2, 380);
-  // score em destaque
+
+  // score gigante
   var fz=null; try{ fz=getFrozenScores(curP); }catch(err){}
-  var score = fz?fz.scores.Geral:'—';
-  g.fillStyle='#f97316'; g.font='700 230px "DM Mono", monospace';
-  g.fillText(score, W/2, 660);
+  var score = fz?fz.scores.Geral:0;
+  g.fillStyle='#f97316'; g.font='700 220px "DM Mono", monospace';
+  g.fillText(score, W/2, 640);
   g.fillStyle='rgba(255,255,255,.6)'; g.font='500 38px "DM Sans", sans-serif';
-  g.fillText('score geral', W/2, 730);
-  // grid de métricas do dia
+  g.fillText('score geral', W/2, 706);
+
+  // ── comparação com a média externa (minimalista): barra + marcadores + selo ──
+  var genderC = (pdOverride[curP]&&pdOverride[curP].gender)||p.gender||'M';
+  var bench = getPopBench(p.age, genderC);
+  var avgB = Math.round((bench.avg.Saude+bench.avg.Fitness+bench.avg.Sono+bench.avg.Nutricao)/4);
+  var tgtB = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
+  var faixa = benchFaixaLabel(p.age, genderC);
+  var diffB = score - avgB;
+  var bx=220, bw=W-440, by=790;
+  // trilha
+  g.strokeStyle='rgba(255,255,255,.16)'; g.lineWidth=10; g.lineCap='round';
+  g.beginPath(); g.moveTo(bx,by); g.lineTo(bx+bw,by); g.stroke();
+  // preenchimento até o seu score
+  g.strokeStyle='#f97316';
+  g.beginPath(); g.moveTo(bx,by); g.lineTo(bx+bw*Math.min(100,score)/100,by); g.stroke();
+  g.lineCap='butt';
+  // marcador da média
+  var mx = bx+bw*avgB/100;
+  g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=3;
+  g.beginPath(); g.moveTo(mx,by-20); g.lineTo(mx,by+20); g.stroke();
+  g.fillStyle='rgba(255,255,255,.5)'; g.font='500 24px "DM Sans", sans-serif';
+  g.textAlign='center';
+  g.fillText('média '+avgB, mx, by+56);
+  // marcador do top 20%
+  var tx = bx+bw*tgtB/100;
+  g.fillStyle='#f0c060'; g.font='700 26px "DM Sans", sans-serif';
+  g.fillText('★', tx, by-30);
+  g.fillStyle='rgba(240,192,96,.75)'; g.font='500 24px "DM Sans", sans-serif';
+  g.fillText('top 20% · '+tgtB, tx, by+56);
+  // bolinha do seu score
+  var sx = bx+bw*Math.min(100,score)/100;
+  g.fillStyle='#f97316'; g.beginPath(); g.arc(sx,by,14,0,Math.PI*2); g.fill();
+  g.strokeStyle='#0c0f0d'; g.lineWidth=5; g.beginPath(); g.arc(sx,by,14,0,Math.PI*2); g.stroke();
+
+  // selo de comparação
+  var selo = score>=tgtB ? 'TOP 20% dos '+faixa
+           : (diffB>=0 ? '▲ '+diffB+' pts acima da média · '+faixa
+                       : '▼ '+Math.abs(diffB)+' pts abaixo da média · '+faixa);
+  g.font='600 30px "DM Sans", sans-serif';
+  var tw = g.measureText(selo).width;
+  var px = W/2-tw/2-28, py=900, ph=64;
+  g.fillStyle = score>=tgtB ? 'rgba(240,192,96,.14)' : diffB>=0 ? 'rgba(29,176,107,.14)' : 'rgba(224,82,82,.14)';
+  g.strokeStyle = score>=tgtB ? 'rgba(240,192,96,.6)' : diffB>=0 ? 'rgba(29,176,107,.55)' : 'rgba(224,82,82,.55)';
+  g.lineWidth=2;
+  g.beginPath();
+  g.roundRect ? g.roundRect(px,py,tw+56,ph,32) : g.rect(px,py,tw+56,ph);
+  g.fill(); g.stroke();
+  g.fillStyle = score>=tgtB ? '#f0c060' : diffB>=0 ? '#2fce85' : '#e07070';
+  g.textAlign='center';
+  g.fillText(selo, W/2, py+42);
+
+  // métricas do dia
   var today = todayStr();
   var e = (treinoHist[curP]||[]).filter(function(x){ return x.date===today && x.done>0; })[0];
   var kcalC = kcalConsumedToday();
@@ -3178,54 +3230,22 @@ async function shareDiaCard(){
   var sonoH = 0;
   if(curP===0 && ouraData){ var hb=ouraHoursByDay(); var k=isoDay(new Date()); if(hb[k]) sonoH=hb[k]/3600; }
   if(!sonoH && sleepData[curP] && sleepData[curP].hours>0) sonoH=sleepData[curP].hours;
-  shareStat(g, W/2-330, 950, e?(e.done+'/'+e.total):'—', e?'séries · '+e.name.split(' ')[0]:'treino', '#fff');
-  shareStat(g, W/2, 950, sonoH>0?fmtH(sonoH):'—', 'sono', '#fff');
-  shareStat(g, W/2+330, 950, glasses>0?(glasses*250/1000).toFixed(1).replace('.',',')+'L':'—', 'água', '#fff');
-  shareStat(g, W/2-180, 1150, kcalC>0?kcalC:'—', 'kcal consumidas', '#fff');
-  shareStat(g, W/2+180, 1150, gasto, 'kcal gastas', '#fff');
+  shareStat(g, W/2-330, 1130, e?(e.done+'/'+e.total):'—', e?'séries · '+e.name.split(' ')[0]:'treino', '#fff');
+  shareStat(g, W/2, 1130, sonoH>0?fmtH(sonoH):'—', 'sono', '#fff');
+  shareStat(g, W/2+330, 1130, glasses>0?(glasses*250/1000).toFixed(1).replace('.',',')+'L':'—', 'água', '#fff');
+  shareStat(g, W/2-180, 1330, kcalC>0?kcalC:'—', 'kcal consumidas', '#fff');
+  shareStat(g, W/2+180, 1330, gasto, 'kcal gastas', '#fff');
   if(e && e.vol>0){
     g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
-    g.beginPath(); g.moveTo(140,1270); g.lineTo(W-140,1270); g.stroke();
-    g.fillStyle='#1db06b'; g.font='700 110px "DM Mono", monospace';
-    g.fillText(e.vol.toLocaleString('pt-BR')+' kg', W/2, 1420);
+    g.beginPath(); g.moveTo(140,1450); g.lineTo(W-140,1450); g.stroke();
+    g.fillStyle='#1db06b'; g.font='700 100px "DM Mono", monospace';
+    g.fillText(e.vol.toLocaleString('pt-BR')+' kg', W/2, 1590);
     g.fillStyle='rgba(255,255,255,.5)'; g.font='500 34px "DM Sans", sans-serif';
-    g.fillText('volume levantado em '+e.name, W/2, 1480);
+    g.fillText('volume levantado em '+e.name, W/2, 1650);
   }
   g.fillStyle='rgba(255,255,255,.3)'; g.font='500 26px "DM Sans", sans-serif';
   g.fillText('◎  M Y H E A L T H', W/2, 1830);
   shareSend(b.cv, 'myhealth-dia.png');
-}
-function openExVideo(exName){
-  var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:70;display:flex;align-items:flex-end';
-  var ytUrl = 'https://www.youtube.com/results?search_query='+encodeURIComponent(exName+' execucao correta musculacao');
-  var panel = document.createElement('div');
-  panel.style.cssText = 'background:var(--card);border-radius:24px 24px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bottom))';
-  panel.innerHTML = [
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">',
-      '<div>',
-        '<div style="font-family:Fraunces,serif;font-size:18px;margin-bottom:4px">'+exName+'</div>',
-        '<div style="font-size:12px;color:var(--muted)">Como executar corretamente</div>',
-      '</div>',
-      '<button id="ex-vid-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1">'+icn('x',14)+'</button>',
-    '</div>',
-    '<a href="'+ytUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;background:#ff0000;color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;margin-bottom:12px">',
-      '<span style="color:var(--coral)">'+icn('play',20)+'</span>',
-      '<div><div style="font-size:14px;font-weight:600">Ver video no YouTube</div><div style="font-size:11px;opacity:.85">Buscar videos de execucao</div></div>',
-    '</a>',
-    '<button id="ex-vid-ai" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;cursor:pointer;font-family:DM Sans,sans-serif">',
-      '<span style="color:var(--green)">'+icn('sparkles',20)+'</span>',
-      '<div style="text-align:left"><div style="font-size:14px;font-weight:600;color:var(--text)">Dicas do AI</div><div style="font-size:11px;color:var(--muted)">Execucao, erros e variacoes</div></div>',
-    '</button>',
-  ].join('');
-  overlay.appendChild(panel);
-  document.body.appendChild(overlay);
-  document.getElementById('ex-vid-close').addEventListener('click', function(){ overlay.remove(); });
-  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
-  document.getElementById('ex-vid-ai').addEventListener('click', function(){
-    overlay.remove();
-    openChat('treino','Me explica como executar corretamente o exercicio "'+exName+'": postura, pegada, amplitude, erros comuns e dicas para '+PD[curP].name+'.');
-  });
 }
 
 // ══════════════════════════════════════════════════════════════

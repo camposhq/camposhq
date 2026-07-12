@@ -2607,7 +2607,7 @@ function renderTreinosContent(){
     var exPR = getExercisePR(ex.n);
     var isNewPR = doneCount>0 && wval>0 && exPR>0 && wval>exPR;
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+(isNewPR?' <span style="font-size:10px;background:#f0c060;color:#5a3a00;border-radius:99px;padding:1px 7px;font-weight:700;vertical-align:middle">'+icn('trophy',9,'vertical-align:-1px')+' PR!</span>':'')+'</div><div class="ex-sets">'+ex.s+(exPR>0?' · <span style="color:'+(isNewPR?'#b45309':'var(--muted)')+'">PR '+exPR+'kg</span>':'')+'</div></div>';
-    h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
+    h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'" style="color:var(--muted)">'+icn('play',12)+'</div>';
     h += '<button class="food-swap" data-exedit-day="'+curPlan+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">'+icn('pencil',14)+'</button>';
     h += '<button class="food-swap" data-day="'+curPlan+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">'+icn('swap',14)+'</button>';
     h += '<button class="food-swap" data-exrem-day="'+curPlan+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">'+icn('x',14)+'</button>';
@@ -2955,7 +2955,7 @@ function openExVideo(exName){
       '<button id="ex-vid-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1">'+icn('x',14)+'</button>',
     '</div>',
     '<a href="'+ytUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;background:#ff0000;color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;margin-bottom:12px">',
-      '<span style="font-size:22px">▶</span>',
+      '<span style="color:var(--coral)">'+icn('play',20)+'</span>',
       '<div><div style="font-size:14px;font-weight:600">Ver video no YouTube</div><div style="font-size:11px;opacity:.85">Buscar videos de execucao</div></div>',
     '</a>',
     '<button id="ex-vid-ai" style="display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 18px;cursor:pointer;font-family:DM Sans,sans-serif">',

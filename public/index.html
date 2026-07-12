@@ -1916,7 +1916,7 @@ function renderHome(){
     h += '</div>';
   }
   // Hero
-  var bench = getPopBench(p.age);
+  var bench = getPopBench(p.age, (pdOverride[curP]&&pdOverride[curP].gender)||p.gender||'M');
   var popAvgGeral = Math.round((bench.avg.Saude+bench.avg.Fitness+bench.avg.Sono+bench.avg.Nutricao)/4);
   var popTgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
   var diffGeral = avg - popAvgGeral;
@@ -1930,7 +1930,12 @@ function renderHome(){
   h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'!</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
-  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?icn('lock',10,'vertical-align:-1px')+' desde '+fzHomeLbl:(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média')+'</div>';
+  var meuHist30 = (historyData[curP]||[]).filter(function(e){ return e.avg>0; }).slice(-30);
+  var minha30 = meuHist30.length>=3 ? Math.round(meuHist30.reduce(function(s,e){ return s+e.avg; },0)/meuHist30.length) : null;
+  var trendTxt;
+  if(minha30!=null){ var dMe = avg - minha30; trendTxt = (dMe>=0?'▲ +'+dMe:'▼ '+dMe)+' vs sua média 30d'; }
+  else { trendTxt = (diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs '+benchFaixaLabel(p.age,(pdOverride[curP]&&pdOverride[curP].gender)||p.gender||'M'); }
+  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?icn('lock',10,'vertical-align:-1px')+' desde '+fzHomeLbl:trendTxt)+'</div>';
   h += '</div>';
   h += '</div>';
   h += '<div class="dash-score-row">';
@@ -4754,7 +4759,7 @@ function renderEvolucao(){
     }
   }
   var labels = hist.map(function(e){ return e.label; });
-  var bench = getPopBench(p.age);
+  var bench = getPopBench(p.age, (pdOverride[curP]&&pdOverride[curP].gender)||p.gender||'M');
   var tgtGeral = Math.round((bench.tgt.Saude+bench.tgt.Fitness+bench.tgt.Sono+bench.tgt.Nutricao)/4);
   var tgtPeso = Math.round(22 * Math.pow(p.height/100,2));
   var tgtFat = 15;
@@ -4792,8 +4797,10 @@ function renderEvolucao(){
     var sColors = {Saude:'#1a7a4a',Fitness:'#5a3ab7',Sono:'#3730a3',Nutricao:'#c47a1a'};
     var sMeta = [{k:'Saude',i:icn('heart',13)},{k:'Fitness',i:icn('dumbbell',13)},{k:'Sono',i:icn('moon',13)},{k:'Nutricao',i:icn('nutrition',13)}];
     h += '<div class="section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-    h += '<div class="sec-label" style="margin:0">Scores vs. media mundial</div>';
-    h += '<div style="font-size:10px;color:var(--muted)">Faixa '+p.age+' anos</div></div>';
+    var benchGen = (pdOverride[curP]&&pdOverride[curP].gender)||p.gender||'M';
+    var hist30cmp = (historyData[curP]||[]).slice(-30);
+    h += '<div class="sec-label" style="margin:0">Você vs '+benchFaixaLabel(p.age, benchGen)+'</div>';
+    h += '<div style="font-size:10px;color:var(--muted)">referência real</div></div>';
     sMeta.forEach(function(sc){
       var myVal = (curScores&&curScores[sc.k])||0;
       var avgVal = bench.avg[sc.k]||0;
@@ -4815,15 +4822,23 @@ function renderEvolucao(){
       h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Você</span>';
       h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+myVal+'%;background:'+color+'"></div></div>';
       h += '<span class="cmp-bar-num" style="color:'+color+'">'+myVal+'</span></div>';
+      var my30vals = hist30cmp.filter(function(e){ return e.scores&&e.scores[sc.k]>0; }).map(function(e){ return e.scores[sc.k]; });
+      if(my30vals.length>=3){
+        var my30 = Math.round(my30vals.reduce(function(s,v){ return s+v; },0)/my30vals.length);
+        h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Você 30d</span>';
+        h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+my30+'%;background:'+color+';opacity:.45"></div></div>';
+        h += '<span class="cmp-bar-num" style="color:var(--muted)">'+my30+'</span></div>';
+      }
       h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Meta</span>';
       h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+tgtVal+'%;background:#f0c060"></div></div>';
       h += '<span class="cmp-bar-num" style="color:#b45309">'+tgtVal+'</span></div>';
-      h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Média</span>';
+      h += '<div class="cmp-bar-row"><span class="cmp-bar-lbl">Média faixa</span>';
       h += '<div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:'+avgVal+'%;background:#ccc"></div></div>';
       h += '<span class="cmp-bar-num" style="color:var(--muted)">'+avgVal+'</span></div>';
       if(!atTop) h += '<div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:right">Faltam '+gap+' pontos para o top 20%</div>';
       h += '</div>';
     });
+    h += '<div style="font-size:10px;color:var(--muted);padding:2px 4px 10px;line-height:1.5">Referências derivadas de dados reais por sexo e faixa etária: sono CDC/NHIS 2020-24 · atividade física OMS/Lancet 2024 e CDC 2020 · IMC OMS 2022 · dieta CDC/BRFSS 2019.</div>';
     h += '</div>';
 
     // Corpo
@@ -5344,17 +5359,44 @@ function openConfirmExamUpload(parsed, filename){
 // ══════════════════════════════════════════════════════════════
 // Population health benchmarks per age bracket
 // avg = media mundial estimada, tgt = top 20% (meta realista atingivel)
-var POP_BENCH = [
-  [65, {avg:{Saude:45,Fitness:28,Sono:52,Nutricao:62}, tgt:{Saude:67,Fitness:48,Sono:68,Nutricao:80}}],
-  [56, {avg:{Saude:50,Fitness:33,Sono:51,Nutricao:60}, tgt:{Saude:73,Fitness:56,Sono:70,Nutricao:79}}],
-  [46, {avg:{Saude:57,Fitness:39,Sono:53,Nutricao:58}, tgt:{Saude:78,Fitness:64,Sono:72,Nutricao:78}}],
-  [36, {avg:{Saude:63,Fitness:45,Sono:55,Nutricao:56}, tgt:{Saude:83,Fitness:71,Sono:76,Nutricao:77}}],
-  [26, {avg:{Saude:68,Fitness:51,Sono:58,Nutricao:54}, tgt:{Saude:86,Fitness:76,Sono:79,Nutricao:76}}],
-  [0,  {avg:{Saude:72,Fitness:57,Sono:62,Nutricao:52}, tgt:{Saude:89,Fitness:80,Sono:82,Nutricao:74}}]
-];
-function getPopBench(age){
-  for(var i=0;i<POP_BENCH.length;i++){ if(age>=POP_BENCH[i][0]) return POP_BENCH[i][1]; }
-  return POP_BENCH[POP_BENCH.length-1][1];
+// ══════════════════════════════════════════════════════════════
+// REFERÊNCIA POPULACIONAL — derivada de fontes reais (jul/2026), por sexo e idade.
+// Método: estatísticas populacionais convertidas para a escala 0-100 dos scores
+// usando as MESMAS fórmulas do app. Fontes:
+// · Sono: CDC/NHIS 2020-2024 (30,5% adultos <7h; média ~6,9-7,1h; homens 45-64: 31% <7h)
+// · Fitness: CDC/NHIS 2020 musculação ≥2x/sem (homens: 44,5% aos 18-44, 29,9% aos 45-64,
+//   22% aos 65+; mulheres: 34,1/23,8/17,2) + OMS/Lancet 2024 (31% adultos insuf. ativos;
+//   mulheres 33,8% vs homens 28,7%)
+// · Saúde/IMC: OMS 2022 (43% sobrepeso, 16% obesidade; pico na meia-idade)
+// · Nutrição: CDC/BRFSS 2019 (só 10-12% batem recomendações de frutas/vegetais;
+//   51+ ligeiramente melhor) — média baixa, teto alto
+// "avg" = pessoa típica da faixa/sexo; "tgt" = percentil 80 (top 20%)
+var POP_BENCH = {
+  M: [
+    [65, {avg:{Saude:52,Fitness:24,Sono:78,Nutricao:50}, tgt:{Saude:74,Fitness:52,Sono:90,Nutricao:76}}],
+    [56, {avg:{Saude:55,Fitness:29,Sono:76,Nutricao:49}, tgt:{Saude:77,Fitness:58,Sono:89,Nutricao:75}}],
+    [46, {avg:{Saude:57,Fitness:32,Sono:75,Nutricao:48}, tgt:{Saude:79,Fitness:62,Sono:88,Nutricao:74}}],
+    [36, {avg:{Saude:60,Fitness:38,Sono:76,Nutricao:47}, tgt:{Saude:82,Fitness:68,Sono:88,Nutricao:73}}],
+    [26, {avg:{Saude:63,Fitness:42,Sono:77,Nutricao:45}, tgt:{Saude:84,Fitness:72,Sono:89,Nutricao:72}}],
+    [0,  {avg:{Saude:66,Fitness:46,Sono:78,Nutricao:44}, tgt:{Saude:86,Fitness:76,Sono:90,Nutricao:71}}]
+  ],
+  F: [
+    [65, {avg:{Saude:53,Fitness:20,Sono:77,Nutricao:53}, tgt:{Saude:75,Fitness:46,Sono:89,Nutricao:79}}],
+    [56, {avg:{Saude:56,Fitness:23,Sono:76,Nutricao:52}, tgt:{Saude:78,Fitness:52,Sono:89,Nutricao:78}}],
+    [46, {avg:{Saude:58,Fitness:26,Sono:76,Nutricao:51}, tgt:{Saude:80,Fitness:56,Sono:88,Nutricao:77}}],
+    [36, {avg:{Saude:61,Fitness:30,Sono:76,Nutricao:50}, tgt:{Saude:83,Fitness:60,Sono:89,Nutricao:76}}],
+    [26, {avg:{Saude:64,Fitness:33,Sono:77,Nutricao:48}, tgt:{Saude:85,Fitness:64,Sono:89,Nutricao:75}}],
+    [0,  {avg:{Saude:67,Fitness:36,Sono:78,Nutricao:47}, tgt:{Saude:87,Fitness:68,Sono:90,Nutricao:74}}]
+  ]
+};
+function getPopBench(age, gender){
+  var list = POP_BENCH[gender==='F'?'F':'M'];
+  for(var i=0;i<list.length;i++){ if(age>=list[i][0]) return list[i][1]; }
+  return list[list.length-1][1];
+}
+function benchFaixaLabel(age, gender){
+  var fx = age>=65?'65+':age>=56?'56-65':age>=46?'46-55':age>=36?'36-45':age>=26?'26-35':'18-25';
+  return (gender==='F'?'mulheres ':'homens ')+fx;
 }
 
 var CHAT_QPS = {

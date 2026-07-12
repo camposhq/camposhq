@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="MyHealth">
 <title>MyHealth</title>
 <link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#1a7a4a">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1091,6 +1092,20 @@ const P = {name:'',initials:'VC',avatarBg:'#e8f5ee',avatarCl:'#1a7a4a',avatarImg
 // ══════════════════════════════════════════════════════════════
 // STORAGE
 // ══════════════════════════════════════════════════════════════
+// ── Auth nas APIs internas: injeta o token Firebase em /api/claude e /api/oura ──
+var _origFetch = window.fetch.bind(window);
+window.fetch = function(url, opts){
+  if(typeof url==='string' && (url.indexOf('/api/claude')===0 || url.indexOf('/api/oura')===0)){
+    var user = (typeof fbAuth!=='undefined' && fbAuth) ? fbAuth.currentUser : null;
+    var tokP = user ? user.getIdToken() : Promise.resolve('');
+    return tokP.then(function(tok){
+      opts = opts || {};
+      opts.headers = Object.assign({}, opts.headers||{}, tok?{'Authorization':'Bearer '+tok}:{});
+      return _origFetch(url, opts);
+    });
+  }
+  return _origFetch(url, opts);
+};
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function kcalConsumedToday(pi){
   var idx=pi!=null?pi:curP;

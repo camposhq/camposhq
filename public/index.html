@@ -49,7 +49,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .ai-badge{background:#f97316;color:#fff;font-size:11px;font-weight:500;padding:5px 10px;border-radius:99px;font-family:'DM Mono',monospace;cursor:pointer}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(247,248,246,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;padding:8px 0 calc(8px + var(--safe-bottom));z-index:30}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 0}
-.nav-icon{font-size:22px;line-height:1}
+.nav-icon{font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;height:24px}
+.icn{display:inline-block;vertical-align:-3px;flex-shrink:0}
+.nav-item svg{color:var(--muted)}
+.nav-item.active svg{color:#f97316}
 .nav-label{font-size:10px;color:var(--muted);font-weight:500}
 .nav-item.active .nav-label{font-weight:600;color:#f97316}
 .profiles{display:flex;gap:10px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none}
@@ -618,12 +621,12 @@ input[type=file]{display:none}
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottom-nav" style="display:none">
-  <button class="nav-item" data-screen="home"><span class="nav-icon">🏠</span><span class="nav-label">Inicio</span></button>
-  <button class="nav-item" data-screen="treinos"><span class="nav-icon">💪</span><span class="nav-label">Treinos</span></button>
-  <button class="nav-item" data-screen="dieta"><span class="nav-icon">🥗</span><span class="nav-label">Dieta</span></button>
-  <button class="nav-item" data-screen="sono"><span class="nav-icon">🌙</span><span class="nav-label">Sono</span></button>
-  <button class="nav-item" data-screen="exames"><span class="nav-icon">🧪</span><span class="nav-label">Exames</span></button>
-  <button class="nav-item" data-screen="evolucao"><span class="nav-icon">📈</span><span class="nav-label">Evolucao</span></button>
+  <button class="nav-item" data-screen="home"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span><span class="nav-label">Inicio</span></button>
+  <button class="nav-item" data-screen="treinos"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/></svg></span><span class="nav-label">Treinos</span></button>
+  <button class="nav-item" data-screen="dieta"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zM21 15v7"/></svg></span><span class="nav-label">Dieta</span></button>
+  <button class="nav-item" data-screen="sono"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></span><span class="nav-label">Sono</span></button>
+  <button class="nav-item" data-screen="exames"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2v17.5a2.5 2.5 0 0 1-5 0V2"/><path d="M8.5 2h7M14.5 16h-5"/></svg></span><span class="nav-label">Exames</span></button>
+  <button class="nav-item" data-screen="evolucao"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg></span><span class="nav-label">Evolucao</span></button>
 </nav>
 </div><!-- /app-shell -->
 
@@ -638,7 +641,7 @@ input[type=file]{display:none}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <button id="comm-invite-btn" onclick="openCommInvite()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;backdrop-filter:blur(8px)">+ Convidar</button>
-        <button onclick="closeCommunity()" style="background:rgba(255,255,255,.15);border:none;width:34px;height:34px;border-radius:50%;font-size:18px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+        <button onclick="closeCommunity()" style="background:rgba(255,255,255,.15);border:none;width:34px;height:34px;border-radius:50%;font-size:18px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
     </div>
     <!-- Stats inside hero -->
@@ -655,7 +658,7 @@ input[type=file]{display:none}
     <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:28px 20px calc(28px + env(safe-area-inset-bottom))">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-family:Fraunces,serif;font-size:20px">🎟️ Convidar pessoa</div>
-        <button onclick="closeCommInvite()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>
+        <button onclick="closeCommInvite()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
       <div style="margin-bottom:12px">
         <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nome</div>
@@ -710,14 +713,14 @@ input[type=file]{display:none}
       <div><div class="chat-ttl" id="chat-ttl">MyHealth IA</div><div class="chat-sub" id="chat-sub"></div></div>
       <div style="display:flex;align-items:center;gap:8px">
         <button id="chat-clear" style="display:none;background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:8px;border:1px solid var(--border)">Limpar</button>
-        <button class="chat-x" id="chat-x">✕</button>
+        <button class="chat-x" id="chat-x"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
     </div>
     <div class="chat-msgs" id="chat-msgs"></div>
     <div class="qps" id="chat-qps"></div>
     <div id="chat-photo-preview" style="display:none;padding:8px 16px 0;position:relative">
       <img id="chat-photo-img" style="height:60px;border-radius:8px;object-fit:cover">
-      <button onclick="clearChatPhoto()" style="position:absolute;top:4px;left:12px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+      <button onclick="clearChatPhoto()" style="position:absolute;top:4px;left:12px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="chat-inp-wrap">
       <button id="chat-photo-btn" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0" title="Enviar foto">📷</button>
@@ -1142,6 +1145,52 @@ window.fetch = function(url, opts){
   }
   return _origFetch(url, opts);
 };
+
+// ══════════════════════════════════════════════════════════════
+// ÍCONES — SVG monocromático (currentColor), estilo linha minimalista
+// ══════════════════════════════════════════════════════════════
+var ICONS = {
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  dumbbell: '<path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/>',
+  nutrition: '<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-2 0-3 2.2-3 4.5V13h6V7.5C20 5.2 19 3 17 3zM17 13v8"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+  flask: '<path d="M14.5 2v17.5a2.5 2.5 0 0 1-5 0V2"/><path d="M8.5 2h7M14.5 16h-5"/>',
+  chart: '<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.51 4.04 3 5.5l7 7z"/>',
+  droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  swap: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  play: '<path d="M7 4l13 8-13 8z"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  sparkles: '<path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  weight: '<circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.9 12a1 1 0 0 1-1 1.2H5.6a1 1 0 0 1-1-1.2z"/>',
+  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="M14.5 12.5l2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  bed: '<path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8v9"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 15v2c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 15v2c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z"/>',
+  gear: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+  run: '<circle cx="14" cy="4" r="2"/><path d="M9 20l2-6-3-2 1-5 5 1 2 3h4M6 20h3M4 12l3-1"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zM21 15v7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>',
+  export: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+};
+function icn(name, sz, style){
+  var body = ICONS[name]; if(!body) return '';
+  sz = sz||18;
+  return '<svg class="icn" width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'+(style?' style="'+style+'"':'')+'>'+body+'</svg>';
+}
+
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function kcalConsumedToday(pi){
   var idx=pi!=null?pi:curP;
@@ -1796,11 +1845,11 @@ function renderHome(){
   h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
-  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?'🔒 desde '+fzHomeLbl:(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média')+'</div>';
+  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?icn('lock',10,'vertical-align:-1px')+' desde '+fzHomeLbl:(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média')+'</div>';
   h += '</div>';
   h += '</div>';
   h += '<div class="dash-score-row">';
-  [{k:'Saude',i:'❤️'},{k:'Fitness',i:'💪'},{k:'Sono',i:'🌙'},{k:'Nutricao',i:'🥗'}].forEach(function(sc){
+  [{k:'Saude',i:icn('heart',12)},{k:'Fitness',i:icn('dumbbell',12)},{k:'Sono',i:icn('moon',12)},{k:'Nutricao',i:icn('nutrition',12)}].forEach(function(sc){
     h += '<div class="dsi"><div class="dsi-val">'+(scores[sc.k]||p.scores[sc.k]||0)+'</div><div class="dsi-lbl">'+sc.i+' '+sc.k+'</div></div>';
   });
   h += '</div></div>';
@@ -1831,7 +1880,7 @@ function renderHome(){
   var treinoVal = treinoIsRest?'Descanso':doneSets+'/'+planSets+' séries';
   var treinoPct = treinoIsRest?100:(planSets>0?Math.round(doneSets/planSets*100):0);
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'treinos\')">';
-  h += '<div style="font-size:18px;margin-bottom:2px">💪</div>';
+  h += '<div style="margin-bottom:4px;color:var(--green)">'+icn('dumbbell',20)+'</div>';
   h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+treinoVal+'</div>';
   h += '<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(dayW.name||'Treino')+'</div>';
   h += dayBar(treinoPct,'var(--green)');
@@ -1839,7 +1888,7 @@ function renderHome(){
   // Dieta
   var dietaColor = kcalPct2>=100?'var(--coral)':kcalPct2>=60?'var(--amber)':'var(--green)';
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'dieta\')">';
-  h += '<div style="font-size:18px;margin-bottom:2px">🥗</div>';
+  h += '<div style="margin-bottom:4px;color:var(--amber)">'+icn('utensils',20)+'</div>';
   h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+kcalC+' / '+p.calories+'</div>';
   h += '<div style="font-size:11px;color:var(--muted)">kcal consumidas</div>';
   h += dayBar(kcalPct2,dietaColor);
@@ -1847,7 +1896,7 @@ function renderHome(){
   // Agua
   var aguaColor = waterPct>=100?'var(--green)':waterPct>=50?'var(--amber)':'var(--coral)';
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'dieta\')">';
-  h += '<div style="font-size:18px;margin-bottom:2px">💧</div>';
+  h += '<div style="margin-bottom:4px;color:var(--blue)">'+icn('droplet',20)+'</div>';
   h += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+glasses2+' / '+totalG2+' copos</div>';
   h += '<div style="font-size:11px;color:var(--muted)">Hidratacao</div>';
   h += dayBar(waterPct,aguaColor);
@@ -1857,7 +1906,7 @@ function renderHome(){
   var sonoColor3 = sleepDone?(todaySleepEntry.hours>=7.5?'var(--green)':todaySleepEntry.hours>=6?'var(--amber)':'var(--coral)'):'var(--muted)';
   var sonoPct2 = sleepDone?Math.min(100,Math.round(todaySleepEntry.hours/p.sleepTarget*100)):0;
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'sono\')">';
-  h += '<div style="font-size:18px;margin-bottom:2px">🌙</div>';
+  h += '<div style="margin-bottom:4px;color:var(--indigo)">'+icn('moon',20)+'</div>';
   h += '<div style="font-size:13px;font-weight:600;color:'+(sleepDone?'var(--text)':'var(--muted)')+'">'+sonoVal2+'</div>';
   h += '<div style="font-size:11px;color:var(--muted)">Sono de hoje</div>';
   h += dayBar(sonoPct2,sonoColor3);
@@ -2004,7 +2053,7 @@ function renderHome(){
         ? 'Excesso de peso misto: ~'+excessMuscle+'kg músculo e ~'+excessFat+'kg gordura acima do ideal.'
         : 'Excesso de peso com componente significativo de gordura (~'+excessFat+'kg acima do ideal).';
     h += '<div class="section"><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px">';
-    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🔬 Análise IMC + % Gordura</div>';
+    h += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">'+icn('ruler',12,'vertical-align:-2px')+' Análise IMC + % Gordura</div>';
     // atual vs ideal
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
     h += '<div style="background:var(--surface);border-radius:10px;padding:10px;text-align:center">';
@@ -2035,14 +2084,14 @@ function renderHome(){
     p.progressPhotos.forEach(function(ph,i){
       h += '<div class="angle-slot" data-angle="'+i+'">';
       if(ph.img){ h += '<img src="'+ph.img+'">'; }
-      else { h += '<span class="angle-icon-lbl">📷</span><span class="angle-lbl">'+ph.angle+'</span>'; }
+      else { h += '<span class="angle-icon-lbl">'+icn('camera',22)+'</span><span class="angle-lbl">'+ph.angle+'</span>'; }
       h += '<div class="angle-date">'+ph.date+'</div>';
       h += '</div>';
     });
     h += '</div></div></div></div>';
   } else {
     h += '<div class="section"><div class="card" id="add-photo-row" style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer">';
-    h += '<span style="font-size:16px">📷</span><span style="font-size:13px;color:var(--muted)">Adicionar fotos de progresso</span>';
+    h += '<span style="color:var(--muted)">'+icn('camera',17)+'</span><span style="font-size:13px;color:var(--muted)">Adicionar fotos de progresso</span>';
     h += '<span style="margin-left:auto;color:var(--muted)">›</span></div></div>';
   }
   // Streak
@@ -2058,7 +2107,7 @@ function renderHome(){
   var weekly = calcWeeklySummary();
   if(weekly && weekly.days>=3){
     h += '<div class="section"><div class="card" style="padding:14px 16px">';
-    h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📅 Resumo dos últimos 7 dias</div>';
+    h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">'+icn('calendar',12,'vertical-align:-2px')+' Resumo dos últimos 7 dias</div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+weekly.avgScore+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Score médio</div></div>';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgSleep+'h</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
@@ -2077,7 +2126,7 @@ function renderHome(){
   var notifStatus = ('Notification' in window) ? Notification.permission : 'unsupported';
   if(notifStatus !== 'granted'){
     h += '<div class="section"><div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">';
-    h += '<div><div style="font-size:13px;font-weight:600;color:#856404">🔔 Ativar notificações</div>';
+    h += '<div><div style="font-size:13px;font-weight:600;color:#856404;display:flex;align-items:center;gap:6px">'+icn('bell',14)+' Ativar notificações</div>';
     h += '<div style="font-size:11px;color:#856404;margin-top:2px">Receba lembretes de refeições, água e sono</div></div>';
     h += '<button id="btn-enable-notif" style="background:#856404;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ativar</button>';
     h += '</div></div>';
@@ -2086,7 +2135,7 @@ function renderHome(){
     var nextNotif = scheduled.length>0 ? 'Próxima: '+scheduled[0] : 'Nenhuma restante hoje';
     h += '<div class="section"><div style="background:var(--green-light);border:1px solid rgba(26,122,74,.2);border-radius:10px;padding:10px 14px">';
     h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
-    h += '<div style="font-size:12px;color:var(--green-deep);font-weight:600">🔔 Notificações ativas · '+scheduled.length+' hoje</div>';
+    h += '<div style="font-size:12px;color:var(--green-deep);font-weight:600">'+icn('bell',12,'vertical-align:-2px')+' Notificações ativas · '+scheduled.length+' hoje</div>';
     h += '<div style="font-size:11px;color:var(--muted)">'+nextNotif+'</div>';
     h += '</div></div>';
   }
@@ -2098,7 +2147,7 @@ function renderHome(){
   // Admin button — only for admin
   if(isAdmin()){
     h += '<div class="section"><a href="/admin.html" style="display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:14px 16px;text-decoration:none">';
-    h += '<span style="font-size:22px">🛡️</span>';
+    h += '<span style="color:var(--green)">'+icn('shield',22)+'</span>';
     h += '<div><div style="font-size:14px;font-weight:600;color:var(--green)">Painel Admin</div>';
     h += '<div style="font-size:12px;color:var(--muted)">Usuários, bloqueios e mensagens</div></div>';
     h += '<span style="margin-left:auto;color:var(--muted)">›</span>';
@@ -2323,7 +2372,7 @@ function showRestTimer(){
   panel.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
     '<div style="font-family:Fraunces,serif;font-size:20px">Descanso <em>entre séries</em></div>'+
-    '<button id="rt-skip" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:4px 8px">Pular ✕</button></div>'+
+    '<button id="rt-skip" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:4px 8px">Pular '+icn('x',14)+'</button></div>'+
     '<div id="rt-countdown" style="padding-top:4px">'+
     '<svg width="150" height="150" viewBox="0 0 150 150" style="display:block;margin:0 auto 8px">'+
     '<circle cx="75" cy="75" r="64" fill="none" stroke="var(--border)" stroke-width="9"/>'+
@@ -2433,12 +2482,12 @@ function renderTreinosDayHistory(ds){
   var h = '';
   if(entries.length===0){
     h += '<div class="section"><div class="card" style="padding:32px 20px;text-align:center">';
-    h += '<div style="font-size:40px;margin-bottom:12px">🌿</div>';
+    h += '<div style="margin-bottom:12px;color:var(--green)">'+icn('leaf',40)+'</div>';
     h += '<div style="font-size:16px;font-weight:600;margin-bottom:6px">Nenhum treino registrado</div>';
     h += '<div style="font-size:13px;color:var(--muted);text-transform:capitalize">'+dLbl+'</div></div></div>';
   } else {
     h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
-    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;text-transform:capitalize">📖 '+dLbl+'</div>';
+    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;text-transform:capitalize;display:flex;align-items:center;gap:7px">'+icn('book',15)+' '+dLbl+'</div>';
     entries.forEach(function(e){
       var pl = p.weekly[e.plan]||{};
       var full = e.done>=e.total && e.total>0;
@@ -2461,14 +2510,14 @@ function renderTreinosDayPlan(ds){
   var h = '';
   if(pi==null || !p.weekly[pi]){
     h += '<div class="section"><div class="card" style="padding:32px 20px;text-align:center">';
-    h += '<div style="font-size:40px;margin-bottom:12px">🗓️</div>';
+    h += '<div style="margin-bottom:12px;color:var(--muted)">'+icn('calendar',40)+'</div>';
     h += '<div style="font-size:16px;font-weight:600;margin-bottom:6px">Planeje este dia</div>';
     h += '<div style="font-size:13px;color:var(--muted)">Escolha acima o treino para <span style="text-transform:capitalize">'+dLbl+'</span>.</div></div></div>';
   } else {
     var w = p.weekly[pi];
     h += '<div class="section">';
     h += '<div class="block-hdr" style="background:'+w.color+'">';
-    h += '<div class="block-type">🗓️ Planejado</div><div class="block-title">'+w.name+'</div>';
+    h += '<div class="block-type" style="display:flex;align-items:center;gap:5px">'+icn('calendar',13)+' Planejado</div><div class="block-title">'+w.name+'</div>';
     h += '<div style="font-size:12px;opacity:.85;margin-top:4px;text-transform:capitalize">'+dLbl+'</div></div>';
     h += '<div class="ex-block">';
     (w.exs||[]).forEach(function(ex,i){
@@ -2516,10 +2565,10 @@ function renderTreinosContent(){
   var estStr = estH>0 ? estH+'h'+(estM>0?estM+'min':'') : estM+'min';
   h += '<div class="block-hdr" style="background:'+w.color+'">';
   h += '<div style="display:flex;align-items:flex-start;justify-content:space-between">';
-  h += '<div><div class="block-type">💪 Musculacao</div><div class="block-title">'+w.name+'</div></div>';
-  h += '<button id="edit-day-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0;margin-top:2px">✏️ Editar</button>';
+  h += '<div><div class="block-type" style="display:flex;align-items:center;gap:5px">'+icn('dumbbell',13)+' Musculacao</div><div class="block-title">'+w.name+'</div></div>';
+  h += '<button id="edit-day-btn" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:DM Sans,sans-serif;flex-shrink:0;margin-top:2px">'+icn('pencil',12,'vertical-align:-2px')+' Editar</button>';
   h += '</div>';
-  if(updatedBy) h += '<div style="font-size:11px;opacity:.85;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px">✏️ Atualizado por '+updatedBy+(updatedAt?' · '+updatedAt:'')+'</span></div>';
+  if(updatedBy) h += '<div style="font-size:11px;opacity:.85;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span style="background:rgba(255,255,255,.2);border-radius:99px;padding:2px 8px">'+icn('pencil',10,'vertical-align:-1px')+' Atualizado por '+updatedBy+(updatedAt?' · '+updatedAt:'')+'</span></div>';
   h += '<div class="block-meta"><div><div class="bmv">'+exs.length+' exercicios</div><div class="bml">Hoje</div></div>';
   h += '<div><div class="bmv">~'+estStr+'</div><div class="bml">Estimado</div></div>';
   h += '<div><div class="bmv">'+pctMus+'%</div><div class="bml">Feito</div></div></div></div>';
@@ -2545,9 +2594,9 @@ function renderTreinosContent(){
     var isNewPR = doneCount>0 && wval>0 && exPR>0 && wval>exPR;
     h += '<div class="ex-info"><div class="ex-name'+(done?' done':'')+'">'+ex.n+(isNewPR?' <span style="font-size:10px;background:#f0c060;color:#5a3a00;border-radius:99px;padding:1px 7px;font-weight:700;vertical-align:middle">🏆 PR!</span>':'')+'</div><div class="ex-sets">'+ex.s+(exPR>0?' · <span style="color:'+(isNewPR?'#b45309':'var(--muted)')+'">PR '+exPR+'kg</span>':'')+'</div></div>';
     h += '<div class="ex-vid" data-vid="'+ex.n.replace(/"/g,'&quot;')+'">▶</div>';
-    h += '<button class="food-swap" data-exedit-day="'+curPlan+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">✏️</button>';
-    h += '<button class="food-swap" data-day="'+curPlan+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">🔄</button>';
-    h += '<button class="food-swap" data-exrem-day="'+curPlan+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">✕</button>';
+    h += '<button class="food-swap" data-exedit-day="'+curPlan+'" data-exedit-idx="'+i+'" title="Editar" style="color:var(--green)">'+icn('pencil',14)+'</button>';
+    h += '<button class="food-swap" data-day="'+curPlan+'" data-exidx="'+i+'" title="Trocar exercicio" style="margin-left:0">'+icn('swap',14)+'</button>';
+    h += '<button class="food-swap" data-exrem-day="'+curPlan+'" data-exrem-idx="'+i+'" title="Remover exercicio" style="color:var(--coral)">'+icn('x',14)+'</button>';
     h += '<button class="ex-wbtn'+(wval>0?'':' nw')+'" data-wkey="'+key+'" data-wname="'+ex.n+'" data-wcur="'+wval+'">'+(wval>0?wval+'kg':'+ peso')+'</button>';
     h += '</div>';
     var prog = getProgressSuggestion(curPlan, i, ex);
@@ -2568,7 +2617,7 @@ function renderTreinosContent(){
   var wp = walkParams[cselKey] || {inc:5, spd:5.5, mins:30};
   h += '<div class="section"><div class="card">';
   h += '<div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">';
-  h += '<span style="font-size:14px;font-weight:500">🏃 Cardio de hoje</span>';
+  h += '<span style="font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px">'+icn('run',16)+' Cardio de hoje</span>';
   h += '<span style="font-size:12px;color:var(--muted)">Escolha um ou mais</span></div>';
   h += '<div style="display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap">';
   CARDIO_OPTS.forEach(function(opt){
@@ -2672,7 +2721,7 @@ function renderTreinosContent(){
   var totalKcal = musKcal + cardioKcal;
   h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
   h += '<div style="padding:11px 16px;background:var(--green-light);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">';
-  h += '<span style="font-size:16px">🔥</span><span style="font-size:14px;font-weight:600;color:var(--green)">Gasto calórico estimado</span></div>';
+  h += '<span style="color:var(--green)">'+icn('flame',16)+'</span><span style="font-size:14px;font-weight:600;color:var(--green)">Gasto calórico estimado</span></div>';
   h += '<div style="display:flex">';
   h += '<div style="flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+musKcal+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Musculação</div></div>';
   h += '<div style="flex:1;padding:12px 14px;border-right:1px solid var(--border);text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--text)">'+(cardioKcal||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Cardio</div></div>';
@@ -2687,9 +2736,9 @@ function renderTreinosContent(){
   var setsPct = totalSetsPlanned>0?Math.round(totalSetsDone/totalSetsPlanned*100):0;
   h += '<div class="section"><div class="card" style="padding:14px 16px">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-  h += '<span style="font-size:13px;font-weight:600">📋 Progresso de hoje</span>';
+  h += '<span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">'+icn('clipboard',14)+' Progresso de hoje</span>';
   h += '<span style="font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+totalSetsDone+'/'+totalSetsPlanned+' séries · '+setsPct+'%</span></div>';
-  if(volToday>0) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">🏋️ Volume levantado hoje: <strong style="color:var(--text);font-family:DM Mono,monospace">'+fmtVol(volToday)+'</strong></div>';
+  if(volToday>0) h += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+icn('weight',12,'vertical-align:-2px')+' Volume levantado hoje: <strong style="color:var(--text);font-family:DM Mono,monospace">'+fmtVol(volToday)+'</strong></div>';
   h += '<div style="height:8px;border-radius:99px;background:#f0f0ed;overflow:hidden"><div style="height:100%;border-radius:99px;background:var(--green);width:'+setsPct+'%;transition:width .4s"></div></div>';
   h += '</div>';
   h += '<div class="section"><div class="stats">';
@@ -2701,7 +2750,7 @@ function renderTreinosContent(){
   var histAll = (treinoHist[curP]||[]).slice().sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,10);
   if(histAll.length>0){
     h += '<div class="section"><div class="card" style="padding:0;overflow:hidden">';
-    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600">📖 Histórico de treinos</div>';
+    h += '<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px">'+icn('book',15)+' Histórico de treinos</div>';
     histAll.forEach(function(e){
       var pl = p.weekly[e.plan]||{};
       var dLbl = new Date(e.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
@@ -2718,9 +2767,9 @@ function renderTreinosContent(){
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Analise IA</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
-  h += '<button class="act-btn" id="t-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar treino</span><span class="act-sub">Cargas e series</span></button>';
-  h += '<button class="act-btn" id="t-gerar"><span class="act-icon">✨</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novos treinos</span></button>';
-  h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">🔗</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
+  h += '<button class="act-btn" id="t-ajustar"><span class="act-icon">'+icn('target',19)+'</span><span class="act-lbl">Ajustar treino</span><span class="act-sub">Cargas e series</span></button>';
+  h += '<button class="act-btn" id="t-gerar"><span class="act-icon">'+icn('sparkles',19)+'</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novos treinos</span></button>';
+  h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">'+icn('link',19)+'</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
   h += '</div></div>';
 
   document.getElementById('treinos-content').innerHTML = h;
@@ -2889,7 +2938,7 @@ function openExVideo(exName){
         '<div style="font-family:Fraunces,serif;font-size:18px;margin-bottom:4px">'+exName+'</div>',
         '<div style="font-size:12px;color:var(--muted)">Como executar corretamente</div>',
       '</div>',
-      '<button id="ex-vid-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1">✕</button>',
+      '<button id="ex-vid-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1">'+icn('x',14)+'</button>',
     '</div>',
     '<a href="'+ytUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;background:#ff0000;color:#fff;border-radius:14px;padding:14px 18px;text-decoration:none;margin-bottom:12px">',
       '<span style="font-size:22px">▶</span>',
@@ -3009,10 +3058,10 @@ function renderDietaContent(){
     h += '</div></div>';
     // Hidratacao no topo
     h += '<div class="section"><div class="water-card">';
-    h += '<div class="water-hdr"><span class="water-title">💧 Hidratacao</span><span class="water-val">'+Math.round(glasses*250)+'ml / '+p.water+'ml</span></div>';
+    h += '<div class="water-hdr"><span class="water-title" style="display:flex;align-items:center;gap:6px">'+icn('droplet',15)+' Hidratacao</span><span class="water-val">'+Math.round(glasses*250)+'ml / '+p.water+'ml</span></div>';
     h += '<div class="water-glasses">';
     for(var gi=0;gi<totalG;gi++){
-      h += '<div class="glass'+(gi<glasses?' filled':'')+'" data-gi="'+gi+'">'+(gi<glasses?'💧':'')+'</div>';
+      h += '<div class="glass'+(gi<glasses?' filled':'')+'" data-gi="'+gi+'">'+(gi<glasses?icn('droplet',14):'')+'</div>';
     }
     h += '</div></div></div>';
   }
@@ -3025,7 +3074,7 @@ function renderDietaContent(){
       if(dietaTab==='lanche') return id.indexOf('lanche')>=0||nm.indexOf('lanche')>=0||nm.indexOf('snack')>=0;
       return id.startsWith(dietaTab)||nm.startsWith(dietaTab);
     }
-    h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">📷 Fotografar refeicao — IA conta calorias</button></div>';
+    h += '<div class="section"><button class="btn-full" id="btn-meal-photo" style="background:var(--orange);gap:8px">'+icn('camera',17,'vertical-align:-3px')+' Fotografar refeicao — IA conta calorias</button></div>';
     h += '<div class="section"><div class="sec-label">Refeicoes</div></div>';
     p.meals.forEach(function(meal, mi){
       var highlight = false;
@@ -3054,9 +3103,9 @@ function renderDietaContent(){
           '<div style="width:18px;height:18px;border-radius:50%;border:1.5px solid '+(featen?'var(--green)':'var(--border)')+';background:'+(featen?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px">'+(featen?'<span style="color:#fff;font-size:10px">✓</span>':'')+'</div>'+
           '<div style="flex:1;min-width:0"><div class="food-name" style="'+(featen?'color:var(--green)':'')+'">'+f.n+'</div><div class="food-portion">'+f.p+'</div></div>'+
           '<div class="food-kcal" style="'+(featen?'color:var(--green);font-weight:600':'')+'">'+f.k+' kcal</div>'+
-          '<button class="food-swap" data-foodedit-mi="'+mi+'" data-foodedit-fi="'+fi+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">✏️</button>'+
-          '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">🔄</button>'+
-          '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>'+
+          '<button class="food-swap" data-foodedit-mi="'+mi+'" data-foodedit-fi="'+fi+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">'+icn('pencil',14)+'</button>'+
+          '<button class="food-swap" data-mealidx="'+mi+'" data-fidx="'+fi+'" title="Substituir" onclick="event.stopPropagation()">'+icn('swap',14)+'</button>'+
+          '<button class="food-swap" data-foodrem-mi="'+mi+'" data-foodrem-fi="'+fi+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">'+icn('x',14)+'</button>'+
         '</div>';
       }).join('')+
       '<div style="padding:8px 14px;border-top:1px solid var(--border)">'+
@@ -3076,9 +3125,9 @@ function renderDietaContent(){
       h += '<div class="supp-icon-wrap" style="background:'+s.tBg+'">'+s.icon+'</div>';
       h += '<div class="supp-info"><div class="supp-name" style="'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+s.n+'</div><div class="supp-detail">'+s.dose+'</div></div>';
       h += '<div class="supp-time" style="background:'+s.tBg+';color:'+s.tCl+'">'+s.time+'</div>';
-      h += '<button class="food-swap" data-suppedit="'+i+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">✏️</button>';
-      h += '<button class="food-swap" data-suppidx="'+i+'" title="Trocar" onclick="event.stopPropagation()">🔄</button>';
-      h += '<button class="food-swap" data-supprem="'+i+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">✕</button>';
+      h += '<button class="food-swap" data-suppedit="'+i+'" title="Editar" onclick="event.stopPropagation()" style="color:var(--green)">'+icn('pencil',14)+'</button>';
+      h += '<button class="food-swap" data-suppidx="'+i+'" title="Trocar" onclick="event.stopPropagation()">'+icn('swap',14)+'</button>';
+      h += '<button class="food-swap" data-supprem="'+i+'" title="Remover" onclick="event.stopPropagation()" style="color:var(--coral)">'+icn('x',14)+'</button>';
       h += '<div class="scheck'+(done?' done':'')+'"></div></div>';
     });
     h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
@@ -3090,8 +3139,8 @@ function renderDietaContent(){
   h += '<div class="section"><div class="ai-card green"><div class="ai-hdr"><div class="ai-dot green"></div><span class="ai-ttl green">Nutricao IA</span></div>';
   h += '<div class="ai-txt green">'+p.insight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
-  h += '<button class="act-btn" id="d-ajustar"><span class="act-icon">🎯</span><span class="act-lbl">Ajustar plano</span><span class="act-sub">Calorias e macros</span></button>';
-  h += '<button class="act-btn" id="d-analise"><span class="act-icon">🔬</span><span class="act-lbl">Analisar dieta</span><span class="act-sub">Deficiencias e melhoras</span></button>';
+  h += '<button class="act-btn" id="d-ajustar"><span class="act-icon">'+icn('target',19)+'</span><span class="act-lbl">Ajustar plano</span><span class="act-sub">Calorias e macros</span></button>';
+  h += '<button class="act-btn" id="d-analise"><span class="act-icon">'+icn('flask',19)+'</span><span class="act-lbl">Analisar dieta</span><span class="act-sub">Deficiencias e melhoras</span></button>';
   h += '</div></div>';
 
   document.getElementById('dieta-content').innerHTML = h;
@@ -3223,7 +3272,7 @@ function adicionarAlimento(mealIdx){
         '<div style="font-family:Fraunces,serif;font-size:18px">Adicionar <em>alimento</em></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+meal.name+'</div>'+
       '</div>'+
-      '<button id="fadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+      '<button id="fadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button>'+
     '</div>'+
     '<input id="fadd-name" type="text" placeholder="Nome do alimento (ex: ovo cozido)" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:10px">'+
     '<div style="display:flex;gap:8px;margin-bottom:12px">'+
@@ -3312,7 +3361,7 @@ function substituirAlimento(mealIdx, foodIdx){
         '<div style="font-family:Fraunces,serif;font-size:18px">Substituir <em>alimento</em></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">Mantendo as calorias da refeicao</div>'+
       '</div>'+
-      '<button id="fsub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+      '<button id="fsub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button>'+
     '</div>'+
     '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">'+
       '<div><div style="font-size:14px;font-weight:500">'+food.n+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+food.p+'</div></div>'+
@@ -3392,7 +3441,7 @@ function substituirSuplemento(idx){
         '<div style="font-family:Fraunces,serif;font-size:18px">Substituir <em>suplemento</em></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">IA vai sugerir uma alternativa compativel</div>'+
       '</div>'+
-      '<button id="ssub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+      '<button id="ssub-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button>'+
     '</div>'+
     '<div style="background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">'+
       '<div style="background:'+supp.tBg+';width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+supp.icon+'</div>'+
@@ -3529,7 +3578,7 @@ function adicionarExercicio(dayIdx){
         '<div style="font-family:Fraunces,serif;font-size:18px">Adicionar <em>exercicio</em></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+day.name+'</div>'+
       '</div>'+
-      '<button id="exadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button>'+
+      '<button id="exadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button>'+
     '</div>'+
     '<input id="exadd-name" type="text" placeholder="Nome do exercicio (ex: agachamento bulgaro)" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:DM Sans,sans-serif;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:10px">'+
     '<div style="display:flex;gap:8px;margin-bottom:10px">'+
@@ -3697,7 +3746,7 @@ function renderSonoContent(){
   }
   else { var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60); sleepDisp=eH+'h'+(eM>0?' '+eM+'min':''); }
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
-  h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta ✏️</div></div>';
+  h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta '+icn('pencil',9)+'</div></div>';
   h += '</div></div></div>';
 
   // Oura Ring (perfil principal)
@@ -3799,8 +3848,8 @@ function renderSonoContent(){
   h += '<div class="section"><div class="card" style="padding:14px 16px;border-left:3px solid var(--indigo)"><div class="ai-hdr"><div class="ai-dot indigo"></div><span class="ai-ttl indigo">Sono IA</span></div>';
   h += '<div style="font-size:14px;line-height:1.65;color:var(--text)">'+sonoInsight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
-  h += '<button class="act-btn" id="s-prot"><span class="act-icon">🌙</span><span class="act-lbl">Protocolo</span><span class="act-sub">Rotina noturna</span></button>';
-  h += '<button class="act-btn" id="s-analise"><span class="act-icon">📊</span><span class="act-lbl">Analisar sono</span><span class="act-sub">Qualidade e melhorias</span></button>';
+  h += '<button class="act-btn" id="s-prot"><span class="act-icon">'+icn('moon',19)+'</span><span class="act-lbl">Protocolo</span><span class="act-sub">Rotina noturna</span></button>';
+  h += '<button class="act-btn" id="s-analise"><span class="act-icon">'+icn('chart',19)+'</span><span class="act-lbl">Analisar sono</span><span class="act-sub">Qualidade e melhorias</span></button>';
   h += '</div></div>';
 
   document.getElementById('sono-content').innerHTML = h;
@@ -3837,7 +3886,7 @@ function renderExames(){
   renderProfiles('exames-profiles');
   document.getElementById('exames-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var cats = ['todos','energia','metabolismo','cardiovascular'];
-  var catLabels = ['Todos','⚡ Energia','🔥 Metabolismo','❤️ Cardio'];
+  var catLabels = ['Todos','Energia','Metabolismo','Cardio'];
   var th = '';
   cats.forEach(function(t,i){
     th += '<button class="tab" style="'+(examesTab===t?'background:var(--coral);color:#fff;border-color:var(--coral)':'')+'" data-etab="'+t+'">'+catLabels[i]+'</button>';
@@ -3943,10 +3992,10 @@ function renderExamesContent(){
 
   if(allVals.length>0){
     h += '<div class="section"><div class="actions">';
-    h += '<button class="act-btn" id="e-analise"><span class="act-icon">🔬</span><span class="act-lbl">Interpretar</span><span class="act-sub">O que esta fora</span></button>';
-    h += '<button class="act-btn" id="e-supp"><span class="act-icon">💊</span><span class="act-lbl">Suplementos</span><span class="act-sub">Pelos resultados</span></button>';
-    h += '<button class="act-btn" id="e-medico"><span class="act-icon">👨‍⚕️</span><span class="act-lbl">Consulta</span><span class="act-sub">Perguntas medico</span></button>';
-    if(history.length>0) h += '<button class="act-btn" id="e-hist"><span class="act-icon">📈</span><span class="act-lbl">Historico</span><span class="act-sub">'+history.length+' medicao(oes)</span></button>';
+    h += '<button class="act-btn" id="e-analise"><span class="act-icon">'+icn('flask',19)+'</span><span class="act-lbl">Interpretar</span><span class="act-sub">O que esta fora</span></button>';
+    h += '<button class="act-btn" id="e-supp"><span class="act-icon">'+icn('plus',19)+'</span><span class="act-lbl">Suplementos</span><span class="act-sub">Pelos resultados</span></button>';
+    h += '<button class="act-btn" id="e-medico"><span class="act-icon">'+icn('heart',19)+'</span><span class="act-lbl">Consulta</span><span class="act-sub">Perguntas medico</span></button>';
+    if(history.length>0) h += '<button class="act-btn" id="e-hist"><span class="act-icon">'+icn('chart',19)+'</span><span class="act-lbl">Historico</span><span class="act-sub">'+history.length+' medicao(oes)</span></button>';
     h += '</div></div>';
   }
 
@@ -3989,7 +4038,7 @@ function openAddExam(){
   var h = '<div style="padding:20px 20px 0">';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
   h += '<div style="font-family:Fraunces,serif;font-size:20px">Nova <em>medicao</em></div>';
-  h += '<button id="add-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  h += '<button id="add-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
   EXAM_GROUPS_ADD.forEach(function(g){
     h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
     g.markers.forEach(function(m){
@@ -4042,7 +4091,7 @@ function openEditExam(idx, entry, onSave){
   var h = '<div style="padding:20px 20px 0">';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
   h += '<div style="font-family:Fraunces,serif;font-size:20px">Editar <em>medicao</em></div>';
-  h += '<button id="edit-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  h += '<button id="edit-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+entry.dateLabel+'</div>';
   EXAM_GROUPS_ADD.forEach(function(g){
     h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
@@ -4099,7 +4148,7 @@ function showExamHistory(){
     h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
     h += '<div><div style="font-family:Fraunces,serif;font-size:20px">Historico <em>de exames</em></div>';
     h += '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+hist.length+' medicao(oes)</div></div>';
-    h += '<button id="hist-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+    h += '<button id="hist-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
     hist.slice().reverse().forEach(function(e, ri){
       var realIdx = hist.length - 1 - ri;
       var keys = Object.keys(e.values||{}).filter(function(k){ return e.values[k]!=null; });
@@ -4347,7 +4396,7 @@ function evoCard(title, icon, values, labels, current, unit, color, lowerBetter,
     var atTgt = lowerBetter ? current<=tgt : current>=tgt;
     var gapToTgt = Math.abs(parseFloat((current-tgt).toFixed(1)));
     if(atTgt){
-      tgtBadge='<div style="font-size:10px;color:#b45309;font-weight:700">🏆 Meta atingida</div>';
+      tgtBadge='<div style="font-size:10px;color:#b45309;font-weight:700">'+icn('trophy',10,'vertical-align:-1px')+' Meta atingida</div>';
     } else {
       tgtBadge='<div style="font-size:10px;color:#b45309">Faltam '+gapToTgt+' '+unit+' p/ meta</div>';
     }
@@ -4434,17 +4483,17 @@ function renderEvolucao(){
     var avgCur = fz ? fz.scores.Geral : Math.round((curScores.Saude+curScores.Fitness+curScores.Sono+curScores.Nutricao)/4);
     if(fz && fz.frozen){
       var fzLbl = new Date(fz.asOf+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-      h+='<div style="font-size:11px;color:var(--muted);padding:0 4px 8px">🔒 Scores travados no último treino ('+fzLbl+') — treinam de novo, atualizam de novo</div>';
+      h+='<div style="font-size:11px;color:var(--muted);padding:0 4px 8px">'+icn('lock',10,'vertical-align:-1px')+' Scores travados no último treino ('+fzLbl+') — treinam de novo, atualizam de novo</div>';
     }
-    h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg>0?e.avg:null;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
-    h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,curScores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
-    h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,curScores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
-    h+=evoCard('Sono score','🌙',hist.map(function(e){return e.scores&&e.scores.Sono>0?e.scores.Sono:null;}),labels,curScores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
-    h+=evoCard('Nutricao','🥗',hist.map(function(e){return e.scores&&e.scores.Nutricao>0?e.scores.Nutricao:null;}),labels,curScores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
+    h+=evoCard('Score Geral',icn('chart',15),hist.map(function(e){return e.avg>0?e.avg:null;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
+    h+=evoCard('Saude',icn('heart',15),hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,curScores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
+    h+=evoCard('Fitness',icn('dumbbell',15),hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,curScores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
+    h+=evoCard('Sono score',icn('moon',15),hist.map(function(e){return e.scores&&e.scores.Sono>0?e.scores.Sono:null;}),labels,curScores.Sono||0,'pts','#3730a3',false,bench.tgt.Sono);
+    h+=evoCard('Nutricao',icn('nutrition',15),hist.map(function(e){return e.scores&&e.scores.Nutricao>0?e.scores.Nutricao:null;}),labels,curScores.Nutricao||0,'pts','#c47a1a',false,bench.tgt.Nutricao);
     h+='</div>';
     // Scores vs população (veio da Home)
     var sColors = {Saude:'#1a7a4a',Fitness:'#5a3ab7',Sono:'#3730a3',Nutricao:'#c47a1a'};
-    var sMeta = [{k:'Saude',i:'❤️'},{k:'Fitness',i:'💪'},{k:'Sono',i:'🌙'},{k:'Nutricao',i:'🥗'}];
+    var sMeta = [{k:'Saude',i:icn('heart',13)},{k:'Fitness',i:icn('dumbbell',13)},{k:'Sono',i:icn('moon',13)},{k:'Nutricao',i:icn('nutrition',13)}];
     h += '<div class="section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
     h += '<div class="sec-label" style="margin:0">Scores vs. media mundial</div>';
     h += '<div style="font-size:10px;color:var(--muted)">Faixa '+p.age+' anos</div></div>';
@@ -4457,7 +4506,7 @@ function renderEvolucao(){
       var isGood = !atTop && diffAvg >= 5;
       var isBad = diffAvg <= -5;
       var badgeClass = atTop?'top':isGood?'good':isBad?'bad':'ok';
-      var badgeTxt = atTop?'🏆 Top 20%':isGood?('▲ +'+diffAvg+' vs média'):isBad?('▼ '+diffAvg+' vs média'):'Na média';
+      var badgeTxt = atTop?icn('trophy',10,'vertical-align:-1px')+' Top 20%':isGood?('▲ +'+diffAvg+' vs média'):isBad?('▼ '+diffAvg+' vs média'):'Na média';
       var borderColor = atTop?'rgba(180,83,9,.25)':isGood?'rgba(26,122,74,.25)':isBad?'rgba(192,57,43,.2)':'var(--border)';
       var color = sColors[sc.k]||'var(--green)';
       var gap = tgtVal - myVal;
@@ -4483,20 +4532,20 @@ function renderEvolucao(){
     // Corpo
     h+='<div class="section"><div class="sec-label">Composicao corporal · meta: top 20%</div>';
     var imcCur=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-    h+=evoCard('Peso','⚖️',hist.map(function(e){return e.weight>0?e.weight:null;}),labels,p.weight>0?p.weight:null,'kg','#993c1d',true,tgtPeso);
-    h+=evoCard('IMC','📐',hist.map(function(e){return e.imc>0?e.imc:null;}),labels,imcCur>0?imcCur:null,'','#993c1d',true,22);
+    h+=evoCard('Peso',icn('weight',15),hist.map(function(e){return e.weight>0?e.weight:null;}),labels,p.weight>0?p.weight:null,'kg','#993c1d',true,tgtPeso);
+    h+=evoCard('IMC',icn('ruler',15),hist.map(function(e){return e.imc>0?e.imc:null;}),labels,imcCur>0?imcCur:null,'','#993c1d',true,22);
     var fatVals=hist.map(function(e){return e.fat;}).filter(function(v){return v!=null&&v>0;});
     var fatLabels=hist.filter(function(e){return e.fat!=null&&e.fat>0;}).map(function(e){return e.label;});
     var lastFat=fatVals.length>0?fatVals[fatVals.length-1]:null;
-    if(lastFat!==null) h+=evoCard('% Gordura','🔬',fatVals,fatLabels,lastFat,'%','#e8630a',true,tgtFat);
+    if(lastFat!==null) h+=evoCard('% Gordura',icn('target',15),fatVals,fatLabels,lastFat,'%','#e8630a',true,tgtFat);
     h+='</div>';
     // Habitos
     h+='<div class="section"><div class="sec-label">Habitos · meta: top 20%</div>';
     var sleepRaw = (sleepData[curP]||{}).hours||0;
     var sleepAtual = sleepRaw>0 ? parseFloat(sleepRaw.toFixed(1)) : null; // null if not logged today
-    h+=evoCard('Sono medio','😴',hist.map(function(e){return e.sleep>0?parseFloat(parseFloat(e.sleep).toFixed(1)):null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
+    h+=evoCard('Sono medio',icn('bed',15),hist.map(function(e){return e.sleep>0?parseFloat(parseFloat(e.sleep).toFixed(1)):null;}),labels,sleepAtual,'h','#1a5a8a',false,p.sleepTarget||7.5);
     var kcalAtual = kcalConsumedToday();
-    h+=evoCard('Kcal consumidas','🍽️',hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);
+    h+=evoCard('Kcal consumidas',icn('utensils',15),hist.map(function(e){return e.calories>0?e.calories:null;}),labels,kcalAtual>0?kcalAtual:null,'kcal','#c47a1a',false,p.calories);
     var gastoHist=hist.map(function(e){return e.gasto>0?e.gasto:null;});
     // balanco: positive = surplus (ate more than spent), negative = deficit (ate less)
     // only include days where calories were tracked (>0)
@@ -4505,20 +4554,20 @@ function renderEvolucao(){
     var kcalAtualBal=kcalConsumedToday();
     var balancoAtual=kcalAtualBal>0?(kcalAtualBal-gastoAtual):null;
     if(gastoHist.some(function(v){return v!=null;})){
-      h+=evoCard('Gasto total','🔥',gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
+      h+=evoCard('Gasto total',icn('flame',15),gastoHist,labels,gastoAtual,'kcal','#993c1d',false,null);
     }
     var waterHist=hist.map(function(e){return e.water>0?e.water:null;});
     var waterAtual=Math.round((waterGlasses[curP+'-water']||0)*250);
     if(waterHist.some(function(v){return v!=null;})||waterAtual>0){
-      h+=evoCard('Hidratação','💧',waterHist,labels,waterAtual>0?waterAtual:null,'ml','#1a5a8a',false,p.water);
+      h+=evoCard('Hidratação',icn('droplet',15),waterHist,labels,waterAtual>0?waterAtual:null,'ml','#1a5a8a',false,p.water);
     }
     h+='</div>';
   }
   // AI analysis button
   h+='<div class="section"><div class="actions">';
-  h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
+  h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">'+icn('sparkles',19)+'</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
   h+='</div></div>';
-  h+='<div class="section" style="padding-top:0"><button id="evo-reset-btn" style="width:100%;padding:12px;background:none;border:1.5px solid var(--coral);border-radius:var(--radius-sm);color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Zerar histórico e recomeçar</button></div>';
+  h+='<div class="section" style="padding-top:0"><button id="evo-reset-btn" style="width:100%;padding:12px;background:none;border:1.5px solid var(--coral);border-radius:var(--radius-sm);color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">'+icn('trash',13,'vertical-align:-2px')+' Zerar histórico e recomeçar</button></div>';
 
   document.getElementById('evolucao-content').innerHTML = h;
 
@@ -4615,7 +4664,7 @@ function openAddHistory(){
   panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'+
     '<div><div style="font-family:Fraunces,serif;font-size:20px">Nova <em>medicao</em></div>'+
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Os scores e sono sao capturados automaticamente</div></div>'+
-    '<button id="hadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
+    '<button id="hadd-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>'+
     fieldsH+
     (hasPhotos ? '<button id="hadd-ai" style="width:100%;padding:11px;background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer;color:var(--green);margin-bottom:8px">🤖 Estimar % gordura com IA + fotos</button>' : '')+
     '<button id="hadd-save" style="width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:DM Sans,sans-serif;cursor:pointer">Salvar medicao</button>';
@@ -4789,7 +4838,7 @@ function openMealSelector(suggestedId, onSelect){
   panel.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
     '<div><div style="font-family:Fraunces,serif;font-size:18px">Adicionar a <em>qual refeicao?</em></div>'+
     '<div style="font-size:12px;color:var(--muted);margin-top:2px">Baseado no horario da foto</div></div>'+
-    '<button id="msel-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
+    '<button id="msel-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>'+
     rows;
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
@@ -4952,7 +5001,7 @@ function openConfirmExamUpload(parsed, filename){
   var h = '<div style="padding:20px 20px 0">';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
   h += '<div style="font-family:Fraunces,serif;font-size:20px">Confirmar <em>exame</em></div>';
-  h += '<button id="conf-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>';
+  h += '<button id="conf-exam-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>';
   h += '<div style="font-size:12px;color:var(--muted);margin-bottom:16px">📎 '+filename+' — edite se necessario</div>';
   EXAM_GROUPS_ADD.forEach(function(g){
     h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">'+g.icon+' '+g.title.toUpperCase()+'</div>';
@@ -6039,7 +6088,7 @@ function editarExercicio(dayIdx, exIdx){
     '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
       '<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
         '<div style="font-size:15px;font-weight:700">✏️ Editar exercício</div>'+
-        '<button id="ee-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="ee-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
         '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Nome</div>'+
@@ -6094,7 +6143,7 @@ function editarAlimento(mi, fi){
     '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px">'+
       '<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
         '<div style="font-size:15px;font-weight:700">✏️ Editar alimento</div>'+
-        '<button id="ef-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="ef-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
         '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Nome</div>'+
@@ -6143,7 +6192,7 @@ function editarSuplemento(idx){
     '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:80dvh;overflow-y:auto">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1">'+
         '<div style="font-size:16px;font-weight:700">✏️ Editar suplemento</div>'+
-        '<button id="es-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="es-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
         '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
@@ -6204,7 +6253,7 @@ function openAddSupp(){
     '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:80dvh;overflow-y:auto">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1">'+
         '<div style="font-size:16px;font-weight:700">+ Novo Suplemento</div>'+
-        '<button id="as-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="as-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+
         '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ícone</div>'+
@@ -6283,7 +6332,7 @@ function openEditDay(){
       h+='<input style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="Exercício" value="'+ex.n+'" data-ei="'+ei+'-n">';
       h+='<input style="width:72px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="4x10" value="'+ex.s+'" data-ei="'+ei+'-s">';
       h+='<input style="width:64px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:13px;padding:6px 10px;outline:none" placeholder="kg" value="'+(ex.w||'')+'" type="number" data-ei="'+ei+'-w">';
-      h+='<button style="background:none;border:none;color:var(--coral);font-size:16px;cursor:pointer;padding:4px" data-rem="'+ei+'">✕</button>';
+      h+='<button style="background:none;border:none;color:var(--coral);font-size:16px;cursor:pointer;padding:4px" data-rem="'+ei+'">'+icn('x',14)+'</button>';
       h+='</div>';
     });
     h+='<button id="edit-day-add" style="background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:4px;font-family:DM Sans,sans-serif">+ Exercício</button>';
@@ -6314,7 +6363,7 @@ function openEditDay(){
     '<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:85dvh;display:flex;flex-direction:column">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
         '<div style="font-size:16px;font-weight:700">✏️ Editar '+(w.name||'treino')+'</div>'+
-        '<button id="edit-day-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="edit-day-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div id="edit-day-body" style="overflow-y:auto;padding:16px;flex:1"></div>'+
       '<div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">'+
@@ -6370,7 +6419,7 @@ function openEditMetas(ctx){
     '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
       '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'+
         '<div style="font-size:16px;font-weight:700">'+title+'</div>'+
-        '<button id="meta-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>'+
+        '<button id="meta-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">'+icn('x',14)+'</button>'+
       '</div>'+
       '<div style="padding:16px">'+fieldsH+
         '<div style="display:flex;gap:8px;margin-top:4px">'+
@@ -7161,7 +7210,7 @@ function showDataSummary(){
   panel.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
     '<div style="font-family:Fraunces,serif;font-size:18px">Dados de <em>hoje</em></div>'+
-    '<button id="ds-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">✕</button></div>'+
+    '<button id="ds-close" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">'+icn('x',14)+'</button></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'+
       '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+kcal+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">kcal consumidas</div></div>'+
       '<div style="background:var(--surface);border-radius:10px;padding:10px 12px"><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+foodsMarked+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">alimentos marcados</div></div>'+

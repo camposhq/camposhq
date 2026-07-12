@@ -6448,7 +6448,9 @@ function editarAlimento(mi, fi){
         '<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Porção</div>'+
         '<input id="ef-portion" value="'+(f.p||'').replace(/"/g,'&quot;')+'" placeholder="Ex: 30g, 1 unidade" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Sans,sans-serif;font-size:14px;padding:10px;outline:none"></div>'+
         '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Calorias (kcal)</div>'+
-        '<input id="ef-kcal" type="number" value="'+(f.k||0)+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:18px;font-weight:700;padding:10px;outline:none;text-align:center"></div>'+
+        '<input id="ef-kcal" type="number" value="'+(f.k||0)+'" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:DM Mono,monospace;font-size:18px;font-weight:700;padding:10px;outline:none;text-align:center">'+
+        '<div id="ef-kcal-hint" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:14px"></div>'+
+        '<button id="ef-kcal-ai" style="width:100%;margin-top:6px;padding:9px;background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">'+icn('sparkles',12,'vertical-align:-2px')+' Recalcular kcal com IA</button></div>'+
         '<div style="display:flex;gap:8px">'+
           '<button id="ef-cancel" style="flex:1;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
           '<button id="ef-save" style="flex:2;padding:11px;background:var(--green);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Salvar ✓</button>'+
@@ -6461,6 +6463,40 @@ function editarAlimento(mi, fi){
   document.getElementById('ef-close').addEventListener('click', closeEF);
   document.getElementById('ef-cancel').addEventListener('click', closeEF);
   overlay.addEventListener('click', function(e){ if(e.target===overlay) closeEF(); });
+  // calorias acompanham a porção: se a porção original tem número (ex: 30g) e a nova
+  // também, escala proporcionalmente; edição manual das kcal desliga o automático
+  var kcalManual = false;
+  function numFrom(s){ var m=(s||'').replace(',','.').match(/(\d+(?:\.\d+)?)/); return m?parseFloat(m[1]):null; }
+  var origNum = numFrom(f.p), origK = f.k||0;
+  document.getElementById('ef-kcal').addEventListener('input', function(){ kcalManual = true; document.getElementById('ef-kcal-hint').textContent=''; });
+  document.getElementById('ef-portion').addEventListener('input', function(){
+    if(kcalManual || !origNum || !origK) return;
+    var nv = numFrom(this.value);
+    if(nv && nv>0){
+      var novo = Math.round(origK * nv / origNum);
+      document.getElementById('ef-kcal').value = novo;
+      document.getElementById('ef-kcal-hint').textContent = 'kcal ajustadas pela porção ('+f.p+' = '+origK+' kcal)';
+    }
+  });
+  document.getElementById('ef-kcal-ai').addEventListener('click', function(){
+    var btn=this; btn.disabled=true; btn.textContent='Calculando...';
+    var nome = document.getElementById('ef-name').value.trim() || f.n;
+    var porc = document.getElementById('ef-portion').value.trim() || f.p;
+    fetch('/api/claude',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-haiku-4-5-20251001', max_tokens:20,
+        system:'Nutricionista. Responda APENAS o número inteiro de kcal, sem texto.',
+        messages:[{role:'user', content:'Quantas kcal tem '+porc+' de '+nome+'?'}]})
+    }).then(function(r){ return r.json(); }).then(function(d){
+      var n = parseInt(((d.content&&d.content[0]&&d.content[0].text)||'').replace(/\D/g,''));
+      if(n>0){
+        document.getElementById('ef-kcal').value = n;
+        kcalManual = true;
+        document.getElementById('ef-kcal-hint').textContent = 'estimado pela IA para '+porc;
+      } else { showToast('Não consegui estimar — ajuste manualmente.'); }
+      btn.disabled=false; btn.innerHTML=icn('sparkles',12,'vertical-align:-2px')+' Recalcular kcal com IA';
+    }).catch(function(){ btn.disabled=false; btn.innerHTML=icn('sparkles',12,'vertical-align:-2px')+' Recalcular kcal com IA'; showToast('Erro na IA — tente de novo.'); });
+  });
   document.getElementById('ef-save').addEventListener('click', function(){
     var name=document.getElementById('ef-name').value.trim();
     var portion=document.getElementById('ef-portion').value.trim();

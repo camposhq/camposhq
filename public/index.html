@@ -3243,6 +3243,7 @@ function renderDietaContent(){
     });
     h += '<div style="padding:8px 14px;border-top:1px solid var(--border)">';
     h += '<button id="btn-add-supp" style="background:none;border:1px dashed var(--green);color:var(--green);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;font-family:DM Sans,sans-serif">+ Adicionar suplemento</button>';
+    h += '<button id="btn-supp-guide" style="background:var(--green-light);border:1px solid rgba(26,122,74,.25);color:var(--green);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;font-family:DM Sans,sans-serif;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px">'+icn('sparkles',13)+' Como tomar meus suplementos · IA</button>';
     h += '</div>';
     h += '</div></div>';
   }
@@ -3320,6 +3321,23 @@ function renderDietaContent(){
       e.stopPropagation();
       removerSuplemento(parseInt(this.dataset.supprem));
     });
+  });
+  var bsg = document.getElementById('btn-supp-guide');
+  if(bsg) bsg.addEventListener('click', function(){
+    var pg = PD[curP];
+    var lista = (pg.supps||[]).map(function(s,i){ return (i+1)+'. '+s.n+' — '+s.dose+' ('+(s.time||'horário livre')+')'; }).join('\n');
+    var ctx = 'PERFIL: '+pg.name+', '+pg.age+' anos, '+pg.weight+'kg. Objetivo: '+pg.goal+'.\n';
+    ctx += 'Treina musculação (rotação Peito+Tríceps/Costas+Bíceps/Pernas/Ombros) + cardio.\n';
+    ctx += 'Meta de sono: '+(pg.sleepTarget||7.5)+'h.\n\nSUPLEMENTOS ATUAIS:\n'+lista;
+    var exams = getExamInputsText()||getExamsText(pg);
+    if(exams) ctx += '\n\nEXAMES RECENTES:\n'+exams;
+    ctx += '\n\nINSTRUÇÃO: monte um guia prático de COMO TOMAR cada suplemento acima: melhor horário do dia, com ou sem comida, o que combinar e o que NUNCA tomar junto (interações entre eles, ex: magnésio × cálcio, ferro × café), relação com treino e sono, e uma sugestão de rotina diária consolidada (manhã/almoço/treino/noite). Seja direto e organize por horário do dia.';
+    openChatWithContext('dieta', ctx, 'Seus '+(pg.supps||[]).length+' suplementos e perfil carregados. Vou te mostrar como tomar cada um — pergunte qualquer dúvida sobre horários, combinações ou interações.');
+    // primeira mensagem automática com o guia
+    setTimeout(function(){
+      var inp = document.getElementById('chat-inp');
+      if(inp){ inp.value = 'Me dê o guia completo de como tomar meus suplementos.'; var sb=document.getElementById('send-btn'); if(sb) sb.click(); }
+    }, 400);
   });
   var bas = document.getElementById('btn-add-supp');
   if(bas) bas.addEventListener('click', openAddSupp);

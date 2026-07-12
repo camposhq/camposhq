@@ -625,6 +625,11 @@ input[type=file]{display:none}
 </div>
 
 <!-- BOTTOM NAV -->
+<!-- Widget flutuante de hidratação: um toque = +1 copo (250ml) -->
+<button id="water-fab" style="display:none;position:fixed;right:14px;bottom:calc(84px + var(--safe-bottom, 0px));z-index:45;width:54px;height:54px;border-radius:50%;background:var(--card);border:1.5px solid var(--blue);color:var(--blue);cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;font-family:DM Sans,sans-serif;transition:transform .15s">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+  <span id="water-fab-count" style="font-size:10px;font-weight:700;font-family:DM Mono,monospace;line-height:1">0/13</span>
+</button>
 <nav class="bottom-nav" id="bottom-nav" style="display:none">
   <button class="nav-item" data-screen="home"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span><span class="nav-label">Inicio</span></button>
   <button class="nav-item" data-screen="treinos"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M6.5 7v10M17.5 7v10M20 9v6M6.5 12h11"/></svg></span><span class="nav-label">Treinos</span></button>
@@ -926,7 +931,8 @@ function getCardioIds(key){
 function toggleCardioId(key, id){
   var ids = getCardioIds(key).slice();
   var i = ids.indexOf(id);
-  if(i >= 0) ids.splice(i, 1); else ids.push(id);
+  if(i >= 0){ ids.splice(i, 1); delete cardioDoneDate[key+'-'+id]; }
+  else { ids.push(id); cardioDoneDate[key+'-'+id] = todayStr(); }
   cardioSel[key] = ids.length > 0 ? ids : null;
 }
 function calcCardioKcalFromIds(ids, weight, cselKey){
@@ -966,8 +972,9 @@ function getBasalKcal(p){
 // cardio com checklist só conta como gasto real se ≥1 passo foi marcado hoje;
 // walk/trilha (sem checklist) contam quando selecionados
 function cardioFoiFeito(selId, cselKey){
+  if(cardioDoneDate[cselKey+'-'+selId] === todayStr()) return true; // selecionou/ajustou hoje = fez hoje
   var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
-  if(!co || !co.steps) return true;
+  if(!co || !co.steps) return false;
   for(var i=0;i<co.steps.length;i++){ if(cardioChecked['c'+cselKey+'-'+selId+'-'+i]) return true; }
   return false;
 }
@@ -982,9 +989,12 @@ function calcWorkoutKcalToday(pi){
     });
   });
   var musK = calcMusKcal(p.weight, sets);
-  var cselKey = idx+'-'+(idx===curP?curPlan:0);
-  var selIds = getCardioIds(cselKey).filter(function(id){ return cardioFoiFeito(id, cselKey); });
-  var cardK = calcCardioKcalFromIds(selIds, p.weight, cselKey);
+  var cardK = 0;
+  (p.weekly||[]).forEach(function(w,pl){
+    var ck = idx+'-'+pl;
+    var ids = getCardioIds(ck).filter(function(id){ return cardioFoiFeito(id, ck); });
+    cardK += calcCardioKcalFromIds(ids, p.weight, ck);
+  });
   return musK + cardK;
 }
 
@@ -1051,6 +1061,7 @@ let treinoHist = {};      // por perfil: [{date, plan, name, done, total}] — h
 let curDate = '';         // data selecionada no strip da semana ('' = hoje)
 let dayPlanSel = {};      // por data (YYYY-MM-DD): treino planejado para aquele dia
 let historyResetAt = {};  // por perfil: data (YYYY-MM-DD) do último "zerar histórico" — bloqueia merge de dados antigos da nuvem
+let cardioDoneDate = {}; // por cselKey-id: data da última interação (selecionar/checar/ajustar) — cardio conta no gasto do dia em que foi mexido
 let dietaTab = 'all';
 let examesTab = 'todos';
 let evoPeriod = 30; // days
@@ -1128,8 +1139,13 @@ function weekDates(){
   return out;
 }
 // Atualiza o histórico de treinos de hoje (chamado a cada série marcada)
-// reps por série a partir de "4x10-12" → 10 (primeiro número após o x)
-function repsFromSets(s){ var m=(s||'').match(/x(\d+)/); return m?parseInt(m[1]):10; }
+// reps por série: "4x10-12" → média do range (11); "4x10" → 10
+function repsFromSets(s){
+  var m=(s||'').match(/x(\d+)(?:[-–](\d+))?/);
+  if(!m) return 10;
+  var a=parseInt(m[1]), b=m[2]?parseInt(m[2]):a;
+  return Math.round((a+b)/2);
+}
 function updateTreinoHistToday(){
   var p = PD[curP]; var today = todayStr();
   if(!treinoHist[curP]) treinoHist[curP] = [];
@@ -1178,6 +1194,13 @@ function getProgressSuggestion(planIdx, exIdx, ex){
   return Math.round((wval+inc)*10)/10;
 }
 function fmtVol(v){ return (v||0).toLocaleString('pt-BR')+' kg'; }
+// horas decimais → "7h12" (todas as exibições de sono usam horas e minutos)
+function fmtH(hours){
+  if(hours==null||isNaN(hours)||hours<=0) return '—';
+  var h=Math.floor(hours), m=Math.round((hours-h)*60);
+  if(m===60){h++;m=0;}
+  return h+'h'+(m>0?(m<10?'0':'')+m:'');
+}
 // Recorde pessoal: maior carga já usada no exercício (com série feita) em dias anteriores
 function getExercisePR(exName){
   var pr = 0;
@@ -1443,7 +1466,7 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
       // Grid métricas
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+(sleep!=null?sleep+'h':'—')+'</div>'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+(sleep!=null?fmtH(sleep):'—')+'</div>'+
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">Sono</div>'+
         '</div>'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
@@ -1507,7 +1530,7 @@ function save(immediate){
     if(saveCount % 5 === 0) saveBackup();
 
     var data = {
-      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,dayPlanSel,historyResetAt,mealDone,foodDone,suppDone,habitDone,
+      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,dayPlanSel,historyResetAt,cardioDoneDate,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,inputHistory,
       lastSavedDate:todayStr(),
@@ -1558,7 +1581,7 @@ function load(){
     var s = JSON.parse(d);
     curP = s.curP||0; curDay = s.curDay||curDay;
     curPlan = s.curPlan||0; planSelDate = s.planSelDate||'';
-    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{}; dayPlanSel = s.dayPlanSel||{}; historyResetAt = s.historyResetAt||{};
+    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{}; dayPlanSel = s.dayPlanSel||{}; historyResetAt = s.historyResetAt||{}; cardioDoneDate = s.cardioDoneDate||{};
     mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
@@ -1725,6 +1748,22 @@ function updateOnlineStatus(){
 window.addEventListener('online',  updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
+// widget de hidratação — visível nas telas principais, um toque soma um copo
+function updateWaterFab(){
+  var fab = document.getElementById('water-fab');
+  if(!fab) return;
+  var mains = ['home','treinos','dieta','sono','exames','evolucao'];
+  if(mains.indexOf(curScreen)===-1 || !currentUser){ fab.style.display='none'; return; }
+  fab.style.display='flex';
+  var p = PD[curP];
+  var glasses = waterGlasses[curP+'-water']||0;
+  var total = Math.round((p.water||3200)/250)||13;
+  var el = document.getElementById('water-fab-count');
+  if(el) el.textContent = glasses+'/'+total;
+  var done = glasses>=total;
+  fab.style.borderColor = done?'var(--green)':'var(--blue)';
+  fab.style.color = done?'var(--green)':'var(--blue)';
+}
 function showScreen(id){
   // Guard: redirect to login if not authenticated and trying to access main screens
   var mainScreens = ['home','treinos','dieta','sono','exames','evolucao'];
@@ -1748,6 +1787,7 @@ function showScreen(id){
     b.classList.toggle('active', isA);
     b.querySelector('.nav-label').style.color = isA ? '#f97316' : 'var(--muted)';
   });
+  updateWaterFab();
   var rmap = {home:renderHome, treinos:renderTreinos, sono:renderSono, exames:renderExames, evolucao:renderEvolucao};
   if(rmap[id]) rmap[id]();
   else if(id==='dieta') renderDieta(true);
@@ -1756,6 +1796,19 @@ function showScreen(id){
   else releaseWakeLock();
 }
 
+(function(){
+  var fab = document.getElementById('water-fab');
+  if(fab) fab.addEventListener('click', function(){
+    waterGlasses[curP+'-water'] = (waterGlasses[curP+'-water']||0) + 1;
+    save(); updateWaterFab();
+    fab.style.transform='scale(1.15)'; setTimeout(function(){ fab.style.transform='scale(1)'; }, 150);
+    var g = waterGlasses[curP+'-water'];
+    var tot = Math.round((PD[curP].water||3200)/250)||13;
+    showToast('+1 copo — '+(g*250)+'ml'+(g>=tot?' — meta atingida!':''));
+    if(curScreen==='home') renderHome();
+    else if(curScreen==='dieta') renderDieta(false);
+  });
+})();
 document.querySelectorAll('.nav-item').forEach(function(btn){
   btn.addEventListener('click', function(){ showScreen(this.dataset.screen); });
 });
@@ -1895,8 +1948,15 @@ function renderHome(){
   var kcalC = kcalConsumedToday(); var kcalPct2 = p.calories>0?Math.min(100,Math.round(kcalC/p.calories*100)):0;
   var glasses2 = waterGlasses[curP+'-water']||0; var totalG2 = Math.round(p.water/250)||8;
   var waterPct = Math.min(100,Math.round(glasses2/totalG2*100));
-  var todaySleepEntry = sleepData[curP]; var sleepDone = todaySleepEntry && todaySleepEntry.hours>0;
-  var sleepH2=sleepDone?Math.floor(todaySleepEntry.hours):0; var sleepM2=sleepDone?Math.round((todaySleepEntry.hours-sleepH2)*60):0;
+  // sono de hoje: Oura primeiro (noite + sonecas), sleepData como fallback
+  var todaySleepH = 0;
+  if(curP===0 && ouraData){
+    var obd = ouraHoursByDay();
+    var oKey = isoDay(new Date());
+    if(obd[oKey]) todaySleepH = obd[oKey]/3600;
+  }
+  if(!todaySleepH && sleepData[curP] && sleepData[curP].hours>0) todaySleepH = sleepData[curP].hours;
+  var sleepDone = todaySleepH>0;
 
   function dayBar(pct,color){
     return '<div style="height:4px;border-radius:2px;background:var(--border);margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+';border-radius:2px;transition:width .4s"></div></div>';
@@ -1929,9 +1989,9 @@ function renderHome(){
   h += dayBar(waterPct,aguaColor);
   h += '</div>';
   // Sono
-  var sonoVal2 = sleepDone?(sleepH2+'h'+(sleepM2>0?' '+sleepM2+'min':'')):'Nao registrado';
-  var sonoColor3 = sleepDone?(todaySleepEntry.hours>=7.5?'var(--green)':todaySleepEntry.hours>=6?'var(--amber)':'var(--coral)'):'var(--muted)';
-  var sonoPct2 = sleepDone?Math.min(100,Math.round(todaySleepEntry.hours/p.sleepTarget*100)):0;
+  var sonoVal2 = sleepDone?fmtH(todaySleepH):'Nao registrado';
+  var sonoColor3 = sleepDone?(todaySleepH>=7.5?'var(--green)':todaySleepH>=6?'var(--amber)':'var(--coral)'):'var(--muted)';
+  var sonoPct2 = sleepDone?Math.min(100,Math.round(todaySleepH/p.sleepTarget*100)):0;
   h += '<div class="card" style="padding:12px 14px;cursor:pointer" onclick="showScreen(\'sono\')">';
   h += '<div style="margin-bottom:4px;color:var(--indigo)">'+icn('moon',20)+'</div>';
   h += '<div style="font-size:13px;font-weight:600;color:'+(sleepDone?'var(--text)':'var(--muted)')+'">'+sonoVal2+'</div>';
@@ -2037,9 +2097,15 @@ function renderHome(){
   var todaySleep = sleepData[curP] && sleepData[curP].hours>0 ? sleepData[curP].hours : null;
   var allSleepEntries = sleepHist.map(function(e){return e.sleep;});
   if(todaySleep) allSleepEntries.push(todaySleep);
-  var avgSleep = allSleepEntries.length>0 ? Math.round(allSleepEntries.reduce(function(s,v){return s+v;},0)/allSleepEntries.length*10)/10 : p.sleep;
-  var sonoColor2 = avgSleep>=7.5?'var(--green)':avgSleep>=6.5?'var(--amber)':'var(--coral)';
-  var sonoLbl2 = avgSleep>=7.5?'Otimo':avgSleep>=6.5?'Regular':'Insuficiente';
+  var avgSleep = null;
+  if(curP===0 && ouraData){
+    var hbAvg = ouraHoursByDay();
+    var hbKeys = Object.keys(hbAvg).sort().slice(-7);
+    if(hbKeys.length) avgSleep = hbKeys.reduce(function(s,k){ return s+hbAvg[k]; },0)/hbKeys.length/3600;
+  }
+  if(avgSleep==null && allSleepEntries.length>0) avgSleep = allSleepEntries.reduce(function(s,v){return s+v;},0)/allSleepEntries.length;
+  var sonoColor2 = avgSleep==null?'var(--muted)':avgSleep>=7.5?'var(--green)':avgSleep>=6.5?'var(--amber)':'var(--coral)';
+  var sonoLbl2 = avgSleep==null?'Sem dados':avgSleep>=7.5?'Otimo':avgSleep>=6.5?'Regular':'Insuficiente';
   h += '<div class="section"><div class="metric-grid">';
   // IMC card — tappable to update body weight
   h += '<div class="metric-card" onclick="openBodyWeight()" style="cursor:pointer"><div class="metric-val">'+p.weight+'<span class="metric-unit">kg</span></div>';
@@ -2056,10 +2122,10 @@ function renderHome(){
   h += miniBar(bfVal,5,45,gender==='M'?22:30,gender==='M'?15:22,(gender==='M'?'22':'30')+'%',(gender==='M'?'15':'22')+'%',true);
   h += '</div>';
   // Sono card — average from history
-  h += '<div class="metric-card"><div class="metric-val">'+avgSleep+'<span class="metric-unit">h</span></div>';
-  h += '<div class="metric-label">Sono media</div>';
+  h += '<div class="metric-card"><div class="metric-val">'+fmtH(avgSleep)+'</div>';
+  h += '<div class="metric-label">Sono média (7 noites)</div>';
   h += '<div class="metric-trend" style="color:'+sonoColor2+'">'+sonoLbl2+'</div>';
-  h += miniBar(avgSleep,4,10,6.8,7.8,'6.8h','7.8h',false);
+  h += miniBar(avgSleep||0,4,10,6.8,7.8,'6.8h','7.8h',false);
   h += '</div>';
   h += '</div></div>';
   // Smart BMI analysis — shown AFTER metric grid, only when real fat% is available
@@ -2138,7 +2204,7 @@ function renderHome(){
     h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">'+icn('calendar',12,'vertical-align:-2px')+' Resumo dos últimos 7 dias</div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+weekly.avgScore+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Score médio</div></div>';
-    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgSleep+'h</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+fmtH(parseFloat(weekly.avgSleep))+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
     if(weekly.avgWater){
       h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgWater+'ml</div><div style="font-size:10px;color:var(--muted);margin-top:2px">hidratação/dia</div></div>';
     } else if(weekly.avgDeficit!==null){
@@ -2871,6 +2937,7 @@ function renderTreinosContent(){
       var cur=walkParams[k][wid]||0;
       var nv=act==='plus'?Math.min(mx,parseFloat((cur+step).toFixed(1))):Math.max(mn,parseFloat((cur-step).toFixed(1)));
       walkParams[k][wid]=nv;
+      getCardioIds(k).forEach(function(cid){ if(cid==='walk'||cid==='trilha') cardioDoneDate[k+'-'+cid]=todayStr(); });
       save();
       var unit=wid==='inc'?'%':wid==='spd'?' km/h':wid==='km'?' km':' min';
       var el2=document.getElementById('wv-'+wid); if(el2) el2.textContent=nv+unit;
@@ -2892,11 +2959,19 @@ function renderTreinosContent(){
       var k=curP+'-'+curPlan;
       walkParams[k]=walkParams[k]||{mins:60,km:5,dif:'moderada'};
       walkParams[k].dif=this.dataset.tdif;
+      cardioDoneDate[k+'-trilha']=todayStr();
       save(); renderTreinosContent();
     });
   });
   document.querySelectorAll('[data-ckey]').forEach(function(el){
-    el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
+    el.addEventListener('click', function(){
+      cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey];
+      if(cardioChecked[this.dataset.ckey]){
+        var pp=this.dataset.ckey.slice(1).split('-'); // c{curP}-{plan}-{id}-{i}
+        cardioDoneDate[pp[0]+'-'+pp[1]+'-'+pp[2]] = todayStr();
+      }
+      save(); renderTreinosContent();
+    });
   });
   var edb=document.getElementById('edit-day-btn'); if(edb) edb.addEventListener('click', openEditDay);
   var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar');
@@ -3772,7 +3847,7 @@ function renderSonoContent(){
     napSec = Math.max(0, nightDayTotal - night.total_sleep_duration);
     sleepDisp = fmtDur(nightDayTotal);
   }
-  else { var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60); sleepDisp=eH+'h'+(eM>0?' '+eM+'min':''); }
+  else { sleepDisp = fmtH(entry.hours); }
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
   h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta '+icn('pencil',9)+'</div></div>';
   h += '</div></div></div>';
@@ -4443,7 +4518,8 @@ function evoCard(title, icon, values, labels, current, unit, color, lowerBetter,
       tgtBadge='<div style="font-size:10px;color:#b45309">Faltam '+gapToTgt+' '+unit+' p/ meta</div>';
     }
   }
-  var currentDisplay = (current==null||current===undefined) ? '—' : current;
+  var currentDisplay = (current==null||current===undefined) ? '—' : (unit==='h' ? fmtH(current) : current);
+  if(unit==='h'){ unit=''; if(deltaHtml && diff!==null && diff!==0){ deltaHtml='<div class="'+(isGood?'evo-delta-up':'evo-delta-down')+'">'+(diff>0?'▲ +':'▼ −')+fmtH(Math.abs(diff))+' vs início</div>'; } }
   var h='<div class="evo-card">';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">';
   h+='<div><span style="font-size:13px;font-weight:500;color:var(--text)">'+icon+' '+title+'</span>'+tgtBadge+'</div>';
@@ -7335,7 +7411,7 @@ function saveToCloud(){
   });
   var appState = {
     curP:curP, curDay:curDay, curPlan:curPlan, planSelDate:planSelDate,
-    lastPlanDone:lastPlanDone, treinoHist:treinoHist, dayPlanSel:dayPlanSel, historyResetAt:historyResetAt,
+    lastPlanDone:lastPlanDone, treinoHist:treinoHist, dayPlanSel:dayPlanSel, historyResetAt:historyResetAt, cardioDoneDate:cardioDoneDate,
     mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,

@@ -9,7 +9,8 @@ async function verifyFirebaseToken(req) {
   try {
     const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // a chave web do Firebase tem restrição de referer — o servidor precisa se identificar como o app
+      headers: { 'Content-Type': 'application/json', 'Referer': 'https://camposhq.vercel.app/' },
       body: JSON.stringify({ idToken })
     });
     if (!r.ok) return false;

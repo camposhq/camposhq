@@ -2127,9 +2127,9 @@ function renderHome(){
   h += miniBar(bfVal,5,45,gender==='M'?22:30,gender==='M'?15:22,(gender==='M'?'22':'30')+'%',(gender==='M'?'15':'22')+'%',true);
   h += '</div>';
   // Sono card — average from history
-  h += '<div class="metric-card"><div class="metric-val">'+fmtH(avgSleep)+'</div>';
-  h += '<div class="metric-label">Sono média (7 noites)</div>';
-  h += '<div class="metric-trend" style="color:'+sonoColor2+'">'+sonoLbl2+'</div>';
+  h += '<div class="metric-card" onclick="showScreen(\'sono\')" style="cursor:pointer"><div class="metric-val">'+fmtH(avgSleep)+'</div>';
+  h += '<div class="metric-label">Sono média · 7 noites</div>';
+  h += '<div class="metric-trend" style="color:'+sonoColor3+'">Hoje: '+(sleepDone?fmtH(todaySleepH):'—')+' <span style="color:var(--muted);font-weight:400">· '+sonoLbl2+'</span></div>';
   h += miniBar(avgSleep||0,4,10,6.8,7.8,'6.8h','7.8h',false);
   h += '</div>';
   h += '</div></div>';
@@ -2204,12 +2204,15 @@ function renderHome(){
   }
   // Weekly summary
   var weekly = calcWeeklySummary();
+  var last7h = [];
+  for(var d7h=6; d7h>=0; d7h--){ var dh=new Date(); dh.setDate(dh.getDate()-d7h); last7h.push(dateStrLocal(dh)); }
+  var treinos7d = (treinoHist[curP]||[]).filter(function(e){ return last7h.indexOf(e.date)>=0 && e.done>0; }).length;
   if(weekly && weekly.days>=3){
     h += '<div class="section"><div class="card" style="padding:14px 16px">';
     h += '<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">'+icn('calendar',12,'vertical-align:-2px')+' Resumo dos últimos 7 dias</div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
     h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--green)">'+weekly.avgScore+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Score médio</div></div>';
-    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+fmtH(parseFloat(weekly.avgSleep))+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Sono médio</div></div>';
+    h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+treinos7d+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Treinos</div></div>';
     if(weekly.avgWater){
       h += '<div style="text-align:center"><div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace;color:var(--blue)">'+weekly.avgWater+'ml</div><div style="font-size:10px;color:var(--muted);margin-top:2px">hidratação/dia</div></div>';
     } else if(weekly.avgDeficit!==null){

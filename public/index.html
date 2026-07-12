@@ -987,6 +987,8 @@ let weightKey = null, weightExName = '';
 let chatHistory = [], isTyping = false, chatCtx = '', chatSystemExtra = '';
 let chatHistories = {}; // persisted per profile+context: key = 'profileIdx_ctx'
 let historyData = {}; // per profile: {0: [{date,label,weight,imc,fat,sleep,avg,scores:{Saude,Fitness,Sono,Nutricao},calories},...], ...}
+let ouraData = null;     // cache da API do Oura Ring: {daily:[...], sessions:[...]}
+let ouraStatus = 'idle'; // idle | loading | ok | error
 let progressPhotoAngle = 0;
 let pdOverride = {};
 let profileComplete = false;
@@ -3571,31 +3573,128 @@ function adicionarExercicio(dayIdx){
 // ══════════════════════════════════════════════════════════════
 // SONO
 // ══════════════════════════════════════════════════════════════
+// ── Oura Ring ──
+function isoDay(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fetchOura(force){
+  if(ouraStatus==='loading') return;
+  if(ouraData && !force) return;
+  ouraStatus='loading';
+  var q='&start='+isoDay(new Date(Date.now()-8*864e5))+'&end='+isoDay(new Date());
+  Promise.all([
+    fetch('/api/oura?type=daily_sleep'+q).then(function(r){ if(!r.ok) throw 0; return r.json(); }),
+    fetch('/api/oura?type=sleep'+q).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+  ]).then(function(res){
+    ouraData={daily:res[0].data||[], sessions:res[1].data||[]};
+    ouraStatus='ok';
+    if(curScreen==='sono') renderSonoContent();
+  }).catch(function(){
+    ouraStatus='error';
+    if(curScreen==='sono') renderSonoContent();
+  });
+}
+function ouraLastNight(){
+  if(!ouraData || !ouraData.sessions.length) return null;
+  var ss=ouraData.sessions.filter(function(s){ return s.type==='long_sleep'; });
+  if(!ss.length) ss=ouraData.sessions;
+  return ss[ss.length-1];
+}
+function ouraDayScore(day){
+  if(!ouraData) return null;
+  for(var i=0;i<ouraData.daily.length;i++) if(ouraData.daily[i].day===day) return ouraData.daily[i].score;
+  return null;
+}
+function fmtDur(sec){ var hh=Math.floor(sec/3600), mm=Math.round((sec%3600)/60); if(mm===60){hh++;mm=0;} return hh+'h'+(mm>0?(mm<10?'0':'')+mm:''); }
+function fmtClock(ts){ return ts?ts.substring(11,16):'--:--'; }
+function ouraDayLabel(day){
+  if(day===isoDay(new Date())) return 'Esta noite';
+  if(day===isoDay(new Date(Date.now()-864e5))) return 'Noite de ontem';
+  return new Date(day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
+}
+function ouraAICtx(){
+  var n=ouraLastNight(); if(!n) return '';
+  var sc=ouraDayScore(n.day);
+  var t='\nDados reais do anel Oura — ultima noite ('+n.day+'): '+(sc!=null?'score '+sc+', ':'')+'dormido '+fmtDur(n.total_sleep_duration||0)+' (profundo '+fmtDur(n.deep_sleep_duration||0)+', REM '+fmtDur(n.rem_sleep_duration||0)+', leve '+fmtDur(n.light_sleep_duration||0)+'), eficiencia '+n.efficiency+'%, FC minima '+n.lowest_heart_rate+' bpm, HRV media '+Math.round(n.average_hrv||0)+' ms, na cama '+fmtClock(n.bedtime_start)+'-'+fmtClock(n.bedtime_end)+'.';
+  if(ouraData.daily.length>1) t+='\nScores de sono Oura (ultimos dias): '+ouraData.daily.map(function(d){ return d.day.slice(5)+'='+d.score; }).join(', ')+'.';
+  return t;
+}
+
 function renderSono(){
   renderProfiles('sono-profiles');
   document.getElementById('sono-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  if(curP===0) fetchOura();
   renderSonoContent();
 }
 
 function renderSonoContent(){
   var p = PD[curP];
   var entry = sleepData[curP] || {hours:p.sleep, quality:3};
-  var score = p.sleepScore;
+  var night = curP===0 ? ouraLastNight() : null;
+  var nightScore = night ? ouraDayScore(night.day) : null;
+  var score = nightScore!=null ? nightScore : p.sleepScore;
   var label = score>=85?'Excelente':score>=70?'Bom':score>=55?'Regular':'Precisa melhorar';
   var hDone = p.habits.filter(function(_,i){ return habitDone[curP+'-'+i]; }).length;
   var h = '';
 
   h += '<div class="section"><div class="score-hero">';
-  h += '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-family:DM Mono,monospace;margin-bottom:6px">Score de sono</div>';
+  h += '<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-family:DM Mono,monospace;margin-bottom:6px">Score de sono'+(night?' · Oura':'')+'</div>';
   h += '<div class="hero-score">'+score+'</div>';
   h += '<div class="hero-tag">'+label+'</div>';
   h += '<div class="hero-meta">';
-  var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60);
-  var sleepDisp=eH+'h'+(eM>0?' '+eM+'min':'');
+  var sleepDisp;
+  if(night && night.total_sleep_duration){ sleepDisp=fmtDur(night.total_sleep_duration); }
+  else { var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60); sleepDisp=eH+'h'+(eM>0?' '+eM+'min':''); }
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
   h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta ✏️</div></div>';
   h += '<div><div class="hm-val">'+hDone+'/'+p.habits.length+'</div><div class="hm-lbl">Habitos</div></div>';
   h += '</div></div></div>';
+
+  // Oura Ring (perfil principal)
+  if(curP===0){
+    if(!night && ouraStatus==='loading'){
+      h += '<div class="section"><div class="card" style="padding:14px 16px;color:var(--muted);font-size:13px">Conectando ao Oura Ring…</div></div>';
+    } else if(!night && ouraStatus==='error'){
+      h += '<div class="section"><div class="card" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px">';
+      h += '<span style="font-size:13px;color:var(--muted)">Sem conexão com o Oura Ring</span>';
+      h += '<button id="oura-retry" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text);white-space:nowrap">Tentar de novo</button></div></div>';
+    } else if(night){
+      var stages=[
+        {l:'Profundo',v:night.deep_sleep_duration||0,c:'#3730a3'},
+        {l:'REM',v:night.rem_sleep_duration||0,c:'#6366f1'},
+        {l:'Leve',v:night.light_sleep_duration||0,c:'#a5b4fc'},
+        {l:'Acordado',v:night.awake_time||0,c:'var(--border)'}
+      ];
+      var stTotal=stages.reduce(function(s,st){ return s+st.v; },0)||1;
+      h += '<div class="section"><div class="sec-label">'+ouraDayLabel(night.day)+' · Oura Ring</div><div class="card" style="padding:14px 16px">';
+      h += '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:10px">';
+      stages.forEach(function(st){ h += '<div style="width:'+(st.v/stTotal*100)+'%;background:'+st.c+'"></div>'; });
+      h += '</div><div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:14px">';
+      stages.forEach(function(st){ h += '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:'+st.c+';display:inline-block"></span>'+st.l+' <b style="color:var(--text)">'+fmtDur(st.v)+'</b></div>'; });
+      h += '</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;border-top:1px solid var(--border);padding-top:12px">';
+      [
+        {v:(night.efficiency!=null?night.efficiency+'%':'--'),l:'Eficiência'},
+        {v:(night.lowest_heart_rate!=null?night.lowest_heart_rate:'--'),l:'FC mín'},
+        {v:(night.average_hrv!=null?Math.round(night.average_hrv):'--'),l:'HRV ms'},
+        {v:fmtClock(night.bedtime_start)+'–'+fmtClock(night.bedtime_end),l:'Na cama'}
+      ].forEach(function(m){
+        h += '<div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace">'+m.v+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+m.l+'</div></div>';
+      });
+      h += '</div></div></div>';
+      var ouraDays=(ouraData.daily||[]).slice(-7);
+      if(ouraDays.length>1){
+        h += '<div class="section"><div class="sec-label">Últimos 7 dias · score de sono</div><div class="card" style="padding:14px 16px 10px">';
+        h += '<div style="display:flex;align-items:flex-end;gap:8px">';
+        ouraDays.forEach(function(d){
+          var c=d.score>=85?'var(--green)':d.score>=70?'var(--indigo)':d.score>=55?'var(--amber)':'var(--coral)';
+          var wd=new Date(d.day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).slice(0,3);
+          h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">';
+          h += '<div style="font-size:10px;font-weight:700;font-family:DM Mono,monospace">'+d.score+'</div>';
+          h += '<div style="width:100%;max-width:26px;height:'+Math.max(6,Math.round(d.score*0.55))+'px;border-radius:5px 5px 2px 2px;background:'+c+'"></div>';
+          h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase">'+wd+'</div></div>';
+        });
+        h += '</div></div></div>';
+      }
+    }
+  }
 
   // Registrar
   var sH=Math.floor(entry.hours), sM=Math.round((entry.hours-sH)*60);
@@ -3651,6 +3750,9 @@ function renderSonoContent(){
   var esg = document.getElementById('btn-edit-sleep-goal');
   if(esg) esg.addEventListener('click', function(){ openEditMetas('sono'); });
 
+  var orr = document.getElementById('oura-retry');
+  if(orr) orr.addEventListener('click', function(){ fetchOura(true); renderSonoContent(); });
+
   var entry2 = sleepData[curP] || {hours:p.sleep, quality:3};
   function sleepHM(){ return {h:Math.floor(entry2.hours), m:Math.round((entry2.hours-Math.floor(entry2.hours))*60)}; }
   function updateSleepDisplay(){
@@ -3683,6 +3785,7 @@ function renderSonoContent(){
     var sysCtx = 'Voce e um especialista em sono e recuperacao. Perfil de '+p.name+' ('+p.age+' anos):\n';
     sysCtx += 'Media de sono: '+avgH+'h/noite. Meta: '+p.sleepTarget+'h. Qualidade atual: '+entry.quality+'/5. Score de sono: '+score+'.\n';
     sysCtx += 'Habitos noturnos: '+p.habits.map(function(h,i){ return h.n+(habitDone[curP+'-'+i]?' (feito)':' (nao feito)'); }).join(', ')+'.';
+    if(curP===0) sysCtx += ouraAICtx();
     openChatWithContext('sono-prot', sysCtx, 'Dados de sono carregados. Me pergunte sobre protocolo noturno, horarios, suplementos, ambiente ou habitos para melhorar seu sono.');
   });
   if(sa) sa.addEventListener('click', function(){
@@ -3691,6 +3794,7 @@ function renderSonoContent(){
     sysCtx += 'Sono hoje: '+entry.hours+'h, qualidade '+entry.quality+'/5. Meta: '+p.sleepTarget+'h. Score: '+score+'.\n';
     if(hist.length>1) sysCtx += 'Historico ('+hist.length+' dias): '+hist.map(function(e){ return e.label+': '+e.sleep+'h'; }).join(', ')+'.\n';
     sysCtx += 'Habitos noturnos feitos hoje: '+p.habits.filter(function(_,i){ return habitDone[curP+'-'+i]; }).map(function(h){ return h.n; }).join(', ')||'nenhum';
+    if(curP===0) sysCtx += ouraAICtx();
     openChatWithContext('sono-analise', sysCtx, 'Historico de sono carregado. Me pergunte sobre qualidade, deficits, impacto na recuperacao, tendencias ou o que melhorar.');
   });
 }

@@ -2117,7 +2117,7 @@ function renderHome(){
   if(apr) apr.addEventListener('click', function(){ progressPhotoAngle = 0; document.getElementById('file-progress').click(); });
   var btnEnable = document.getElementById('btn-enable-notif');
   if(btnEnable) btnEnable.addEventListener('click', function(){
-    requestNotifPermission(function(){ scheduleNotifications(); renderHome(); });
+    requestNotifPermission(function(){ scheduleNotifications(); renderHome(); }, true);
   });
 
   var btnBodyAI = document.getElementById('btn-body-ai');
@@ -7424,11 +7424,23 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').then(function(reg){ swReg = reg; });
 }
 
-function requestNotifPermission(onGranted){
-  if(!('Notification' in window)) return;
-  if(Notification.permission==='granted'){ if(onGranted) onGranted(); return; }
-  if(Notification.permission==='denied') return;
-  Notification.requestPermission().then(function(p){ if(p==='granted' && onGranted) onGranted(); });
+function requestNotifPermission(onGranted, verbose){
+  if(!('Notification' in window)){
+    if(verbose){
+      var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+      showToast(standalone ? 'Este navegador não suporta notificações.' : '📱 No iPhone, notificações só funcionam no app instalado — adicione à Tela de Início e ative por lá.');
+    }
+    return;
+  }
+  if(Notification.permission==='granted'){ if(verbose) showToast('Notificações já estão ativas ✓'); if(onGranted) onGranted(); return; }
+  if(Notification.permission==='denied'){
+    if(verbose) showToast('Permissão negada — ative em Ajustes → Notificações → MyHealth.');
+    return;
+  }
+  Notification.requestPermission().then(function(p){
+    if(p==='granted'){ if(verbose) showToast('Notificações ativadas! 🔔'); if(onGranted) onGranted(); }
+    else if(verbose) showToast('Permissão não concedida — ative em Ajustes → Notificações → MyHealth.');
+  });
 }
 
 function sendNotif(title, body, tag){

@@ -1,7 +1,8 @@
 const https = require('https');
 
-// Verifica o token Firebase do usuário logado (app é invite-only)
+// Verifica o token Firebase E se o usuário é aprovado (admin ou membro aprovado da comunidade)
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyALZguDLc-eqlQO1oq0SXFnPw-xfLIM9y8';
+const ADMIN_EMAILS = ['camposwalter@gmail.com', 'walter@camposhq.com'];
 async function verifyFirebaseToken(req) {
   const auth = req.headers.authorization || '';
   const idToken = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
@@ -15,7 +16,17 @@ async function verifyFirebaseToken(req) {
     });
     if (!r.ok) return false;
     const data = await r.json();
-    return !!(data.users && data.users.length);
+    const user = data.users && data.users[0];
+    if (!user) return false;
+    if (ADMIN_EMAILS.indexOf((user.email || '').toLowerCase()) !== -1) return true;
+    // usuário comum: precisa estar aprovado na comunidade (criar conta no Auth é aberto,
+    // então login válido não basta — o doc community/{uid} com approved:true é o crachá)
+    const d = await fetch('https://firestore.googleapis.com/v1/projects/myhealth-app-d8acf/databases/(default)/documents/community/' + user.localId, {
+      headers: { 'Authorization': 'Bearer ' + idToken }
+    });
+    if (!d.ok) return false;
+    const doc = await d.json();
+    return !!(doc.fields && doc.fields.approved && doc.fields.approved.booleanValue === true);
   } catch (e) { return false; }
 }
 

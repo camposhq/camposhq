@@ -1663,13 +1663,6 @@ function renderProfiles(containerId){
   h += '<button id="btn-edit-profile-strip" style="display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:0 4px;flex-shrink:0">';
   h += '<div style="width:38px;height:38px;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted)">⚙️</div>';
   h += '<span style="font-size:10px;color:var(--muted)">Editar</span></button>';
-  // Community card — home screen only
-  if(containerId === 'home-profiles'){
-    h += '<button onclick="openCommunity()" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid #f97316;border-radius:20px;padding:6px 14px 6px 8px;cursor:pointer;flex-shrink:0;margin-left:auto;font-family:DM Sans,sans-serif">';
-    h += '<div style="width:30px;height:30px;border-radius:50%;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:14px">🏘️</div>';
-    h += '<div style="text-align:left"><div style="font-size:12px;font-weight:600;color:#f97316;line-height:1.2">Comunidade</div><div style="font-size:10px;color:var(--muted)">MyHealth</div></div>';
-    h += '</button>';
-  }
   el.innerHTML = h;
   document.getElementById('btn-edit-profile-strip').addEventListener('click', function(){
     spStep=1; spLoadFromProfile(); showScreen('setup');
@@ -1717,6 +1710,7 @@ function calcWeeklySummary(){
 function renderHome(){
   renderProfiles('home-profiles');
   var p = PD[curP];
+  if(curP===0) fetchOura(); // sono do anel entra sozinho no dia (cache evita chamadas repetidas)
   document.getElementById('home-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   // scores congelados no último dia de treino (getFrozenScores)
   var fzHome = null; try{ fzHome = getFrozenScores(curP); }catch(e){}
@@ -2732,7 +2726,6 @@ function renderTreinosContent(){
   h += '<button class="act-btn" id="t-gerar"><span class="act-icon">✨</span><span class="act-lbl">Gerar com IA</span><span class="act-sub">Novos treinos</span></button>';
   h += '<button class="act-btn" id="t-share-personal"><span class="act-icon">🔗</span><span class="act-lbl">Compartilhar</span><span class="act-sub">Personal trainer</span></button>';
   h += '</div></div>';
-  h += '<div class="section"><button class="btn-full" id="t-analise">Analise completa com IA ↗</button></div>';
 
   document.getElementById('treinos-content').innerHTML = h;
 
@@ -2812,7 +2805,7 @@ function renderTreinosContent(){
     el.addEventListener('click', function(){ cardioChecked[this.dataset.ckey]=!cardioChecked[this.dataset.ckey]; save(); renderTreinosContent(); });
   });
   var edb=document.getElementById('edit-day-btn'); if(edb) edb.addEventListener('click', openEditDay);
-  var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar'); var tan=document.getElementById('t-analise');
+  var ta=document.getElementById('t-ajustar'); var tg=document.getElementById('t-gerar');
   // shared full profile context for all workout buttons
   function buildTrainingCtx(){
     var o = pdOverride[curP]||{};
@@ -2862,12 +2855,6 @@ function renderTreinosContent(){
   if(tg) tg.addEventListener('click', function(){
     var ctx = buildTrainingCtx();
     openChatWithContext('treino', ctx, 'Perfil completo, plano atual, historico e exames carregados. Posso gerar novos treinos personalizados (Peito + Tríceps, Costas + Bíceps, Pernas, Ombros) ou responder qualquer duvida sobre treino.');
-  });
-  if(tan) tan.addEventListener('click', function(){
-    var ctx = buildTrainingCtx();
-    var totalDone=0; (w.exs||[]).forEach(function(ex,i){ var k=wk(curP,curPlan,i); var ns=parseInt((ex.s.match(/^(\d+)/)||[0,3])[1])||3; for(var si=0;si<ns;si++){ if(exSets[k+'-s'+si]) totalDone++; } });
-    ctx += '\n\nHOJE: '+totalDone+' series concluidas de '+w.name+'.';
-    openChatWithContext('treino', ctx, 'Perfil completo com historico, evolucao e exames carregados. Analise sua evolucao, frequencia, pontos de melhoria ou qualquer aspeto do treino.');
   });
   var tsp = document.getElementById('t-share-personal');
   if(tsp) tsp.addEventListener('click', openSharePersonal);
@@ -3600,7 +3587,20 @@ function fetchOura(force){
   ]).then(function(res){
     ouraData={daily:res[0].data||[], sessions:res[1].data||[], readiness:res[2].data||[]};
     ouraStatus='ok';
+    // auto-registro: o anel preenche o sono de hoje sozinho (substitui o registro manual)
+    try{
+      var n=ouraLastNight();
+      if(n && n.day===isoDay(new Date())){
+        var totH=(ouraHoursByDay()[n.day]||n.total_sleep_duration||0)/3600;
+        if(totH>0){
+          var sc=ouraDayScore(n.day);
+          sleepData[0]={hours:Math.round(totH*10)/10, quality:sc>=85?5:sc>=70?4:sc>=55?3:2, oura:true};
+          save();
+        }
+      }
+    }catch(e){}
     if(curScreen==='sono') renderSonoContent();
+    else if(curScreen==='home') renderHome();
   }).catch(function(){
     ouraStatus='error';
     if(curScreen==='sono') renderSonoContent();
@@ -3665,7 +3665,6 @@ function renderSonoContent(){
   var nightScore = night ? ouraDayScore(night.day) : null;
   var score = nightScore!=null ? nightScore : p.sleepScore;
   var label = score>=85?'Excelente':score>=70?'Bom':score>=55?'Regular':'Precisa melhorar';
-  var hDone = p.habits.filter(function(_,i){ return habitDone[curP+'-'+i]; }).length;
   var h = '';
 
   h += '<div class="section"><div class="score-hero">';
@@ -3682,7 +3681,6 @@ function renderSonoContent(){
   else { var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60); sleepDisp=eH+'h'+(eM>0?' '+eM+'min':''); }
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
   h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta ✏️</div></div>';
-  h += '<div><div class="hm-val">'+hDone+'/'+p.habits.length+'</div><div class="hm-lbl">Habitos</div></div>';
   h += '</div></div></div>';
 
   // Oura Ring (perfil principal)
@@ -3771,50 +3769,6 @@ function renderSonoContent(){
     }
   }
 
-  // Registrar (manual — só quando não há dados do anel)
-  if(!night){
-  var sH=Math.floor(entry.hours), sM=Math.round((entry.hours-sH)*60);
-  h += '<div class="section"><div class="sec-label">Registrar sono</div><div class="card" style="padding:0;overflow:hidden">';
-  h += '<div style="padding:14px 16px;border-bottom:1px solid var(--border)">';
-  h += '<div style="font-size:14px;font-weight:500;margin-bottom:12px">Horas dormidas</div>';
-  h += '<div style="display:flex;align-items:center;gap:16px">';
-  var spinBtn = 'width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1';
-  var spinInp = 'width:54px;font-size:24px;font-weight:700;font-family:DM Mono,monospace;text-align:center;border:2px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:4px 2px;outline:none;-moz-appearance:textfield';
-  // hours spinner
-  h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
-  h += '<button style="'+spinBtn+'" id="sh-minus">−</button>';
-  h += '<div style="text-align:center"><input type="number" min="0" max="14" value="'+sH+'" style="'+spinInp+'" id="s-hval"><div style="font-size:10px;color:var(--muted);margin-top:2px">horas</div></div>';
-  h += '<button style="'+spinBtn+'" id="sh-plus">+</button>';
-  h += '</div>';
-  // divider
-  h += '<div style="font-size:22px;font-weight:300;color:var(--muted)">:</div>';
-  // minutes spinner
-  h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
-  h += '<button style="'+spinBtn+'" id="sm-minus">−</button>';
-  h += '<div style="text-align:center"><input type="number" min="0" max="59" value="'+(sM<10?'0':'')+sM+'" style="'+spinInp+'" id="s-mval"><div style="font-size:10px;color:var(--muted);margin-top:2px">min</div></div>';
-  h += '<button style="'+spinBtn+'" id="sm-plus">+</button>';
-  h += '</div>';
-  h += '</div></div>';
-  h += '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">';
-  h += '<span style="font-size:14px;font-weight:500">Qualidade</span>';
-  h += '<div style="display:flex;gap:6px">';
-  ['😫','😔','😐','😊','😴'].forEach(function(em,i){
-    var sel = entry.quality===i+1;
-    h += '<button style="width:34px;height:34px;border-radius:8px;border:1.5px solid '+(sel?'var(--indigo)':'var(--border)')+';background:'+(sel?'var(--indigo-light)':'var(--surface)')+';font-size:18px;cursor:pointer" data-q="'+(i+1)+'">'+em+'</button>';
-  });
-  h += '</div></div></div></div>';
-  }
-
-  h += '<div class="section"><div class="sec-label">Habitos de sono</div>';
-  p.habits.forEach(function(hab,i){
-    var key = curP+'-'+i; var done = !!habitDone[key];
-    h += '<div class="habit-item" data-hkey="'+key+'">';
-    h += '<span class="habit-icon-lbl">'+hab.icon+'</span>';
-    h += '<div class="habit-info"><div class="habit-name'+(done?' done':'')+'">'+hab.name+'</div><div class="habit-tip">'+hab.tip+'</div></div>';
-    h += '<div class="hcheck'+(done?' done':'')+'"></div></div>';
-  });
-  h += '</div>';
-
   var sonoInsight = p.insight;
   if(night){
     var wkDays=(ouraData.daily||[]);
@@ -3840,40 +3794,12 @@ function renderSonoContent(){
   var orr = document.getElementById('oura-retry');
   if(orr) orr.addEventListener('click', function(){ fetchOura(true); renderSonoContent(); });
 
-  var entry2 = sleepData[curP] || {hours:p.sleep, quality:3};
-  function sleepHM(){ return {h:Math.floor(entry2.hours), m:Math.round((entry2.hours-Math.floor(entry2.hours))*60)}; }
-  function updateSleepDisplay(){
-    var hm=sleepHM();
-    document.getElementById('s-hval').value=hm.h;
-    document.getElementById('s-mval').value=(hm.m<10?'0':'')+hm.m;
-  }
-  function setSleepHours(newH, newM){
-    newH=Math.max(0,Math.min(14,newH)); newM=Math.max(0,Math.min(59,newM));
-    entry2.hours=parseFloat((newH+newM/60).toFixed(4));
-    sleepData[curP]=entry2; save(); updateSleepDisplay();
-  }
-  function readHM(){ return {h:parseInt(document.getElementById('s-hval').value)||0, m:parseInt(document.getElementById('s-mval').value)||0}; }
-  if(document.getElementById('sh-minus')){
-    document.getElementById('sh-minus').addEventListener('click',function(){ var hm=readHM(); setSleepHours(hm.h-1,hm.m); });
-    document.getElementById('sh-plus').addEventListener('click',function(){ var hm=readHM(); setSleepHours(hm.h+1,hm.m); });
-    document.getElementById('sm-minus').addEventListener('click',function(){ var hm=readHM(); var nm=hm.m-1; if(nm<0){nm=59; setSleepHours(hm.h-1,nm);}else{setSleepHours(hm.h,nm);} });
-    document.getElementById('sm-plus').addEventListener('click',function(){ var hm=readHM(); var nm=hm.m+1; if(nm>=60){nm=0; setSleepHours(hm.h+1,nm);}else{setSleepHours(hm.h,nm);} });
-    document.getElementById('s-hval').addEventListener('change',function(){ var hm=readHM(); setSleepHours(hm.h,hm.m); });
-    document.getElementById('s-mval').addEventListener('change',function(){ var hm=readHM(); setSleepHours(hm.h,hm.m); });
-  }
-  document.querySelectorAll('[data-q]').forEach(function(btn){
-    btn.addEventListener('click', function(){ entry2.quality=parseInt(this.dataset.q); sleepData[curP]=entry2; save(); renderSonoContent(); });
-  });
-  document.querySelectorAll('.habit-item[data-hkey]').forEach(function(el){
-    el.addEventListener('click', function(){ habitDone[this.dataset.hkey]=!habitDone[this.dataset.hkey]; save(); renderSonoContent(); });
-  });
   var sp2=document.getElementById('s-prot'); var sa=document.getElementById('s-analise');
   if(sp2) sp2.addEventListener('click', function(){
     var hist = (historyData[curP]||[]).slice(-7);
     var avgH = hist.length ? (hist.reduce(function(s,e){ return s+(e.sleep||0); },0)/hist.length).toFixed(1) : entry.hours;
     var sysCtx = 'Voce e um especialista em sono e recuperacao. Perfil de '+p.name+' ('+p.age+' anos):\n';
     sysCtx += 'Media de sono: '+avgH+'h/noite. Meta: '+p.sleepTarget+'h. Qualidade atual: '+entry.quality+'/5. Score de sono: '+score+'.\n';
-    sysCtx += 'Habitos noturnos: '+p.habits.map(function(h,i){ return h.n+(habitDone[curP+'-'+i]?' (feito)':' (nao feito)'); }).join(', ')+'.';
     if(curP===0) sysCtx += ouraAICtx();
     openChatWithContext('sono-prot', sysCtx, 'Dados de sono carregados. Me pergunte sobre protocolo noturno, horarios, suplementos, ambiente ou habitos para melhorar seu sono.');
   });
@@ -3882,7 +3808,6 @@ function renderSonoContent(){
     var sysCtx = 'Voce e um especialista em analise de sono. Perfil de '+p.name+' ('+p.age+' anos):\n';
     sysCtx += 'Sono hoje: '+entry.hours+'h, qualidade '+entry.quality+'/5. Meta: '+p.sleepTarget+'h. Score: '+score+'.\n';
     if(hist.length>1) sysCtx += 'Historico ('+hist.length+' dias): '+hist.map(function(e){ return e.label+': '+e.sleep+'h'; }).join(', ')+'.\n';
-    sysCtx += 'Habitos noturnos feitos hoje: '+p.habits.filter(function(_,i){ return habitDone[curP+'-'+i]; }).map(function(h){ return h.n; }).join(', ')||'nenhum';
     if(curP===0) sysCtx += ouraAICtx();
     openChatWithContext('sono-analise', sysCtx, 'Historico de sono carregado. Me pergunte sobre qualidade, deficits, impacto na recuperacao, tendencias ou o que melhorar.');
   });
@@ -4537,7 +4462,6 @@ function renderEvolucao(){
   // AI analysis button
   h+='<div class="section"><div class="actions">';
   h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
-  h+='<button class="act-btn" id="evo-export-btn"><span class="act-icon">📤</span><span class="act-lbl">Exportar</span><span class="act-sub">Compartilhar progresso</span></button>';
   h+='</div></div>';
   h+='<div class="section" style="padding-top:0"><button id="evo-reset-btn" style="width:100%;padding:12px;background:none;border:1.5px solid var(--coral);border-radius:var(--radius-sm);color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Zerar histórico e recomeçar</button></div>';
 
@@ -4559,8 +4483,6 @@ function renderEvolucao(){
     openChatWithContext('saude', sysCtx, 'Historico de evolucao carregado. Me pergunte sobre o que melhorou, tendencias, pontos de atencao ou as prioridades para os proximos 90 dias.');
   });
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
-  var exportBtn = document.getElementById('evo-export-btn');
-  if(exportBtn) exportBtn.addEventListener('click', exportProgresso);
   var resetBtn = document.getElementById('evo-reset-btn');
   if(resetBtn) resetBtn.addEventListener('click', openResetHistory);
 }
@@ -4618,71 +4540,6 @@ function doResetHistory(){
   syncSpecialistView(); // personal passa a ver o histórico limpo
   showToast('Histórico zerado — recomeçando do zero! 🌱');
   renderEvolucao();
-}
-
-function exportProgresso(){
-  var p = PD[curP];
-  var hist = (historyData[curP]||[]).slice(-30);
-  var streak = calcStreak();
-  var weekly = calcWeeklySummary();
-  var avg = Math.round(Object.values(p.scores).reduce(function(a,b){return a+b;},0)/4);
-  var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-  var today = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-
-  var win = window.open('','_blank');
-  if(!win){ showToast('Permita popups para exportar'); return; }
-
-  var css = 'body{font-family:DM Sans,sans-serif;background:#f4f6f0;margin:0;padding:20px;color:#1a1a1a}'+
-    '.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}'+
-    'h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px}'+
-    '.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}'+
-    '.metric{background:#f4f6f0;border-radius:10px;padding:12px;text-align:center}'+
-    '.metric-val{font-size:28px;font-weight:700;font-family:monospace}'+
-    '.metric-lbl{font-size:11px;color:#666;margin-top:4px}'+
-    '.green{color:#1a7a4a}.amber{color:#c47a1a}.blue{color:#1a5a8a}'+
-    '.scores{display:flex;gap:8px;flex-wrap:wrap}'+
-    '.score-pill{background:#e8f5ee;color:#1a7a4a;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}'+
-    '@media print{body{background:#fff;padding:0}.no-print{display:none}}';
-
-  var examHist = (pdOverride[curP]&&pdOverride[curP].examHistory||[]);
-  var lastExam = examHist.length>0?examHist[examHist.length-1]:null;
-  var examHtml = '';
-  if(lastExam){
-    examHtml = '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">🧪 Últimos exames ('+lastExam.dateLabel+')</h2><div class="scores">';
-    var defs = {vitd:'Vit D',ferro:'Ferritina',vitb12:'B12',testo:'Testosterona',tsh:'TSH',gli:'Glicemia',pce:'PCR',trig:'Triglicerídeos',hdl:'HDL'};
-    Object.keys(lastExam.values||{}).forEach(function(k){
-      if(lastExam.values[k]!=null) examHtml+='<span class="score-pill" style="background:#e3f0fd;color:#1a5a8a">'+defs[k]+': '+lastExam.values[k]+'</span>';
-    });
-    examHtml += '</div></div>';
-  }
-
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Evolução — '+p.name+'</title><style>'+css+'</style></head><body>'+
-    '<div class="card" style="background:linear-gradient(135deg,#1a7a4a,#0f4f30);color:#fff">'+
-      '<h1>'+p.name+'</h1>'+
-      '<div style="font-size:13px;opacity:.8">'+today+' · '+p.age+' anos · Objetivo: '+p.goal+'</div>'+
-      (streak>0?'<div style="margin-top:8px;font-size:13px">🔥 '+streak+' dias de consistência</div>':'')+'</div>'+
-    '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">📊 Score de Saúde</h2>'+
-      '<div style="font-size:48px;font-weight:700;font-family:monospace;color:#1a7a4a;margin-bottom:8px">'+avg+'<span style="font-size:16px;color:#666"> / 100</span></div>'+
-      '<div class="scores">'+
-        ['Saude','Fitness','Sono','Nutricao'].map(function(k){ return '<span class="score-pill">'+k+': '+p.scores[k]+'</span>'; }).join('')+
-      '</div></div>'+
-    '<div class="card"><h2 style="font-size:15px;margin:0 0 12px">⚖️ Composição Corporal</h2>'+
-      '<div class="grid">'+
-        '<div class="metric"><div class="metric-val green">'+p.weight+'</div><div class="metric-lbl">Peso (kg)</div></div>'+
-        '<div class="metric"><div class="metric-val amber">'+imc+'</div><div class="metric-lbl">IMC</div></div>'+
-      '</div></div>'+
-    (weekly?'<div class="card"><h2 style="font-size:15px;margin:0 0 12px">📅 Últimos 7 dias</h2>'+
-      '<div class="grid">'+
-        '<div class="metric"><div class="metric-val green">'+weekly.avgScore+'</div><div class="metric-lbl">Score médio</div></div>'+
-        '<div class="metric"><div class="metric-val blue">'+weekly.avgSleep+'h</div><div class="metric-lbl">Sono médio</div></div>'+
-        (weekly.avgDeficit!=null?'<div class="metric" style="grid-column:span 2"><div class="metric-val '+(weekly.avgDeficit<=0?'green':'amber')+'">'+
-          (weekly.avgDeficit<=0?'Déficit ':'Superávit ')+Math.abs(weekly.avgDeficit)+' kcal</div><div class="metric-lbl">Balanço calórico médio</div></div>':'')+
-      '</div></div>':'')+ examHtml+
-    '<div class="no-print" style="text-align:center;padding:20px">'+
-      '<button onclick="window.print()" style="background:#1a7a4a;color:#fff;border:none;border-radius:10px;padding:12px 32px;font-size:15px;font-weight:600;cursor:pointer;margin-right:8px">🖨️ Imprimir / Salvar PDF</button>'+
-      '<button onclick="window.close()" style="background:#eee;border:none;border-radius:10px;padding:12px 24px;font-size:15px;cursor:pointer">Fechar</button></div>'+
-    '</body></html>');
-  win.document.close();
 }
 
 function openAddHistory(){

@@ -3233,16 +3233,34 @@ async function shareDiaCard(){
   shareStat(g, W/2-330, 1130, e?(e.done+'/'+e.total):'—', e?'séries · '+e.name.split(' ')[0]:'treino', '#fff');
   shareStat(g, W/2, 1130, sonoH>0?fmtH(sonoH):'—', 'sono', '#fff');
   shareStat(g, W/2+330, 1130, glasses>0?(glasses*250/1000).toFixed(1).replace('.',',')+'L':'—', 'água', '#fff');
-  shareStat(g, W/2-180, 1330, kcalC>0?kcalC:'—', 'kcal consumidas', '#fff');
-  shareStat(g, W/2+180, 1330, gasto, 'kcal gastas', '#fff');
-  if(e && e.vol>0){
-    g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
-    g.beginPath(); g.moveTo(140,1450); g.lineTo(W-140,1450); g.stroke();
-    g.fillStyle='#1db06b'; g.font='700 100px "DM Mono", monospace';
-    g.fillText(e.vol.toLocaleString('pt-BR')+' kg', W/2, 1590);
-    g.fillStyle='rgba(255,255,255,.5)'; g.font='500 34px "DM Sans", sans-serif';
-    g.fillText('volume levantado em '+e.name, W/2, 1650);
-  }
+  // déficit calórico do dia em destaque
+  var deficitD = kcalC>0 ? kcalC-gasto : null;
+  var defTxt = deficitD==null ? '—' : (deficitD<=0 ? '−'+Math.abs(deficitD) : '+'+deficitD);
+  var defCor = deficitD==null ? '#fff' : deficitD<=0 ? '#2fce85' : '#e07070';
+  shareStat(g, W/2-300, 1330, kcalC>0?kcalC:'—', 'consumidas', '#fff');
+  shareStat(g, W/2, 1330, defTxt, deficitD==null?'balanço':(deficitD<=0?'kcal · déficit':'kcal · superávit'), defCor);
+  shareStat(g, W/2+300, 1330, gasto, 'gastas', '#fff');
+  // ── 4 scores vs a média da faixa (minimalista) ──
+  g.strokeStyle='rgba(255,255,255,.12)'; g.lineWidth=2;
+  g.beginPath(); g.moveTo(140,1450); g.lineTo(W-140,1450); g.stroke();
+  var scoresD = fz ? fz.scores : {Saude:0,Fitness:0,Sono:0,Nutricao:0};
+  var eixos = [
+    {k:'Saude', l:'saúde'}, {k:'Fitness', l:'fitness'},
+    {k:'Sono', l:'sono'}, {k:'Nutricao', l:'nutrição'}
+  ];
+  eixos.forEach(function(ax,i){
+    var x = W/2 + (i-1.5)*236;
+    var v = scoresD[ax.k]||0;
+    var avgAx = bench.avg[ax.k], tgtAx = bench.tgt[ax.k];
+    g.textAlign='center';
+    g.fillStyle='#fff'; g.font='700 62px "DM Mono", monospace';
+    g.fillText(v, x, 1570);
+    g.fillStyle='rgba(255,255,255,.45)'; g.font='500 27px "DM Sans", sans-serif';
+    g.fillText(ax.l, x, 1614);
+    var dAx = v-avgAx;
+    if(v>=tgtAx){ g.fillStyle='#f0c060'; g.font='700 26px "DM Sans", sans-serif'; g.fillText('★ top 20%', x, 1660); }
+    else { g.fillStyle=dAx>=0?'#2fce85':'#e07070'; g.font='600 26px "DM Sans", sans-serif'; g.fillText((dAx>=0?'▲ +':'▼ ')+dAx+' vs média', x, 1660); }
+  });
   g.fillStyle='rgba(255,255,255,.3)'; g.font='500 26px "DM Sans", sans-serif';
   g.fillText('◎  M Y H E A L T H', W/2, 1830);
   shareSend(b.cv, 'myhealth-dia.png');

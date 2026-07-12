@@ -975,6 +975,7 @@ let lastPlanDone = {};    // por perfil: {plan, date} — último treino 100% co
 let treinoHist = {};      // por perfil: [{date, plan, name, done, total}] — histórico de treinos
 let curDate = '';         // data selecionada no strip da semana ('' = hoje)
 let dayPlanSel = {};      // por data (YYYY-MM-DD): treino planejado para aquele dia
+let historyResetAt = {};  // por perfil: data (YYYY-MM-DD) do último "zerar histórico" — bloqueia merge de dados antigos da nuvem
 let dietaTab = 'all';
 let examesTab = 'todos';
 let evoPeriod = 30; // days
@@ -1234,33 +1235,41 @@ function handleDayChange(oldDate){
   var oldDateLabel = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   var oldDateFull = new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}).replace(/ De /g,' de ');
 
+  // Regra de congelamento: só o dia que está fechando (oldDate) pode ter dados reais.
+  // Dias pulados NÃO geram entrada; dia sem nenhum dado real também não. Nada é fabricado.
   PD.forEach(function(p,pi){
     if(!historyData[pi]) historyData[pi]=[];
     var imc=parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-    var sleepEntry=sleepData[pi]||{hours:p.sleep};
     var kcal=kcalConsumedToday(pi);
-    var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
-    var deficit=kcal>0?kcal-gasto:null;
     var waterMl=Math.round((waterGlasses[pi+'-water']||0)*250);
-    var lastDateStr = datesToFill[datesToFill.length-1];
-    datesToFill.forEach(function(dateStr){
-      var existingIdx=historyData[pi].findIndex(function(e){return e.date===dateStr;});
-      var d=new Date(dateStr+'T12:00:00');
-      var lbl=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
-      if(existingIdx>=0 && dateStr===lastDateStr){
-        // always overwrite the most recently closed day with the final values
-        var prev=historyData[pi][existingIdx];
-        historyData[pi][existingIdx]=Object.assign({},prev,{
-          calories:kcal>0?kcal:prev.calories,
-          gasto:gasto,
-          deficit:kcal>0?kcal-gasto:prev.deficit,
-          water:waterMl>0?waterMl:prev.water,
-          sleep:sleepEntry.hours>0?sleepEntry.hours:prev.sleep
-        });
-      } else if(existingIdx<0){
-        historyData[pi].push({date:dateStr,label:lbl,weight:p.weight,imc:imc,fat:null,sleep:sleepEntry.hours,avg:p.scores?Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4):0,scores:p.scores,calories:kcal>0?kcal:p.calories,gasto:gasto,deficit:deficit,water:waterMl>0?waterMl:null});
-      }
-    });
+    var sleepReal=(sleepData[pi]&&sleepData[pi].hours>0)?sleepData[pi].hours:null;
+    var treinouDia=(treinoHist[pi]||[]).some(function(e){ return e.date===oldDate && e.done>0; });
+    var hasRealData = kcal>0 || waterMl>0 || sleepReal!=null || treinouDia;
+    if(!hasRealData) return;
+    var gasto=getBasalKcal(p)+calcWorkoutKcalToday(pi);
+    // scores só são gravados em dia com treino — é o que "destrava" a evolução
+    var dynClose=null;
+    if(treinouDia){ try{ dynClose=calcDynamicScores(pi); }catch(e){} }
+    var existingIdx=historyData[pi].findIndex(function(e){return e.date===oldDate;});
+    var lbl=new Date(oldDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    var finalEntry={
+      date:oldDate, label:lbl, weight:p.weight, imc:imc, fat:null,
+      sleep:sleepReal,
+      avg:dynClose?dynClose.Geral:null,
+      scores:dynClose?{Saude:dynClose.Saude,Fitness:dynClose.Fitness,Sono:dynClose.Sono,Nutricao:dynClose.Nutricao}:null,
+      calories:kcal>0?kcal:null,
+      gasto:(treinouDia||kcal>0)?gasto:null,
+      deficit:kcal>0?kcal-gasto:null,
+      water:waterMl>0?waterMl:null
+    };
+    if(existingIdx>=0){
+      // preserva valores reais já registrados no dia (ex: fat de medição manual)
+      var prev=historyData[pi][existingIdx];
+      Object.keys(finalEntry).forEach(function(k){ if(finalEntry[k]==null && prev[k]!=null) finalEntry[k]=prev[k]; });
+      historyData[pi][existingIdx]=finalEntry;
+    } else {
+      historyData[pi].push(finalEntry);
+    }
     historyData[pi].sort(function(a,b){ return a.date<b.date?-1:1; });
   });
 
@@ -1371,7 +1380,7 @@ function save(immediate){
     if(saveCount % 5 === 0) saveBackup();
 
     var data = {
-      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,dayPlanSel,mealDone,foodDone,suppDone,habitDone,
+      curP,curDay,curPlan,planSelDate,lastPlanDone,treinoHist,dayPlanSel,historyResetAt,mealDone,foodDone,suppDone,habitDone,
       exChecked,exSets,exWeights,cardioSel,cardioChecked,walkParams,
       waterGlasses,sleepData,expandedExam,profileComplete,pdOverride,chatHistories,historyData,inputHistory,
       lastSavedDate:todayStr(),
@@ -1422,7 +1431,7 @@ function load(){
     var s = JSON.parse(d);
     curP = s.curP||0; curDay = s.curDay||curDay;
     curPlan = s.curPlan||0; planSelDate = s.planSelDate||'';
-    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{}; dayPlanSel = s.dayPlanSel||{};
+    lastPlanDone = s.lastPlanDone||{}; treinoHist = s.treinoHist||{}; dayPlanSel = s.dayPlanSel||{}; historyResetAt = s.historyResetAt||{};
     mealDone = s.mealDone||{}; foodDone = s.foodDone||{}; suppDone = s.suppDone||{};
     habitDone = s.habitDone||{}; exChecked = s.exChecked||{};
     exSets = s.exSets||{}; exWeights = s.exWeights||{}; cardioSel = s.cardioSel||{};
@@ -1709,10 +1718,11 @@ function renderHome(){
   renderProfiles('home-profiles');
   var p = PD[curP];
   document.getElementById('home-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  // use dynamic scores for display if available
-  var dynS = null; try{ dynS = calcDynamicScores(curP); }catch(e){}
-  var scores = dynS || p.scores;
-  var avg = scores ? Math.round((scores.Saude+scores.Fitness+scores.Sono+scores.Nutricao)/4) : 0;
+  // scores congelados no último dia de treino (getFrozenScores)
+  var fzHome = null; try{ fzHome = getFrozenScores(curP); }catch(e){}
+  var scores = fzHome ? fzHome.scores : p.scores;
+  var avg = fzHome ? fzHome.scores.Geral : (scores ? Math.round((scores.Saude+scores.Fitness+scores.Sono+scores.Nutricao)/4) : 0);
+  var fzHomeLbl = (fzHome && fzHome.frozen) ? new Date(fzHome.asOf+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : null;
   var h = '';
   // Setup CTA banner
   if(!profileComplete){
@@ -1745,7 +1755,7 @@ function renderHome(){
   h += '<div><div class="dash-greeting">Bom dia, '+p.name.split(' ')[0]+'! 👋</div><div style="font-size:12px;opacity:.75;margin-top:2px">Score geral · faixa '+p.age+' anos</div></div>';
   h += '<div style="text-align:right">';
   h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;line-height:1">'+avg+'</div>';
-  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média</div>';
+  h += '<div style="font-size:11px;opacity:.7;margin-top:3px">'+(fzHomeLbl?'🔒 desde '+fzHomeLbl:(diffGeral>=0?'▲ +'+diffGeral:'▼ '+diffGeral)+' vs média')+'</div>';
   h += '</div>';
   h += '</div>';
   // Score vs Top 20% comparison bar
@@ -4235,13 +4245,19 @@ function calcDynamicScores(idx){
   var waterScore = waterDays.length ? Math.round(waterHit/waterDays.length*35) : 20;
   var nutricaoScore = Math.min(100, calScore+waterScore);
 
-  // FITNESS: incluindo hoje
-  var avgBasal = getBasalKcal(p);
-  var gastoDays = hist7.filter(function(e){ return e.gasto>0; });
-  var avgExtraKcal = gastoDays.length ? gastoDays.reduce(function(s,e){ return s+Math.max(0,e.gasto-avgBasal); },0)/gastoDays.length : 0;
-  var targetExtra = Math.max(1, avgBasal*0.2);
-  var exerciseScore = Math.min(60, Math.round(avgExtraKcal/targetExtra*60));
-  var consistencyScore = gastoDays.length ? Math.round(gastoDays.length/7*40) : 0;
+  // FITNESS: baseado em TREINOS REAIS (treinoHist), não em gasto calórico
+  // (gasto inclui o basal e sempre existe — o modelo antigo dava consistência máxima sem treinar)
+  var last7dates = [];
+  for(var f7=6; f7>=0; f7--){ var fd=new Date(); fd.setDate(fd.getDate()-f7); last7dates.push(dateStrLocal(fd)); }
+  var treinos7 = (treinoHist[idx]||[]).filter(function(e){ return last7dates.indexOf(e.date)>=0 && e.done>0; });
+  var trainDaysSet = {};
+  treinos7.forEach(function(e){ trainDaysSet[e.date]=true; });
+  var trainDays = Object.keys(trainDaysSet).length;
+  var targetDays = parseInt((pdOverride[idx]||{}).trainingDays)||4;
+  var consistencyScore = Math.min(40, Math.round(trainDays/targetDays*40));
+  // qualidade: % médio de conclusão das séries nos treinos da semana
+  var avgCompletion = treinos7.length ? treinos7.reduce(function(s,e){ return s+(e.total>0?e.done/e.total:0); },0)/treinos7.length : 0;
+  var exerciseScore = Math.round(avgCompletion*60);
   var fitnessScore = Math.min(100, exerciseScore+consistencyScore);
 
   // SAÚDE: IMC (30%) + Sono (25%) + Nutrição (25%) + Fitness (20%)
@@ -4254,35 +4270,59 @@ function calcDynamicScores(idx){
   return {Saude:saudeScore, Fitness:fitnessScore, Sono:sonoScore, Nutricao:nutricaoScore, Geral:geral};
 }
 
+// Congelamento: scores só "andam" em dia de treino. Sem treino hoje → retorna os
+// scores do último dia de treino registrado (com a data), em vez de recalcular.
+function getFrozenScores(idx){
+  var todayK = todayStr();
+  var treinouHoje = (treinoHist[idx]||[]).some(function(e){ return e.date===todayK && e.done>0; });
+  if(treinouHoje){
+    var live = null; try{ live = calcDynamicScores(idx); }catch(e){}
+    if(live) return {scores:live, asOf:todayK, frozen:false};
+  }
+  // último dia com scores gravados (dia de treino fechado)
+  var hist = (historyData[idx]||[]).filter(function(e){ return e.scores && e.scores.Fitness>0 && e.date<=todayK; });
+  if(hist.length>0){
+    var last = hist[hist.length-1];
+    var s = last.scores;
+    return {scores:{Saude:s.Saude,Fitness:s.Fitness,Sono:s.Sono,Nutricao:s.Nutricao,
+      Geral:last.avg||Math.round((s.Saude+s.Fitness+s.Sono+s.Nutricao)/4)}, asOf:last.date, frozen:true};
+  }
+  // sem nenhum treino no histórico: cálculo ao vivo como baseline
+  var base = null; try{ base = calcDynamicScores(idx); }catch(e){}
+  return base ? {scores:base, asOf:todayK, frozen:false} : null;
+}
+
 function snapshotHistory(idx){
   var p = PD[idx];
   if(!p || !p.weight) return;
   var imc = parseFloat((p.weight/Math.pow(p.height/100,2)).toFixed(1));
-  var avg = p.scores ? Math.round((p.scores.Saude+p.scores.Fitness+p.scores.Sono+p.scores.Nutricao)/4) : 0;
   var today = new Date();
   // use local date (todayStr) to avoid UTC vs local timezone mismatch at night
   var dateKey = todayStr();
   var label = today.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
   if(!historyData[idx]) historyData[idx]=[];
   var existing = historyData[idx].findIndex(function(e){ return e.date===dateKey; });
-  var kcalToday=kcalConsumedToday(idx); var gastoToday=getBasalKcal(p)+calcWorkoutKcalToday(idx);
+  var kcalToday=kcalConsumedToday(idx);
   var waterMl=Math.round((waterGlasses[idx+'-water']||0)*250);
   var sleepEntry=sleepData[idx]||{};
   var sleepHours = sleepEntry.hours>0 ? sleepEntry.hours : null; // null if not logged today
+  var treinouHoje = (treinoHist[idx]||[]).some(function(e){ return e.date===dateKey && e.done>0; });
   var prev = existing>=0 ? historyData[idx][existing] : null;
-  // use dynamic scores for today's snapshot so chart shows real progress
-  var dynToday = null; try{ dynToday = calcDynamicScores(idx); }catch(e){}
-  var snapScores = dynToday ? {Saude:dynToday.Saude,Fitness:dynToday.Fitness,Sono:dynToday.Sono,Nutricao:dynToday.Nutricao} : p.scores;
-  var snapAvg = dynToday ? dynToday.Geral : avg;
+  // congelamento: sem nenhum dado real hoje, não cria/atualiza entrada (nada é fabricado)
+  if(kcalToday<=0 && waterMl<=0 && sleepHours==null && !treinouHoje && !prev) return;
+  var gastoToday=getBasalKcal(p)+calcWorkoutKcalToday(idx);
+  // scores só em dia de treino — nos demais dias a evolução fica travada no último treino
+  var dynToday = null;
+  if(treinouHoje){ try{ dynToday = calcDynamicScores(idx); }catch(e){} }
   var entry = {
     date:dateKey, label:label, weight:p.weight, imc:imc,
-    fat: (prev&&prev.fat>0) ? prev.fat : (historyData[idx].length>0?(historyData[idx][historyData[idx].length-1].fat||null):null),
-    sleep: sleepHours || (prev&&prev.sleep>0 ? prev.sleep : p.sleep||0),
-    avg:snapAvg,
-    scores:snapScores,
+    fat: (prev&&prev.fat>0) ? prev.fat : null,
+    sleep: sleepHours!=null ? sleepHours : (prev&&prev.sleep>0 ? prev.sleep : null),
+    avg: dynToday ? dynToday.Geral : (prev&&prev.avg!=null?prev.avg:null),
+    scores: dynToday ? {Saude:dynToday.Saude,Fitness:dynToday.Fitness,Sono:dynToday.Sono,Nutricao:dynToday.Nutricao} : (prev&&prev.scores?prev.scores:null),
     calories:kcalToday>0?kcalToday:null,
-    gasto:gastoToday,
-    deficit:kcalToday>0?kcalToday-gastoToday:(prev&&prev.deficit!=null?prev.deficit:null),
+    gasto:(treinouHoje||kcalToday>0)?gastoToday:null,
+    deficit:kcalToday>0?kcalToday-gastoToday:null,
     water:waterMl>0?waterMl:(prev&&prev.water>0?prev.water:null)
   };
   if(existing>=0) historyData[idx][existing]=entry;
@@ -4391,9 +4431,11 @@ function renderEvolucao(){
   var cutStr = cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
   var hist = allHist.filter(function(e){ return !e.date||e.date>=cutStr; });
   if(hist.length===0) hist = allHist.slice(-2);
-  // for today's point, inject live dynamic scores so chart always shows current data
-  var dynLive = null; try{ dynLive = calcDynamicScores(curP); }catch(e){}
+  // ponto de hoje: só entra no gráfico se HOJE treinou (congelamento) — scores ao vivo
   var todayK = todayStr();
+  var treinouHojeEvo = (treinoHist[curP]||[]).some(function(e){ return e.date===todayK && e.done>0; });
+  var dynLive = null;
+  if(treinouHojeEvo){ try{ dynLive = calcDynamicScores(curP); }catch(e){} }
   var todayWaterMl = Math.round((waterGlasses[curP+'-water']||0)*250);
   var todaySleepH = parseFloat(((sleepData[curP]||{}).hours||0).toFixed(1));
   var todayKcal = kcalConsumedToday();
@@ -4444,10 +4486,14 @@ function renderEvolucao(){
   } else {
     // Scores
     h+='<div class="section"><div class="sec-label">Scores de saude · meta: top 20% da sua faixa</div>';
-    // use dynamic scores for current values, history shows saved snapshots
-    var dynScores = null; try{ dynScores = calcDynamicScores(curP); }catch(e){}
-    var curScores = dynScores || p.scores || {Saude:0,Fitness:0,Sono:0,Nutricao:0};
-    var avgCur = Math.round((curScores.Saude+curScores.Fitness+curScores.Sono+curScores.Nutricao)/4);
+    // valores atuais congelados no último dia de treino (getFrozenScores)
+    var fz = getFrozenScores(curP);
+    var curScores = fz ? fz.scores : (p.scores || {Saude:0,Fitness:0,Sono:0,Nutricao:0});
+    var avgCur = fz ? fz.scores.Geral : Math.round((curScores.Saude+curScores.Fitness+curScores.Sono+curScores.Nutricao)/4);
+    if(fz && fz.frozen){
+      var fzLbl = new Date(fz.asOf+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+      h+='<div style="font-size:11px;color:var(--muted);padding:0 4px 8px">🔒 Scores travados no último treino ('+fzLbl+') — treinam de novo, atualizam de novo</div>';
+    }
     h+=evoCard('Score Geral','📊',hist.map(function(e){return e.avg>0?e.avg:null;}),labels,avgCur,'pts','#1a7a4a',false,tgtGeral);
     h+=evoCard('Saude','❤️',hist.map(function(e){return e.scores&&e.scores.Saude>0?e.scores.Saude:null;}),labels,curScores.Saude||0,'pts','#1a7a4a',false,bench.tgt.Saude);
     h+=evoCard('Fitness','💪',hist.map(function(e){return e.scores&&e.scores.Fitness>0?e.scores.Fitness:null;}),labels,curScores.Fitness||0,'pts','#5a3ab7',false,bench.tgt.Fitness);
@@ -4493,6 +4539,7 @@ function renderEvolucao(){
   h+='<button class="act-btn" id="evo-ai-btn"><span class="act-icon">🤖</span><span class="act-lbl">Analise IA</span><span class="act-sub">Sua evolucao</span></button>';
   h+='<button class="act-btn" id="evo-export-btn"><span class="act-icon">📤</span><span class="act-lbl">Exportar</span><span class="act-sub">Compartilhar progresso</span></button>';
   h+='</div></div>';
+  h+='<div class="section" style="padding-top:0"><button id="evo-reset-btn" style="width:100%;padding:12px;background:none;border:1.5px solid var(--coral);border-radius:var(--radius-sm);color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">🗑️ Zerar histórico e recomeçar</button></div>';
 
   document.getElementById('evolucao-content').innerHTML = h;
 
@@ -4514,6 +4561,63 @@ function renderEvolucao(){
   document.getElementById('evolucao-ai-btn').addEventListener('click', function(){ openChat('saude',''); });
   var exportBtn = document.getElementById('evo-export-btn');
   if(exportBtn) exportBtn.addEventListener('click', exportProgresso);
+  var resetBtn = document.getElementById('evo-reset-btn');
+  if(resetBtn) resetBtn.addEventListener('click', openResetHistory);
+}
+
+// ── Zerar histórico do perfil ativo (mantém treinos, cargas e exames) ──
+function openResetHistory(){
+  var p = PD[curP];
+  var nHist = (historyData[curP]||[]).length;
+  var nTreinos = (treinoHist[curP]||[]).length;
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:var(--radius);width:100%;max-width:360px;overflow:hidden">'+
+      '<div style="padding:18px 20px;border-bottom:1px solid var(--border)">'+
+        '<div style="font-size:17px;font-weight:700;color:var(--coral)">🗑️ Zerar histórico</div>'+
+        '<div style="font-size:13px;color:var(--muted);margin-top:4px">Recomeçar o acompanhamento de '+p.name+' do zero.</div>'+
+      '</div>'+
+      '<div style="padding:16px 20px;font-size:13px;line-height:1.6">'+
+        '<div style="font-weight:700;color:var(--coral);margin-bottom:4px">Apaga:</div>'+
+        '<div style="color:var(--muted)">· '+nHist+' medições diárias (scores, kcal, peso, sono)<br>· '+nTreinos+' treinos registrados<br>· marcações de hoje</div>'+
+        '<div style="font-weight:700;color:var(--green);margin:12px 0 4px">Mantém:</div>'+
+        '<div style="color:var(--muted)">· Plano de treinos e exercícios<br>· Cargas dos exercícios<br>· Exames<br>· Perfil, metas, refeições e suplementos</div>'+
+      '</div>'+
+      '<div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px">'+
+        '<button id="rh-cancel" style="flex:1;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;color:var(--text)">Cancelar</button>'+
+        '<button id="rh-confirm" style="flex:1;padding:12px;background:var(--coral);border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;color:#fff">Zerar agora</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.getElementById('rh-cancel').addEventListener('click', function(){ overlay.remove(); });
+  document.getElementById('rh-confirm').addEventListener('click', function(){
+    if(!confirm('Tem certeza? Essa ação não pode ser desfeita.')) return;
+    doResetHistory();
+    overlay.remove();
+  });
+}
+function doResetHistory(){
+  var todayK = todayStr();
+  // APAGA: histórico de medições e treinos do perfil ativo + marcações do dia
+  historyData[curP] = [];
+  treinoHist[curP] = [];
+  delete lastPlanDone[curP];
+  Object.keys(dayPlanSel).forEach(function(d){ if(d<todayK) delete dayPlanSel[d]; });
+  var pref = curP+'-';
+  [exSets, exChecked, cardioChecked, mealDone, foodDone, suppDone, habitDone].forEach(function(obj){
+    Object.keys(obj).forEach(function(k){ if(k.indexOf(pref)===0 || k.indexOf('c'+pref)===0) delete obj[k]; });
+  });
+  delete waterGlasses[curP+'-water'];
+  delete sleepData[curP];
+  // MANTÉM: PD/pdOverride (perfil, plano de treinos, exames, refeições, supps), exWeights (cargas), inputHistory
+  historyResetAt[curP] = todayK; // bloqueia merge de dados antigos vindos da nuvem
+  localStorage.setItem('mh_reset_date', todayK); // evita restauração do estado diário pela nuvem
+  save(true); // persiste imediatamente no Firebase
+  syncSpecialistView(); // personal passa a ver o histórico limpo
+  showToast('Histórico zerado — recomeçando do zero! 🌱');
+  renderEvolucao();
 }
 
 function exportProgresso(){
@@ -6984,11 +7088,13 @@ function loadUserData(uid, callback){
             curP = s.curP||0; curDay = s.curDay||curDay;
             // treinos por tipo: só restaura seleção do Firebase se for mais recente que a local
             if(s.planSelDate && s.planSelDate >= (planSelDate||'')){ curPlan = s.planSelDate>planSelDate ? (s.curPlan||0) : curPlan; planSelDate = s.planSelDate>planSelDate ? s.planSelDate : planSelDate; }
-            if(s.lastPlanDone){ Object.keys(s.lastPlanDone).forEach(function(pi){ var r=s.lastPlanDone[pi], l=lastPlanDone[pi]; if(!l || (r&&r.date>l.date)) lastPlanDone[pi]=r; }); }
+            if(s.lastPlanDone){ Object.keys(s.lastPlanDone).forEach(function(pi){ var r=s.lastPlanDone[pi], l=lastPlanDone[pi]; if(historyResetAt[pi] && r && r.date<=historyResetAt[pi]) return; if(!l || (r&&r.date>l.date)) lastPlanDone[pi]=r; }); }
             if(s.dayPlanSel){ dayPlanSel = Object.assign({}, s.dayPlanSel, dayPlanSel); }
+            if(s.historyResetAt){ Object.keys(s.historyResetAt).forEach(function(pi){ if(!historyResetAt[pi] || s.historyResetAt[pi]>historyResetAt[pi]) historyResetAt[pi]=s.historyResetAt[pi]; }); }
             if(s.treinoHist){ Object.keys(s.treinoHist).forEach(function(pi){
               if(!treinoHist[pi]) treinoHist[pi]=[];
               (s.treinoHist[pi]||[]).forEach(function(re){
+                if(historyResetAt[pi] && re.date<=historyResetAt[pi]) return; // zerado — não restaurar
                 var li = treinoHist[pi].findIndex(function(le){ return le.date===re.date && le.plan===re.plan; });
                 if(li<0) treinoHist[pi].push(re);
                 else if(re.done>treinoHist[pi][li].done) treinoHist[pi][li]=re;
@@ -7089,6 +7195,7 @@ function loadUserData(uid, callback){
                 if(!historyData[ri]) historyData[ri] = [];
                 var merged = historyData[ri].slice();
                 (remoteHist[pi]||[]).forEach(function(re){
+                  if(historyResetAt[pi] && re.date<=historyResetAt[pi]) return; // zerado — não restaurar
                   if(!merged.find(function(le){ return le.date===re.date; })) merged.push(re);
                 });
                 historyData[ri] = dedupeHistory(merged, todayStr());
@@ -7233,7 +7340,7 @@ function saveToCloud(){
   });
   var appState = {
     curP:curP, curDay:curDay, curPlan:curPlan, planSelDate:planSelDate,
-    lastPlanDone:lastPlanDone, treinoHist:treinoHist, dayPlanSel:dayPlanSel,
+    lastPlanDone:lastPlanDone, treinoHist:treinoHist, dayPlanSel:dayPlanSel, historyResetAt:historyResetAt,
     mealDone:mealDone, foodDone:foodDone, suppDone:suppDone,
     habitDone:habitDone, exChecked:exChecked, exSets:exSets, exWeights:exWeights,
     cardioSel:cardioSel, cardioChecked:cardioChecked, walkParams:walkParams,

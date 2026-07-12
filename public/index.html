@@ -963,6 +963,14 @@ function getBasalKcal(p){
   var g = p.gender || (pdOverride[curP]||{}).gender||'M';
   return Math.round(g==='M' ? 10*p.weight+6.25*p.height-5*p.age+5 : 10*p.weight+6.25*p.height-5*p.age-161);
 }
+// cardio com checklist só conta como gasto real se ≥1 passo foi marcado hoje;
+// walk/trilha (sem checklist) contam quando selecionados
+function cardioFoiFeito(selId, cselKey){
+  var co = CARDIO_OPTS.find(function(o){ return o.id===selId; });
+  if(!co || !co.steps) return true;
+  for(var i=0;i<co.steps.length;i++){ if(cardioChecked['c'+cselKey+'-'+selId+'-'+i]) return true; }
+  return false;
+}
 function calcWorkoutKcalToday(pi){
   var idx = pi!=null?pi:curP; var p = PD[idx];
   // conta séries feitas hoje em TODOS os treinos (exSets é zerado diariamente)
@@ -975,7 +983,7 @@ function calcWorkoutKcalToday(pi){
   });
   var musK = calcMusKcal(p.weight, sets);
   var cselKey = idx+'-'+(idx===curP?curPlan:0);
-  var selIds = getCardioIds(cselKey);
+  var selIds = getCardioIds(cselKey).filter(function(id){ return cardioFoiFeito(id, cselKey); });
   var cardK = calcCardioKcalFromIds(selIds, p.weight, cselKey);
   return musK + cardK;
 }
@@ -1331,8 +1339,8 @@ function handleDayChange(oldDate){
   var basal0 = getBasalKcal(p0);
   var treino0 = calcWorkoutKcalToday(curP);
   var gasto0 = basal0 + treino0;
-  var deficit0 = kcal0 - gasto0;
-  var sleep0 = parseFloat(((sleepData[curP]||{hours:p0.sleep}).hours||0).toFixed(1));
+  var deficit0 = kcal0>0 ? kcal0 - gasto0 : null; // sem registro de refeição não existe balanço
+  var sleep0 = (sleepData[curP]&&sleepData[curP].hours>0) ? parseFloat(sleepData[curP].hours.toFixed(1)) : null;
   var mealsDone0 = p0.meals.filter(function(m,mi){ var mk=curP+'-'+(m.id||'m'+mi); return m.foods.some(function(_,fi){ return foodDone[mk+'-'+fi]===true; }); }).length;
   var water0 = Math.round((waterGlasses[curP+'-water']||0)*250);
   var suppDone0 = p0.supps.filter(function(_,i){ return suppDone[curP+'-'+i]; }).length;
@@ -1346,7 +1354,7 @@ function handleDayChange(oldDate){
   // auto highlight
   var highlights0 = [];
   if(deficit0<=0 && kcal0>0) highlights0.push('Meta calórica atingida');
-  if(sleep0>=(p0.sleepTarget||7.5)) highlights0.push('Meta de sono atingida');
+  if(sleep0!=null && sleep0>=(p0.sleepTarget||7.5)) highlights0.push('Meta de sono atingida');
   if(mealsDone0===p0.meals.length) highlights0.push('Todas as refeições registradas');
   if(workout0 && workout0.done===workout0.total && workout0.total>0) highlights0.push('Treino 100% completo');
   if(water0>=(p0.water||2500)) highlights0.push('Meta de hidratação atingida');
@@ -1406,9 +1414,9 @@ function handleDayChange(oldDate){
 }
 
 function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, mealsDone, mealsTotal, water, suppDone, suppTotal, workout, highlight){
-  var defColor = deficit<=0?'var(--green)':'var(--coral)';
-  var defLabel = deficit<=0?'−'+Math.abs(deficit)+' kcal deficit':'+'+deficit+' kcal superávit';
-  var sleepColor = sleep>=7?'var(--green)':sleep>=6?'var(--amber)':'var(--coral)';
+  var defColor = deficit==null?'var(--muted)':deficit<=0?'var(--green)':'var(--coral)';
+  var defLabel = deficit==null?'Sem registro':deficit<=0?'−'+Math.abs(deficit)+' kcal deficit':'+'+deficit+' kcal superávit';
+  var sleepColor = sleep==null?'var(--muted)':sleep>=7?'var(--green)':sleep>=6?'var(--amber)':'var(--coral)';
   var waterPct = water>0?Math.round(water/PD[curP].water*100):0;
   var waterColor = waterPct>=100?'var(--green)':waterPct>=60?'var(--amber)':'var(--coral)';
   var overlay = document.createElement('div');
@@ -1435,7 +1443,7 @@ function showDaySummary(dateLabel, kcal, basal, treino, gasto, deficit, sleep, m
       // Grid métricas
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
-          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+sleep+'h</div>'+
+          '<div style="font-size:22px;font-weight:700;font-family:DM Mono,monospace;color:'+sleepColor+'">'+(sleep!=null?sleep+'h':'—')+'</div>'+
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">Sono</div>'+
         '</div>'+
         '<div style="background:var(--surface);border-radius:12px;padding:12px;text-align:center">'+
@@ -1938,8 +1946,9 @@ function renderHome(){
   var gastoTotal = basalK + workoutK;
   var consumidoK = kcalConsumedToday();
   var balance = consumidoK - gastoTotal;
-  var balanceColor = balance<-100?'var(--green)':balance>100?'var(--coral)':'var(--amber)';
-  var balanceLbl = balance<-100?'Déficit':balance>100?'Superávit':'Equilibrio';
+  var semRegistro = consumidoK<=0;
+  var balanceColor = semRegistro?'var(--muted)':balance<-100?'var(--green)':balance>100?'var(--coral)':'var(--amber)';
+  var balanceLbl = semRegistro?'Sem registro':balance<-100?'Déficit':balance>100?'Superávit':'Equilibrio';
   var balanceSign = balance>0?'+':'';
   h += '<div class="section"><div class="card" style="padding:14px 16px">';
   h += '<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Balanço Energético</div>';
@@ -1957,7 +1966,7 @@ function renderHome(){
   h += '</div>';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border-radius:10px;border:1px solid var(--border)">';
   h += '<span style="font-size:13px;font-weight:500">'+balanceLbl+' do dia</span>';
-  h += '<span style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+balanceColor+'">'+balanceSign+balance+' kcal</span>';
+  h += '<span style="font-size:16px;font-weight:700;font-family:DM Mono,monospace;color:'+balanceColor+'">'+(semRegistro?'—':balanceSign+balance+' kcal')+'</span>';
   h += '</div>';
   h += '</div></div>';
 

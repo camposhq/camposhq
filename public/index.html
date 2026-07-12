@@ -3772,6 +3772,29 @@ function renderSonoContent(){
       h += '<span style="font-size:13px;color:var(--muted)">Sem conexão com o Oura Ring</span>';
       h += '<button id="oura-retry" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text);white-space:nowrap">Tentar de novo</button></div></div>';
     } else if(night){
+      // Readiness do dia
+      var rd = ouraReadiness(night.day) || ouraReadiness();
+      if(rd){
+        var rdC = rd.score>=85?'var(--green)':rd.score>=70?'var(--indigo)':rd.score>=55?'var(--amber)':'var(--coral)';
+        var rdL = rd.score>=85?'Ótimo':rd.score>=70?'Bom':rd.score>=55?'Regular':'Baixo';
+        var rc = rd.contributors||{};
+        h += '<div class="section"><div class="sec-label">Readiness · Oura Ring</div><div class="card" style="padding:14px 16px">';
+        h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">';
+        h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;color:'+rdC+'">'+rd.score+'</div>';
+        h += '<div><div style="font-size:14px;font-weight:600">'+rdL+' para hoje</div>';
+        h += '<div style="font-size:12px;color:var(--muted)">Prontidão para treino e esforço'+(rd.temperature_deviation!=null?' · temp '+(rd.temperature_deviation>0?'+':'')+rd.temperature_deviation.toFixed(1)+'°C':'')+'</div></div>';
+        h += '</div>';
+        h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;border-top:1px solid var(--border);padding-top:12px">';
+        [
+          {v:rc.recovery_index!=null?rc.recovery_index:'--',l:'Recuperação'},
+          {v:rc.hrv_balance!=null?rc.hrv_balance:'--',l:'Equil. HRV'},
+          {v:rc.resting_heart_rate!=null?rc.resting_heart_rate:'--',l:'FC repouso'},
+          {v:rc.sleep_balance!=null?rc.sleep_balance:'--',l:'Equil. sono'}
+        ].forEach(function(m){
+          h += '<div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace">'+m.v+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+m.l+'</div></div>';
+        });
+        h += '</div></div></div>';
+      }
       var stages=[
         {l:'Profundo',v:night.deep_sleep_duration||0,c:'#3730a3'},
         {l:'REM',v:night.rem_sleep_duration||0,c:'#6366f1'},
@@ -3801,29 +3824,6 @@ function renderSonoContent(){
       });
       h += '</div></div></div>';
 
-      // Readiness do dia
-      var rd = ouraReadiness(night.day) || ouraReadiness();
-      if(rd){
-        var rdC = rd.score>=85?'var(--green)':rd.score>=70?'var(--indigo)':rd.score>=55?'var(--amber)':'var(--coral)';
-        var rdL = rd.score>=85?'Ótimo':rd.score>=70?'Bom':rd.score>=55?'Regular':'Baixo';
-        var rc = rd.contributors||{};
-        h += '<div class="section"><div class="sec-label">Readiness · Oura Ring</div><div class="card" style="padding:14px 16px">';
-        h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">';
-        h += '<div style="font-size:36px;font-weight:700;font-family:DM Mono,monospace;color:'+rdC+'">'+rd.score+'</div>';
-        h += '<div><div style="font-size:14px;font-weight:600">'+rdL+' para hoje</div>';
-        h += '<div style="font-size:12px;color:var(--muted)">Prontidão para treino e esforço'+(rd.temperature_deviation!=null?' · temp '+(rd.temperature_deviation>0?'+':'')+rd.temperature_deviation.toFixed(1)+'°C':'')+'</div></div>';
-        h += '</div>';
-        h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;border-top:1px solid var(--border);padding-top:12px">';
-        [
-          {v:rc.recovery_index!=null?rc.recovery_index:'--',l:'Recuperação'},
-          {v:rc.hrv_balance!=null?rc.hrv_balance:'--',l:'Equil. HRV'},
-          {v:rc.resting_heart_rate!=null?rc.resting_heart_rate:'--',l:'FC repouso'},
-          {v:rc.sleep_balance!=null?rc.sleep_balance:'--',l:'Equil. sono'}
-        ].forEach(function(m){
-          h += '<div><div style="font-size:13px;font-weight:700;font-family:DM Mono,monospace">'+m.v+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+m.l+'</div></div>';
-        });
-        h += '</div></div></div>';
-      }
       var ouraDays=(ouraData.daily||[]).slice(-7);
       if(ouraDays.length>1){
         var hoursMap=ouraHoursByDay();
@@ -3845,7 +3845,11 @@ function renderSonoContent(){
         });
         h += '</div></div></div>';
       }
-      h += '<div class="section" style="margin-top:-8px"><div style="text-align:center;font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase">Powered by ŌURA</div></div>';
+      h += '<div class="section" style="margin-top:-8px"><div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted)">';
+      h += '<span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase">Powered by</span>';
+      h += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="12" r="5.6"/></svg>';
+      h += '<span style="font-size:11px;letter-spacing:.32em;font-weight:600;font-family:DM Sans,sans-serif">O\u0304URA</span>';
+      h += '</div></div>';
     }
   }
 

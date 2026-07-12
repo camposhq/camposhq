@@ -3613,8 +3613,9 @@ function ouraReadiness(day){
   return null;
 }
 function ouraHoursByDay(){
+  // soma todas as sessões de sono do dia (noite + sonecas), como o app da Oura
   var m={};
-  if(ouraData) ouraData.sessions.forEach(function(s){ if(s.type==='long_sleep') m[s.day]=(m[s.day]||0)+(s.total_sleep_duration||0); });
+  if(ouraData) ouraData.sessions.forEach(function(s){ if(s.type!=='deleted' && s.type!=='rest' && s.total_sleep_duration) m[s.day]=(m[s.day]||0)+s.total_sleep_duration; });
   return m;
 }
 function fmtDur(sec){ var hh=Math.floor(sec/3600), mm=Math.round((sec%3600)/60); if(mm===60){hh++;mm=0;} return hh+'h'+(mm>0?(mm<10?'0':'')+mm:''); }
@@ -3627,7 +3628,8 @@ function ouraDayLabel(day){
 function ouraAICtx(){
   var n=ouraLastNight(); if(!n) return '';
   var sc=ouraDayScore(n.day);
-  var t='\nDados reais do anel Oura — ultima noite ('+n.day+'): '+(sc!=null?'score '+sc+', ':'')+'dormido '+fmtDur(n.total_sleep_duration||0)+' (profundo '+fmtDur(n.deep_sleep_duration||0)+', REM '+fmtDur(n.rem_sleep_duration||0)+', leve '+fmtDur(n.light_sleep_duration||0)+'), eficiencia '+n.efficiency+'%, FC minima '+n.lowest_heart_rate+' bpm, HRV media '+Math.round(n.average_hrv||0)+' ms, na cama '+fmtClock(n.bedtime_start)+'-'+fmtClock(n.bedtime_end)+'.';
+  var dayTot=ouraHoursByDay()[n.day]||n.total_sleep_duration||0;
+  var t='\nDados reais do anel Oura — ultima noite ('+n.day+'): '+(sc!=null?'score '+sc+', ':'')+'dormido '+fmtDur(n.total_sleep_duration||0)+(dayTot>(n.total_sleep_duration||0)+600?' mais soneca, total do dia '+fmtDur(dayTot):'')+' (profundo '+fmtDur(n.deep_sleep_duration||0)+', REM '+fmtDur(n.rem_sleep_duration||0)+', leve '+fmtDur(n.light_sleep_duration||0)+'), eficiencia '+n.efficiency+'%, FC minima '+n.lowest_heart_rate+' bpm, HRV media '+Math.round(n.average_hrv||0)+' ms, na cama '+fmtClock(n.bedtime_start)+'-'+fmtClock(n.bedtime_end)+'.';
   if(ouraData.daily.length>1) t+='\nScores de sono Oura (ultimos dias): '+ouraData.daily.map(function(d){ return d.day.slice(5)+'='+d.score; }).join(', ')+'.';
   var rd=ouraReadiness(n.day)||ouraReadiness();
   if(rd){
@@ -3661,8 +3663,12 @@ function renderSonoContent(){
   h += '<div class="hero-score">'+score+'</div>';
   h += '<div class="hero-tag">'+label+'</div>';
   h += '<div class="hero-meta">';
-  var sleepDisp;
-  if(night && night.total_sleep_duration){ sleepDisp=fmtDur(night.total_sleep_duration); }
+  var sleepDisp, nightDayTotal=0, napSec=0;
+  if(night && night.total_sleep_duration){
+    nightDayTotal = ouraHoursByDay()[night.day] || night.total_sleep_duration;
+    napSec = Math.max(0, nightDayTotal - night.total_sleep_duration);
+    sleepDisp = fmtDur(nightDayTotal);
+  }
   else { var eH=Math.floor(entry.hours), eM=Math.round((entry.hours-eH)*60); sleepDisp=eH+'h'+(eM>0?' '+eM+'min':''); }
   h += '<div><div class="hm-val">'+sleepDisp+'</div><div class="hm-lbl">Dormido</div></div>';
   h += '<div style="cursor:pointer" id="btn-edit-sleep-goal"><div class="hm-val">'+p.sleepTarget+'h</div><div class="hm-lbl">Meta ✏️</div></div>';
@@ -3690,7 +3696,9 @@ function renderSonoContent(){
       stages.forEach(function(st){ h += '<div style="width:'+(st.v/stTotal*100)+'%;background:'+st.c+'"></div>'; });
       h += '</div><div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:14px">';
       stages.forEach(function(st){ h += '<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:'+st.c+';display:inline-block"></span>'+st.l+' <b style="color:var(--text)">'+fmtDur(st.v)+'</b></div>'; });
-      h += '</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;text-align:center;border-top:1px solid var(--border);padding-top:12px">';
+      h += '</div>';
+      if(napSec>600) h += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Noite '+fmtDur(night.total_sleep_duration||0)+' + soneca '+fmtDur(napSec)+' = <b style="color:var(--text)">'+fmtDur(nightDayTotal)+'</b> no dia</div>';
+      h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;text-align:center;border-top:1px solid var(--border);padding-top:12px">';
       [
         {v:(night.efficiency!=null?night.efficiency+'%':'--'),l:'Eficiência'},
         {v:(night.lowest_heart_rate!=null?night.lowest_heart_rate:'--'),l:'FC mín'},
@@ -3734,13 +3742,18 @@ function renderSonoContent(){
         h += '<div class="section"><div class="sec-label">Últimos 7 dias · score e horas</div><div class="card" style="padding:14px 16px 10px">';
         h += '<div style="display:flex;align-items:flex-end;gap:8px">';
         ouraDays.forEach(function(d){
-          var c=d.score>=85?'var(--green)':d.score>=70?'var(--indigo)':d.score>=55?'var(--amber)':'var(--coral)';
+          var c=d.score>=85?'var(--green)':d.score>=70?'var(--indigo)':'var(--coral)';
           var wd=new Date(d.day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).slice(0,3);
           h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">';
           h += '<div style="font-size:10px;font-weight:700;font-family:DM Mono,monospace">'+d.score+'</div>';
           h += '<div style="width:100%;max-width:26px;height:'+Math.max(6,Math.round(d.score*0.55))+'px;border-radius:5px 5px 2px 2px;background:'+c+'"></div>';
           h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase">'+wd+'</div>';
           h += '<div style="font-size:9px;color:var(--muted);font-family:DM Mono,monospace">'+(hoursMap[d.day]?fmtDur(hoursMap[d.day]):'–')+'</div></div>';
+        });
+        h += '</div>';
+        h += '<div style="display:flex;justify-content:center;gap:14px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px">';
+        [{c:'var(--green)',l:'Ótimo 85+'},{c:'var(--indigo)',l:'Bom 70–84'},{c:'var(--coral)',l:'Atenção <70'}].forEach(function(lg){
+          h += '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:'+lg.c+';display:inline-block"></span>'+lg.l+'</div>';
         });
         h += '</div></div></div>';
       }
@@ -3797,13 +3810,13 @@ function renderSonoContent(){
     var wkDays=(ouraData.daily||[]);
     var wkAvg=wkDays.length?Math.round(wkDays.reduce(function(s,d){ return s+d.score; },0)/wkDays.length):null;
     var slept=night.total_sleep_duration||0;
-    var deficitMin=Math.round((p.sleepTarget*3600-slept)/60);
-    sonoInsight='Esta noite: '+fmtDur(slept)+' dormidas'+(deficitMin>30?' — '+fmtDur(deficitMin*60)+' abaixo da meta de '+p.sleepTarget+'h':' — meta de '+p.sleepTarget+'h atingida')+'. ';
+    var deficitMin=Math.round((p.sleepTarget*3600-nightDayTotal)/60);
+    sonoInsight='Esta noite: '+fmtDur(slept)+' dormidas'+(napSec>600?' + soneca de '+fmtDur(napSec)+' (total '+fmtDur(nightDayTotal)+')':'')+(deficitMin>30?' — '+fmtDur(deficitMin*60)+' abaixo da meta de '+p.sleepTarget+'h':' — meta de '+p.sleepTarget+'h atingida')+'. ';
     sonoInsight+='Profundo '+fmtDur(night.deep_sleep_duration||0)+', REM '+fmtDur(night.rem_sleep_duration||0)+((night.awake_time||0)>3600?', e '+fmtDur(night.awake_time)+' acordado — vale focar em reduzir interrupções':'')+'. ';
     if(wkAvg!=null) sonoInsight+='Média da semana: score '+wkAvg+'.';
   }
-  h += '<div class="section"><div class="ai-card indigo"><div class="ai-hdr"><div class="ai-dot indigo"></div><span class="ai-ttl indigo">Sono IA</span></div>';
-  h += '<div class="ai-txt indigo">'+sonoInsight+'</div></div></div>';
+  h += '<div class="section"><div class="card" style="padding:14px 16px;border-left:3px solid var(--indigo)"><div class="ai-hdr"><div class="ai-dot indigo"></div><span class="ai-ttl indigo">Sono IA</span></div>';
+  h += '<div style="font-size:14px;line-height:1.65;color:var(--text)">'+sonoInsight+'</div></div></div>';
   h += '<div class="section"><div class="actions">';
   h += '<button class="act-btn" id="s-prot"><span class="act-icon">🌙</span><span class="act-lbl">Protocolo</span><span class="act-sub">Rotina noturna</span></button>';
   h += '<button class="act-btn" id="s-analise"><span class="act-icon">📊</span><span class="act-lbl">Analisar sono</span><span class="act-sub">Qualidade e melhorias</span></button>';

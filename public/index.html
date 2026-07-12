@@ -3579,10 +3579,13 @@ function fetchOura(force){
   if(ouraStatus==='loading') return;
   if(ouraData && !force) return;
   ouraStatus='loading';
-  var q='&start='+isoDay(new Date(Date.now()-8*864e5))+'&end='+isoDay(new Date());
+  var qStart='&start='+isoDay(new Date(Date.now()-8*864e5));
+  var q=qStart+'&end='+isoDay(new Date());
+  // sleep (sessões): end_date é exclusivo na API da Oura — pedir +1 dia para incluir a última noite
+  var q2=qStart+'&end='+isoDay(new Date(Date.now()+864e5));
   Promise.all([
     fetch('/api/oura?type=daily_sleep'+q).then(function(r){ if(!r.ok) throw 0; return r.json(); }),
-    fetch('/api/oura?type=sleep'+q).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    fetch('/api/oura?type=sleep'+q2).then(function(r){ if(!r.ok) throw 0; return r.json(); })
   ]).then(function(res){
     ouraData={daily:res[0].data||[], sessions:res[1].data||[]};
     ouraStatus='ok';

@@ -6306,6 +6306,7 @@ function spGenerate(){
   if(!exTxt) exTxt = getExamsText(PD[curP]); // fallback to hardcoded if user didn't input
   var profileText = 'Perfil: '+(P.name||'Usuario')+', '+(P.age||'45')+' anos, '+(P.gender==='M'?'masculino':'feminino')+', '+(P.weight||'80')+'kg, '+(P.height||'175')+'cm, IMC '+spCalcIMC()+'. Objetivos: '+goalsStr+'. Treinos: '+P.trainingDays+'x/semana, nivel '+P.trainingLevel+'. Sono atual: '+P.sleepHours+'h.'+(exTxt?'\n\n'+exTxt:'');
   var hasPhotos = P.bodyPhotos.frente || P.bodyPhotos.lado || P.bodyPhotos.costas;
+  var sciBase = 'REGRA: plano 100% science-based. Toda recomendacao deve seguir evidencia cientifica solida (diretrizes OMS/ACSM/ISSN, sociedades medicas, meta-analises); indique entre parenteses a base de cada recomendacao-chave (ex: "proteina 1,6-2,2 g/kg (ISSN)"). Zero modismo sem evidencia; se a evidencia for fraca ou mista, diga isso. Suplementos: apenas os com eficacia comprovada e na dose estudada. Adeque tudo a idade e sexo do perfil (menor de 18: diretrizes para adolescentes, cautela com suplementos e deficit calorico).\n\n';
 
   function doFetch(userContent){
     fetch('/api/claude',{
@@ -6350,13 +6351,13 @@ function spGenerate(){
           ['frente','lado','costas'].forEach(function(k2){
             if(compressed[k2]) uc.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:compressed[k2].split(',')[1]||compressed[k2]}});
           });
-          uc.push({type:'text',text:'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado considerando tambem os exames laboratoriais do perfil. Inclua: 1) Analise da composicao corporal 2) Alertas dos exames que impactam o plano 3) Top 3 prioridades 4) Nutricao personalizada (calorias e macros) 5) Plano de treino semanal com musculacao + cardio 6) Top 5 suplementos com doses baseados nos exames 7) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 700 palavras.'});
+          uc.push({type:'text',text:sciBase+'Analise as fotos do corpo acima e gere um plano de saude 100% personalizado considerando tambem os exames laboratoriais do perfil. Inclua: 1) Analise da composicao corporal 2) Alertas dos exames que impactam o plano 3) Top 3 prioridades 4) Nutricao personalizada (calorias e macros) 5) Plano de treino semanal com musculacao + cardio 6) Top 5 suplementos com doses baseados nos exames 7) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 700 palavras.'});
           doFetch(uc);
         }
       });
     });
   } else {
-    doFetch('Gere um plano de saude personalizado considerando os exames laboratoriais do perfil. Inclua: 1) Analise do perfil e alertas dos exames 2) Top 3 prioridades baseadas nos exames e objetivos 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio) 5) Top 5 suplementos com doses baseados nos exames 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 600 palavras.');
+    doFetch(sciBase+'Gere um plano de saude personalizado considerando os exames laboratoriais do perfil. Inclua: 1) Analise do perfil e alertas dos exames 2) Top 3 prioridades baseadas nos exames e objetivos 3) Nutricao (calorias e macros) 4) Plano de treino semanal (musculacao + cardio) 5) Top 5 suplementos com doses baseados nos exames 6) Alerta principal.\n\n'+profileText+'\n\nResposta em portugues, pratica, max 600 palavras.');
   }
 }
 

@@ -1,4 +1,4 @@
-var CACHE = 'mh-v18';
+var CACHE = 'mh-v19';
 var ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', function(e){

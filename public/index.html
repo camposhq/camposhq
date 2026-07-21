@@ -7834,9 +7834,12 @@ function saveToCloud(){
     waterGlasses:waterGlasses, sleepData:sleepData, expandedExam:expandedExam,
     profileComplete:profileComplete, pdOverride:pdOverrideSafe,
     historyData:historyData, chatHistories:chatHistories, inputHistory:inputHistory,
-    lastSavedDate:todayStr(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    lastSavedDate:todayStr()
   };
+  // Firestore rejeita QUALQUER undefined (perfil novo sem exames/initials derrubava o save
+  // inteiro e o convidado ficava só no localStorage — perdia tudo ao fechar a sessão)
+  try{ appState = JSON.parse(JSON.stringify(appState)); }catch(e){}
+  appState.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
   fbDb.collection('users').doc(uid).set({appState:appState}, {merge:true})
     .then(function(){
       setSyncStatus('ok'); syncCommunitySnapshot();

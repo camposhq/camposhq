@@ -193,7 +193,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var fbAuth = firebase.auth();
 var fbDb = firebase.firestore();
-var ADMIN_EMAIL = 'walter@camposhq.com';
+var ADMIN_EMAILS = ['camposwalter@gmail.com', 'walter@camposhq.com'];
 var allUsers = [];
 var blockTarget = null;
 var blockAction = null;
@@ -213,7 +213,7 @@ function switchTab(tab){
 
 fbAuth.onAuthStateChanged(function(user){
   if(!user){ document.getElementById('login-box').style.display='block'; return; }
-  if(user.email.toLowerCase() !== ADMIN_EMAIL){ document.getElementById('denied-box').style.display='block'; return; }
+  if(ADMIN_EMAILS.indexOf(user.email.toLowerCase()) === -1){ document.getElementById('denied-box').style.display='block'; return; }
   document.getElementById('main').style.display='block';
   document.getElementById('logout-btn').addEventListener('click', function(){ fbAuth.signOut(); });
   loadUsers();
@@ -346,7 +346,7 @@ function createInvite(){
   var token=randToken(16);
   fbDb.collection('invites').doc(token).set({
     name:name, email:email, status:'pending',
-    invitedBy:ADMIN_EMAIL,
+    invitedBy:fbAuth.currentUser?fbAuth.currentUser.email:'',
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   }).then(function(){
     var link=window.location.origin+'/join?token='+token;

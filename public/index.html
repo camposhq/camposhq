@@ -6509,7 +6509,7 @@ function spSave(){
     pdOverride[curP].examHistory.push({date:today2.toISOString().slice(0,10), dateLabel:today2.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}), values:examVals});
   }
   profileComplete=true;
-  save(); showToast('Perfil salvo! Treino e dieta atualizados ✓');
+  save(true); showToast('Perfil salvo! Treino e dieta atualizados ✓');
   showScreen('home');
 }
 

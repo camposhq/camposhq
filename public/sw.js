@@ -1,4 +1,4 @@
-var CACHE = 'mh-v19';
+var CACHE = 'mh-v20';
 var ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', function(e){
@@ -18,8 +18,21 @@ self.addEventListener('activate', function(e){
 
 self.addEventListener('fetch', function(e){
   var url = e.request.url;
-  // only handle same-origin navigation requests with cache-first
-  if(e.request.mode==='navigate' || (url.indexOf(self.location.origin)===0 && url.indexOf('/api/')===-1)){
+  // navegação: network-first — versão nova aparece já na primeira abertura; cache só offline
+  if(e.request.mode==='navigate'){
+    e.respondWith(
+      fetch(e.request).then(function(response){
+        if(response && response.status===200 && response.type!=='opaque'){
+          var clone = response.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
+        }
+        return response;
+      }).catch(function(){ return caches.match(e.request); })
+    );
+    return;
+  }
+  // demais assets same-origin: cache-first com atualização em segundo plano
+  if(url.indexOf(self.location.origin)===0 && url.indexOf('/api/')===-1){
     e.respondWith(
       caches.match(e.request).then(function(cached){
         var fetchPromise = fetch(e.request).then(function(response){
@@ -29,7 +42,6 @@ self.addEventListener('fetch', function(e){
           }
           return response;
         }).catch(function(){ return cached; });
-        // return cached immediately if available, fetch in background
         return cached || fetchPromise;
       })
     );

@@ -6,7 +6,7 @@ const ADMIN_EMAILS = ['camposwalter@gmail.com', 'walter@camposhq.com'];
 async function verifyFirebaseToken(req) {
   const auth = req.headers.authorization || '';
   const idToken = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
-  if (!idToken) return false;
+  if (!idToken) return { ok: false, why: 'Você não está logado — entre no app e tente de novo' };
   try {
     const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + FIREBASE_API_KEY, {
       method: 'POST',
@@ -14,20 +14,23 @@ async function verifyFirebaseToken(req) {
       headers: { 'Content-Type': 'application/json', 'Referer': 'https://camposhq.vercel.app/' },
       body: JSON.stringify({ idToken })
     });
-    if (!r.ok) return false;
+    if (!r.ok) return { ok: false, why: 'Sessão expirada — saia e entre de novo no app' };
     const data = await r.json();
     const user = data.users && data.users[0];
-    if (!user) return false;
-    if (ADMIN_EMAILS.indexOf((user.email || '').toLowerCase()) !== -1) return true;
+    if (!user) return { ok: false, why: 'Sessão expirada — saia e entre de novo no app' };
+    if (ADMIN_EMAILS.indexOf((user.email || '').toLowerCase()) !== -1) return { ok: true };
     // usuário comum: precisa estar aprovado na comunidade (criar conta no Auth é aberto,
     // então login válido não basta — o doc community/{uid} com approved:true é o crachá)
     const d = await fetch('https://firestore.googleapis.com/v1/projects/myhealth-app-d8acf/databases/(default)/documents/community/' + user.localId, {
       headers: { 'Authorization': 'Bearer ' + idToken }
     });
-    if (!d.ok) return false;
+    if (d.status === 404) return { ok: false, why: 'Conta sem cadastro na comunidade — abra seu link de convite de novo' };
+    if (!d.ok) return { ok: false, why: 'Falha ao verificar aprovação (' + d.status + ') — tente de novo' };
     const doc = await d.json();
-    return !!(doc.fields && doc.fields.approved && doc.fields.approved.booleanValue === true);
-  } catch (e) { return false; }
+    if (!(doc.fields && doc.fields.approved && doc.fields.approved.booleanValue === true))
+      return { ok: false, why: 'Conta aguardando aprovação do administrador' };
+    return { ok: true };
+  } catch (e) { return { ok: false, why: 'Falha ao validar sessão — tente de novo' }; }
 }
 
 
@@ -48,8 +51,9 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!(await verifyFirebaseToken(req))) {
-    return res.status(401).json({ error: 'Não autorizado — faça login no app' });
+  const authCheck = await verifyFirebaseToken(req);
+  if (!authCheck.ok) {
+    return res.status(401).json({ error: authCheck.why });
   }
 
   const token = process.env.OURA_TOKEN;

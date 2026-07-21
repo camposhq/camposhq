@@ -217,6 +217,7 @@ fbAuth.onAuthStateChanged(function(user){
   document.getElementById('main').style.display='block';
   document.getElementById('logout-btn').addEventListener('click', function(){ fbAuth.signOut(); });
   loadUsers();
+  loadCommunity(); // contadores e pendências já na abertura, sem depender do clique na aba
 });
 
 function doLogin(){
@@ -364,11 +365,8 @@ function copyInviteLink(){
 }
 
 function loadCommunity(){
-  Promise.all([
-    fbDb.collection('invites').orderBy('createdAt','desc').limit(20).get(),
-    fbDb.collection('community').get()
-  ]).then(function(results){
-    var invSnap=results[0], comSnap=results[1];
+  // membros e convites carregam independentes — falha em um não esconde o outro
+  fbDb.collection('community').get().then(function(comSnap){
     var pending=[], approved=[];
     comSnap.docs.forEach(function(d){
       var m=Object.assign({uid:d.id},d.data());
@@ -376,10 +374,17 @@ function loadCommunity(){
     });
     document.getElementById('stat-members').textContent=approved.length;
     document.getElementById('stat-pending').textContent=pending.length;
-    renderInvites(invSnap.docs);
     renderPending(pending);
     renderApproved(approved);
-  }).catch(function(){ toast('Erro ao carregar comunidade.'); });
+  }).catch(function(err){
+    toast('Erro ao carregar membros: '+(err&&(err.code||err.message)||err));
+    document.getElementById('pending-list').innerHTML='<div style="color:var(--coral);font-size:13px;padding:12px 0">Erro: '+escHtml(String(err&&(err.code||err.message)||err))+'</div>';
+  });
+  fbDb.collection('invites').orderBy('createdAt','desc').limit(20).get().then(function(invSnap){
+    renderInvites(invSnap.docs);
+  }).catch(function(err){
+    document.getElementById('invites-list').innerHTML='<div style="color:var(--coral);font-size:13px;padding:12px 0">Erro ao listar convites: '+escHtml(String(err&&(err.code||err.message)||err))+'</div>';
+  });
 }
 
 function fmtDate(ts){

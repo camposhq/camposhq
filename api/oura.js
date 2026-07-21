@@ -19,17 +19,8 @@ async function verifyFirebaseToken(req) {
     const user = data.users && data.users[0];
     if (!user) return { ok: false, why: 'Sessão expirada — saia e entre de novo no app' };
     if (ADMIN_EMAILS.indexOf((user.email || '').toLowerCase()) !== -1) return { ok: true };
-    // usuário comum: precisa estar aprovado na comunidade (criar conta no Auth é aberto,
-    // então login válido não basta — o doc community/{uid} com approved:true é o crachá)
-    const d = await fetch('https://firestore.googleapis.com/v1/projects/myhealth-app-d8acf/databases/(default)/documents/community/' + user.localId, {
-      headers: { 'Authorization': 'Bearer ' + idToken }
-    });
-    if (d.status === 404) return { ok: false, why: 'Conta sem cadastro na comunidade — abra seu link de convite de novo' };
-    if (!d.ok) return { ok: false, why: 'Falha ao verificar aprovação (' + d.status + ') — tente de novo' };
-    const doc = await d.json();
-    if (!(doc.fields && doc.fields.approved && doc.fields.approved.booleanValue === true))
-      return { ok: false, why: 'Conta aguardando aprovação do administrador' };
-    return { ok: true };
+    // OURA_TOKEN é o anel do Walter — dados pessoais dele; nenhum outro usuário pode ler
+    return { ok: false, why: 'Oura Ring disponível apenas para o administrador' };
   } catch (e) { return { ok: false, why: 'Falha ao validar sessão — tente de novo' }; }
 }
 

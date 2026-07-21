@@ -4008,6 +4008,7 @@ function adicionarExercicio(dayIdx){
 // ── Oura Ring ──
 function isoDay(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fetchOura(force){
+  if(!isAdmin()) return; // OURA_TOKEN é do Walter — convidados não têm anel e não podem ver esses dados
   if(ouraStatus==='loading') return;
   if(ouraData && !force) return;
   ouraStatus='loading';
@@ -4208,6 +4209,37 @@ function renderSonoContent(){
     }
   }
 
+  // Registro manual — para quem não tem dados do anel (convidados; ou anel sem conexão)
+  if(!night){
+    var sH=Math.floor(entry.hours), sM=Math.round((entry.hours-sH)*60);
+    h += '<div class="section"><div class="sec-label">Registrar sono</div><div class="card" style="padding:0;overflow:hidden">';
+    h += '<div style="padding:14px 16px;border-bottom:1px solid var(--border)">';
+    h += '<div style="font-size:14px;font-weight:500;margin-bottom:12px">Horas dormidas</div>';
+    h += '<div style="display:flex;align-items:center;gap:16px">';
+    var spinBtn = 'width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:20px;cursor:pointer;line-height:1;color:var(--text)';
+    var spinInp = 'width:54px;font-size:24px;font-weight:700;font-family:DM Mono,monospace;text-align:center;border:2px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);padding:4px 2px;outline:none;-moz-appearance:textfield';
+    h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
+    h += '<button style="'+spinBtn+'" id="sh-minus">−</button>';
+    h += '<div style="text-align:center"><input type="number" min="0" max="14" value="'+sH+'" style="'+spinInp+'" id="s-hval"><div style="font-size:10px;color:var(--muted);margin-top:2px">horas</div></div>';
+    h += '<button style="'+spinBtn+'" id="sh-plus">+</button>';
+    h += '</div>';
+    h += '<div style="font-size:22px;font-weight:300;color:var(--muted)">:</div>';
+    h += '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">';
+    h += '<button style="'+spinBtn+'" id="sm-minus">−</button>';
+    h += '<div style="text-align:center"><input type="number" min="0" max="59" value="'+(sM<10?'0':'')+sM+'" style="'+spinInp+'" id="s-mval"><div style="font-size:10px;color:var(--muted);margin-top:2px">min</div></div>';
+    h += '<button style="'+spinBtn+'" id="sm-plus">+</button>';
+    h += '</div>';
+    h += '</div></div>';
+    h += '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">';
+    h += '<span style="font-size:14px;font-weight:500">Qualidade</span>';
+    h += '<div style="display:flex;gap:6px">';
+    ['Péssima','Ruim','Regular','Boa','Ótima'].forEach(function(ql,i){
+      var sel = entry.quality===i+1;
+      h += '<button style="width:34px;height:34px;border-radius:8px;border:1.5px solid '+(sel?'var(--indigo)':'var(--border)')+';background:'+(sel?'var(--indigo-light)':'var(--surface)')+';font-size:14px;font-weight:700;font-family:DM Mono,monospace;color:'+(sel?'var(--indigo)':'var(--muted)')+';cursor:pointer" data-q="'+(i+1)+'" title="'+ql+'">'+(i+1)+'</button>';
+    });
+    h += '</div></div></div></div>';
+  }
+
   var sonoInsight = p.insight;
   if(night){
     var wkDays=(ouraData.daily||[]);
@@ -4232,6 +4264,28 @@ function renderSonoContent(){
 
   var orr = document.getElementById('oura-retry');
   if(orr) orr.addEventListener('click', function(){ fetchOura(true); renderSonoContent(); });
+
+  // Registro manual: spinners de horas/minutos + qualidade
+  var entry2 = sleepData[curP] || {hours:p.sleep, quality:3};
+  function setSleepHours(newH, newM){
+    newH=Math.max(0,Math.min(14,newH)); newM=Math.max(0,Math.min(59,newM));
+    entry2.hours=parseFloat((newH+newM/60).toFixed(4));
+    sleepData[curP]=entry2; save();
+    document.getElementById('s-hval').value=newH;
+    document.getElementById('s-mval').value=(newM<10?'0':'')+newM;
+  }
+  function readHM(){ return {h:parseInt(document.getElementById('s-hval').value)||0, m:parseInt(document.getElementById('s-mval').value)||0}; }
+  if(document.getElementById('sh-minus')){
+    document.getElementById('sh-minus').addEventListener('click',function(){ var hm=readHM(); setSleepHours(hm.h-1,hm.m); });
+    document.getElementById('sh-plus').addEventListener('click',function(){ var hm=readHM(); setSleepHours(hm.h+1,hm.m); });
+    document.getElementById('sm-minus').addEventListener('click',function(){ var hm=readHM(); var nm=hm.m-1; if(nm<0){nm=59; setSleepHours(hm.h-1,nm);}else{setSleepHours(hm.h,nm);} });
+    document.getElementById('sm-plus').addEventListener('click',function(){ var hm=readHM(); var nm=hm.m+1; if(nm>=60){nm=0; setSleepHours(hm.h+1,nm);}else{setSleepHours(hm.h,nm);} });
+    document.getElementById('s-hval').addEventListener('change',function(){ var hm=readHM(); setSleepHours(hm.h,hm.m); });
+    document.getElementById('s-mval').addEventListener('change',function(){ var hm=readHM(); setSleepHours(hm.h,hm.m); });
+  }
+  document.querySelectorAll('#sono-content [data-q]').forEach(function(btn){
+    btn.addEventListener('click', function(){ entry2.quality=parseInt(this.dataset.q); sleepData[curP]=entry2; save(); renderSonoContent(); });
+  });
 
   var sp2=document.getElementById('s-prot'); var sa=document.getElementById('s-analise');
   if(sp2) sp2.addEventListener('click', function(){
